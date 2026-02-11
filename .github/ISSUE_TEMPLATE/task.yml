@@ -1,5 +1,5 @@
 name: Task
-description: General work item for development, documentation, research, or setup
+description: General work item for development, documentation, or setup
 title: "[TASK] "
 labels: ["task"]
 
@@ -9,7 +9,7 @@ body:
     attributes:
       label: Task Description
       description: What needs to be done?
-      placeholder: Example: Create Team Members wiki page OR Implement recipe search API
+      placeholder: "Write the task clearly (e.g., create a Wiki page, implement an API, fix deployment)."
     validations:
       required: true
 
@@ -18,7 +18,7 @@ body:
     attributes:
       label: Context / Notes (Optional)
       description: Why is this needed? Any links or references?
-      placeholder: Example: Required for project documentation milestone
+      placeholder: "Add context, links, screenshots, or related issues (optional)."
 
   - type: textarea
     id: done_criteria
@@ -26,9 +26,8 @@ body:
       label: Done Criteria
       description: How do we know this task is finished?
       placeholder: |
-        Example:
-        - Feature/page/content exists and works
-        - Reviewed by team member (if needed)
-        - Relevant docs updated (if applicable)
+        - Deliverable exists (page/code/config/etc.)
+        - Works as intended / links work (if applicable)
+        - Reviewed by a teammate (if needed)
     validations:
       required: true
