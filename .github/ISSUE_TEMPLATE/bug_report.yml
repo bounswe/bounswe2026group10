@@ -10,9 +10,9 @@ body:
       label: Bug Description
       description: |
         Please include:
-        • What you expected to happen
-        • What actually happened
-        • Any important context
+        - What you expected to happen
+        - What actually happened
+        - Any important context
       placeholder: |
         Expected: Searching recipes should return matching recipes
 
@@ -37,4 +37,4 @@ body:
     attributes:
       label: Error Evidence (Optional)
       description: Error message, logs, or screenshot description
-      placeholder: Example: 500 error from backend / console error
+      placeholder: "Example: 500 error from backend / console error"
