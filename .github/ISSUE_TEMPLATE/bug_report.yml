@@ -1,0 +1,40 @@
+name: Bug Report
+description: Report a system error or unexpected behavior
+title: "[BUG] "
+labels: ["bug"]
+
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: |
+        Please include:
+        • What you expected to happen
+        • What actually happened
+        • Any important context
+      placeholder: |
+        Expected: Searching recipes should return matching recipes
+
+        Actual: Search returns empty results even when matching recipes exist
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. Go to recipe search
+        2. Enter ingredients
+        3. Click search
+        4. See issue
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Error Evidence (Optional)
+      description: Error message, logs, or screenshot description
+      placeholder: Example: 500 error from backend / console error
