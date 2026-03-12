@@ -14,5 +14,5 @@ const BUTTON_LABELS = [
   "Button 4",
   "Button 5",
   "Button 6",
-  "Button 7",
+  "Global Commodities",
 ];
