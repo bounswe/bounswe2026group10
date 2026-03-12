@@ -8,11 +8,11 @@
 const NUM_BUTTONS = 7;
 
 const BUTTON_LABELS = [
-  "Button 1",
-  "Button 2",
-  "Button 3",
-  "Button 4",
+  "USD/TRY Rate",
+  "Weather for Istanbul",
+  "Ahmet Baha Bayrakçıoğlu - Random Joke",
+  "Random Football Player",
   "Countries",
-  "Button 6",
-  "Button 7",
+  "Fetch Cat Fact",
+  "Global Commodities",
 ];

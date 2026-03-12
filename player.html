@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Random Football Player</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f172a;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: #1e293b;
+      border-radius: 20px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+      text-align: center;
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      padding: 32px 32px 64px;
+      position: relative;
+    }
+
+    .card-header h2 {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 4px;
+    }
+
+    .league-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .avatar-wrap {
+      position: relative;
+      margin: -48px auto 0;
+      width: 96px;
+      height: 96px;
+      z-index: 1;
+    }
+
+    .avatar-wrap img {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid #1e293b;
+      background: #334155;
+    }
+
+    .card-body { padding: 16px 32px 32px; }
+
+    .player-name {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #f1f5f9;
+      margin-bottom: 4px;
+    }
+
+    .team-name {
+      font-size: 0.9rem;
+      color: #94a3b8;
+      margin-bottom: 24px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .stat-box {
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .buttons { display: flex; gap: 10px; }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border: none;
+      transition: opacity 150ms;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover { opacity: 0.85; }
+
+    .btn-primary { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; }
+    .btn-secondary { background: #334155; color: #cbd5e1; }
+
+    .api-note {
+      margin-top: 20px;
+      font-size: 0.75rem;
+      color: #475569;
+    }
+
+    /* Loading state */
+    .loading-wrap { padding: 64px 32px; }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #334155;
+      border-top-color: #6d28d9;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text { color: #64748b; font-size: 0.9rem; }
+
+    #error { color: #f87171; margin-bottom: 20px; font-size: 0.95rem; padding: 0 32px; padding-top: 40px; }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <p class="loading-text">Picking a random league...</p>
+    </div>
+  </div>
+
+  <script>
+    var LEAGUES = [
+      "English Premier League",
+      "Spanish La Liga",
+      "German Bundesliga",
+      "Italian Serie A",
+      "French Ligue 1"
+    ];
+
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function setStatus(msg) {
+      document.getElementById("card").innerHTML =
+        '<div class="loading-wrap"><div class="spinner"></div><p class="loading-text">' + msg + '</p></div>';
+    }
+
+    function showError(msg) {
+      document.getElementById("card").innerHTML =
+        '<p id="error">' + msg + '</p>' +
+        '<div class="buttons" style="padding:0 32px 32px;"><button class="btn btn-primary" onclick="start()">Try Again</button>' +
+        '<a class="btn btn-secondary" href="index.html">Go back</a></div>';
+    }
+
+    function showPlayer(player, league) {
+      var thumb = player.strThumb || player.strCutout || "https://www.thesportsdb.com/images/media/player/thumb/nophoto.jpg";
+      document.getElementById("card").innerHTML =
+        '<div class="card-header">' +
+          '<h2>Random Player</h2>' +
+          '<span class="league-name">' + league + '</span>' +
+        '</div>' +
+        '<div class="avatar-wrap"><img src="' + thumb + '" alt="' + player.strPlayer + '" /></div>' +
+        '<div class="card-body">' +
+          '<div class="player-name">' + player.strPlayer + '</div>' +
+          '<div class="team-name">' + (player.strTeam || "Unknown Team") + '</div>' +
+          '<div class="stats">' +
+            '<div class="stat-box"><div class="stat-label">Position</div><div class="stat-value">' + (player.strPosition || "N/A") + '</div></div>' +
+            '<div class="stat-box"><div class="stat-label">Nationality</div><div class="stat-value">' + (player.strNationality || "N/A") + '</div></div>' +
+            '<div class="stat-box"><div class="stat-label">Born</div><div class="stat-value">' + (player.dateBorn || "N/A") + '</div></div>' +
+            '<div class="stat-box"><div class="stat-label">Status</div><div class="stat-value">' + (player.strStatus || "Active") + '</div></div>' +
+          '</div>' +
+          '<div class="buttons">' +
+            '<button class="btn btn-primary" onclick="start()">Another Player</button>' +
+            '<a class="btn btn-secondary" href="index.html">Go back</a>' +
+          '</div>' +
+          '<p class="api-note">Data from TheSportsDB — free public sports API</p>' +
+        '</div>';
+    }
+
+    function start() {
+      var league = pick(LEAGUES);
+      setStatus("Fetching teams from " + league + "...");
+
+      fetch("https://www.thesportsdb.com/api/v1/json/3/search_all_teams.php?l=" + encodeURIComponent(league))
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (!data.teams || data.teams.length === 0) { showError("No teams found. Try again."); return; }
+
+          var team = pick(data.teams);
+          setStatus("Fetching players from " + team.strTeam + "...");
+
+          return fetch("https://www.thesportsdb.com/api/v1/json/3/lookup_all_players.php?id=" + team.idTeam)
+            .then(function(res) { return res.json(); })
+            .then(function(pData) {
+              if (!pData.player || pData.player.length === 0) { showError("No players found for " + team.strTeam + ". Try again."); return; }
+              showPlayer(pick(pData.player), league);
+            });
+        })
+        .catch(function() { showError("Something went wrong. Try again."); });
+    }
+
+    start();
+  </script>
+</body>
+</html>
