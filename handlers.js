@@ -6,7 +6,7 @@
  */
 
 function onButton1Click() {
-  console.log("Button 1 clicked -- implement me!");
+  window.location.href = "usd-try.html";
 }
 
 function onButton2Click() {
@@ -30,5 +30,6 @@ function onButton6Click() {
 }
 
 function onButton7Click() {
-  console.log("Button 7 clicked -- implement me!");
+  console.log("Button 7 clicked! Opening Live Commodities dashboard...");
+  window.open('commodities.html', '_blank');
 }
