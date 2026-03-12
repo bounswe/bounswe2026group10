@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Country Explorer</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+      padding: 48px 24px 24px;
+    }
+
+    h1.page-title {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 32px;
+    }
+
+    .layout {
+      display: flex;
+      gap: 24px;
+      max-width: 820px;
+      margin: 0 auto;
+      align-items: flex-start;
+    }
+
+    .card {
+      flex: 1;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      padding: 36px;
+    }
+
+    .flag {
+      font-size: 3.5rem;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .card h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #1e293b;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .official {
+      text-align: center;
+      color: #64748b;
+      font-size: 0.88rem;
+      margin-bottom: 24px;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .detail label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .detail p {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #1e293b;
+    }
+
+    .note {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      text-align: center;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 14px;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 160px;
+      flex-shrink: 0;
+    }
+
+    .sidebar button {
+      width: 100%;
+      padding: 14px 12px;
+      background: #fff;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #475569;
+      cursor: pointer;
+      transition: all 150ms;
+      text-align: center;
+    }
+
+    .sidebar button:hover {
+      border-color: #4f46e5;
+      color: #4f46e5;
+    }
+
+    .sidebar button.active {
+      background: #4f46e5;
+      border-color: #4f46e5;
+      color: #fff;
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 28px;
+      color: #4f46e5;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h1 class="page-title">Country Explorer</h1>
+
+  <div class="layout">
+    <div class="card">
+      <div class="flag" id="flag"></div>
+      <h2 id="name"></h2>
+      <p class="official" id="official"></p>
+      <div class="details">
+        <div class="detail"><label>Capital</label><p id="capital"></p></div>
+        <div class="detail"><label>Region</label><p id="region"></p></div>
+        <div class="detail"><label>Population</label><p id="population"></p></div>
+        <div class="detail"><label>Currency</label><p id="currency"></p></div>
+        <div class="detail"><label>Languages</label><p id="languages"></p></div>
+        <div class="detail"><label>Continent</label><p id="continent"></p></div>
+      </div>
+      <p class="note">
+        Data fetched live from <strong>REST Countries API</strong> (restcountries.com).
+        Returns country details such as capital, population, currency, and languages.
+      </p>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+      <button onclick="load('turkey', this)" class="active">🇹🇷 Turkey</button>
+      <button onclick="load('germany', this)">🇩🇪 Germany</button>
+      <button onclick="load('japan', this)">🇯🇵 Japan</button>
+      <button onclick="load('brazil', this)">🇧🇷 Brazil</button>
+    </div>
+  </div>
+
+  <a class="back-link" href="index.html">← Back to Stub App</a>
+
+  <script>
+    function load(country, btn) {
+      document.querySelectorAll(".sidebar button").forEach(function(b) {
+        b.classList.remove("active");
+      });
+      btn.classList.add("active");
+
+      fetch("https://restcountries.com/v3.1/name/" + country)
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          var c = data[0];
+          document.getElementById("flag").textContent = c.flag || "";
+          document.getElementById("name").textContent = c.name.common;
+          document.getElementById("official").textContent = c.name.official;
+          document.getElementById("capital").textContent = (c.capital && c.capital[0]) || "N/A";
+          document.getElementById("region").textContent = c.region || "N/A";
+          document.getElementById("population").textContent = c.population.toLocaleString();
+          document.getElementById("currency").textContent = c.currencies
+            ? Object.values(c.currencies)[0].name : "N/A";
+          document.getElementById("languages").textContent = c.languages
+            ? Object.values(c.languages).join(", ") : "N/A";
+          document.getElementById("continent").textContent = (c.continents && c.continents[0]) || "N/A";
+        });
+    }
+
+    load("turkey", document.querySelector(".sidebar button"));
+  </script>
+</body>
+</html>

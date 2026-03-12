@@ -12,7 +12,7 @@ const BUTTON_LABELS = [
   "Weather for Istanbul",
   "Ahmet Baha Bayrakçıoğlu - Random Joke",
   "Random Football Player",
-  "Button 5",
+  "Countries",
   "Fetch Cat Fact",
   "Global Commodities",
 ];
