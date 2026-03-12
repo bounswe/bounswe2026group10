@@ -8,11 +8,11 @@
 const NUM_BUTTONS = 7;
 
 const BUTTON_LABELS = [
-  "Button 1",
+  "USD/TRY Rate",
   "Button 2",
   "Button 3",
-  "Button 4",
+  "Random Football Player",
   "Button 5",
   "Fetch Cat Fact",
-  "Button 7",
+  "Global Commodities",
 ];
