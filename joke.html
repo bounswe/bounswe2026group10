@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Joke Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            --card-bg: #ffffff;
+            --card-border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --accent-color: #4f46e5;
+            --accent-hover: #4338ca;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            padding: 24px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(79, 70, 229, 0.05) 0%, transparent 60%);
+            z-index: -1;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 24px;
+            color: var(--text-main);
+        }
+
+        .description {
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-size: 1rem;
+            margin-bottom: 32px;
+            font-weight: 300;
+        }
+
+        .joke-card {
+            background: #f8fafc;
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .joke-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .setup {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-main);
+        }
+
+        .punchline {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            opacity: 0;
+            transform: translateY(10px);
+            animation: revealPunchline 0.6s 1.5s forwards ease-out;
+        }
+
+        @keyframes revealPunchline {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            font-size: 1rem;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            box-shadow: 0 8px 16px rgba(139, 92, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--card-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .loader {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-color);
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Random Joke</h1>
+
+        <div class="description">
+            <strong>API Details:</strong> This page fetches data from
+            <code>https://official-joke-api.appspot.com/random_joke</code>.<br>
+            <strong>Payload Representation:</strong> The external API returns a random programming or general-purpose
+            joke in JSON format. It includes the <code>setup</code> (the premise), the <code>punchline</code>, a
+            <code>type</code> category, and an <code>id</code>. We render the setup and punchline below.
+        </div>
+
+        <div class="joke-card" id="joke-card">
+            <div class="loader" id="loader"></div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="fetchJoke()">Get Another Joke</button>
+            <a href="index.html" class="btn btn-secondary">Go Back</a>
+        </div>
+    </div>
+
+    <script>
+        function fetchJoke() {
+            const card = document.getElementById('joke-card');
+            card.innerHTML = '<div class="loader"></div>';
+
+            fetch("https://official-joke-api.appspot.com/random_joke")
+                .then(res => res.json())
+                .then(data => {
+                    card.innerHTML = `
+            <div class="setup">${data.setup}</div>
+            <div class="punchline">${data.punchline}</div>
+          `;
+                })
+                .catch(err => {
+                    card.innerHTML = `<div class="setup" style="color: #ef4444;">Failed to load joke. Please try again.</div>`;
+                    console.error(err);
+                });
+        }
+
+        // Fetch initial joke on load
+        document.addEventListener('DOMContentLoaded', fetchJoke);
+    </script>
+</body>
+
+</html>

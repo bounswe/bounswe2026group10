@@ -10,7 +10,7 @@ const NUM_BUTTONS = 7;
 const BUTTON_LABELS = [
   "USD/TRY Rate",
   "Button 2",
-  "Button 3",
+  "Ahmet Baha Bayrakçıoğlu - Random Joke",
   "Random Football Player",
   "Button 5",
   "Fetch Cat Fact",
