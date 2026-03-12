@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>USD / TRY Exchange Rate</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        padding: 24px;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 520px;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        padding: 48px 40px;
+        text-align: center;
+      }
+
+      .card h1 {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 8px;
+      }
+
+      .card .description {
+        color: #64748b;
+        margin-bottom: 32px;
+        line-height: 1.5;
+      }
+
+      .rate-display {
+        font-size: 3rem;
+        font-weight: 800;
+        color: #4f46e5;
+        margin-bottom: 8px;
+      }
+
+      .rate-label {
+        font-size: 0.95rem;
+        color: #94a3b8;
+        margin-bottom: 32px;
+      }
+
+      .info-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 32px;
+        text-align: left;
+      }
+
+      .info-table th,
+      .info-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 0.95rem;
+      }
+
+      .info-table th {
+        color: #64748b;
+        font-weight: 500;
+        width: 40%;
+      }
+
+      .info-table td {
+        color: #1e293b;
+        font-weight: 600;
+      }
+
+      .status {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-bottom: 24px;
+      }
+
+      .error {
+        color: #ef4444;
+      }
+
+      .back-btn {
+        display: inline-block;
+        padding: 12px 32px;
+        border: none;
+        border-radius: 12px;
+        background-color: #4f46e5;
+        color: #ffffff;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition:
+          background-color 150ms,
+          box-shadow 150ms;
+      }
+
+      .back-btn:hover {
+        background-color: #4338ca;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+      }
+
+      .back-btn:active {
+        background-color: #3730a3;
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        border: 4px solid #e2e8f0;
+        border-top-color: #4f46e5;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-bottom: 16px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>USD / TRY Exchange Rate</h1>
+      <p class="description">
+        This page fetches the current US Dollar to Turkish Lira exchange rate
+        from the <strong>ExchangeRate-API</strong> (open, no-key-required
+        endpoint). The data shows how many Turkish Lira (TRY) one US Dollar
+        (USD) is worth.
+      </p>
+
+      <div id="loading">
+        <div class="spinner"></div>
+        <p class="status">Fetching live rate&hellip;</p>
+      </div>
+
+      <div id="result" style="display: none">
+        <div class="rate-display" id="rate-value">--</div>
+        <div class="rate-label">1 USD = <span id="rate-text">--</span> TRY</div>
+
+        <table class="info-table">
+          <tr>
+            <th>Base Currency</th>
+            <td>USD (US Dollar)</td>
+          </tr>
+          <tr>
+            <th>Target Currency</th>
+            <td>TRY (Turkish Lira)</td>
+          </tr>
+          <tr>
+            <th>Last Updated</th>
+            <td id="last-updated">--</td>
+          </tr>
+          <tr>
+            <th>Data Source</th>
+            <td>ExchangeRate-API</td>
+          </tr>
+        </table>
+      </div>
+
+      <div id="error-msg" style="display: none">
+        <p class="status error" id="error-text"></p>
+      </div>
+
+      <a href="index.html" class="back-btn">&larr; Back to Home</a>
+    </div>
+
+    <script>
+      (function () {
+        var API_URL = "https://open.er-api.com/v6/latest/USD";
+
+        fetch(API_URL)
+          .then(function (response) {
+            if (!response.ok) {
+              throw new Error(
+                "Network response was not ok (status " + response.status + ")",
+              );
+            }
+            return response.json();
+          })
+          .then(function (data) {
+            var tryRate = data.rates && data.rates.TRY;
+            if (!tryRate) {
+              throw new Error("TRY rate not found in API response.");
+            }
+
+            document.getElementById("rate-value").textContent =
+              tryRate.toFixed(4);
+            document.getElementById("rate-text").textContent =
+              tryRate.toFixed(4);
+            document.getElementById("last-updated").textContent =
+              data.time_last_update_utc || new Date().toUTCString();
+
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("result").style.display = "block";
+          })
+          .catch(function (err) {
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("error-text").textContent =
+              "Failed to load exchange rate: " + err.message;
+            document.getElementById("error-msg").style.display = "block";
+          });
+      })();
+    </script>
+  </body>
+</html>
