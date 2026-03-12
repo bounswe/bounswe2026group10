@@ -10,7 +10,7 @@ const NUM_BUTTONS = 7;
 const BUTTON_LABELS = [
   "Button 1",
   "Button 2",
-  "Button 3",
+  "Ahmet Baha Bayrakçıoğlu - Random Joke",
   "Button 4",
   "Button 5",
   "Button 6",
