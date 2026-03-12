@@ -9,7 +9,7 @@ const NUM_BUTTONS = 7;
 
 const BUTTON_LABELS = [
   "Button 1",
-  "Button 2",
+  "Weather for Istanbul",
   "Button 3",
   "Button 4",
   "Button 5",
