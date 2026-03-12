@@ -11,7 +11,7 @@ const BUTTON_LABELS = [
   "USD/TRY Rate",
   "Button 2",
   "Button 3",
-  "Button 4",
+  "Random Football Player",
   "Button 5",
   "Button 6",
   "Global Commodities",
