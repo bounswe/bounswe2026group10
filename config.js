@@ -13,6 +13,6 @@ const BUTTON_LABELS = [
   "Button 3",
   "Random Football Player",
   "Button 5",
-  "Button 6",
+  "Fetch Cat Fact",
   "Global Commodities",
 ];
