@@ -10,7 +10,15 @@ function onButton1Click() {
 }
 
 function onButton2Click() {
-  console.log("Button 2 clicked -- implement me!");
+  fetch("https://api.open-meteo.com/v1/forecast?latitude=41.01&longitude=28.95&current=temperature_2m,windspeed_10m,relativehumidity_2m&timezone=auto")
+    .then(res => res.json())
+    .then(data => {
+      const current = data.current;
+      window.location.href = "weather.html" +
+        "?temp=" + current.temperature_2m +
+        "&wind=" + current.windspeed_10m +
+        "&humidity=" + current.relativehumidity_2m;
+    });
 }
 
 function onButton3Click() {
