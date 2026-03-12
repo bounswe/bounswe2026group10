@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Oil Prices</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: #f8fafc;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            background: -webkit-linear-gradient(45deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        #prices-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .price-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease;
+        }
+
+        .price-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .commodity-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 12px;
+        }
+
+        .price-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #38bdf8;
+            margin-bottom: 8px;
+        }
+
+        .change-indicator {
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .change-positive {
+            color: #4ade80;
+        }
+
+        .change-negative {
+            color: #f87171;
+        }
+
+        .change-icon::before {
+            content: '▲';
+            font-size: 0.7em;
+        }
+
+        .change-negative .change-icon::before {
+            content: '▼';
+        }
+
+        #loading {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #94a3b8;
+            margin-top: 40px;
+        }
+
+        #error-message {
+            color: #f87171;
+            text-align: center;
+            font-size: 1.2rem;
+            margin-top: 40px;
+            display: none;
+        }
+
+        .back-link {
+            margin-top: 48px;
+            color: #818cf8;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 150ms;
+        }
+
+        .back-link:hover {
+            color: #a5b4fc;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Global Commodities</h1>
+        <p class="subtitle">Live market data powered by OilPriceAPI</p>
+    </header>
+
+    <div id="loading">Fetching latest market data...</div>
+    <div id="error-message">Failed to load market data. Please try again later.</div>
+
+    <div id="prices-container">
+        <!-- Price cards will be injected here -->
+    </div>
+
+    <a href="index.html" class="back-link">← Back to Dashboard</a>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error-message');
+            const containerEl = document.getElementById('prices-container');
+
+            fetch("https://api.oilpriceapi.com/v1/demo/prices")
+                .then(response => {
+                    if (!response.ok) throw new Error('API request failed');
+                    return response.json();
+                })
+                .then(data => {
+                    loadingEl.style.display = 'none';
+
+                    if (data && data.data && data.data.prices) {
+                        data.data.prices.forEach(item => {
+                            const changeVal = item.change_24h || 0;
+                            const isPositive = changeVal >= 0;
+                            const changeClass = isPositive ? 'change-positive' : 'change-negative';
+                            const changeText = `${Math.abs(changeVal).toFixed(2)}%`;
+
+                            const card = document.createElement('div');
+                            card.className = 'price-card';
+                            card.innerHTML = `
+                <div class="commodity-name">${item.name}</div>
+                <div class="price-value">$${parseFloat(item.price).toLocaleString()}</div>
+                <div class="change-indicator ${changeClass}">
+                  <span class="change-icon"></span>
+                  ${changeText} (24h)
+                </div>
+              `;
+                            containerEl.appendChild(card);
+                        });
+                    } else {
+                        throw new Error('Invalid data format');
+                    }
+                })
+                .catch(err => {
+                    console.error("Error fetching data:", err);
+                    loadingEl.style.display = 'none';
+                    errorEl.style.display = 'block';
+                });
+        });
+    </script>
+</body>
+
+</html>
