@@ -11,10 +11,10 @@ Main landing screen after login. Curated recipe discovery.
   - No tags/chips on cards (no "Anatolian Highlands", "Family Secret" etc.)
 - **Community picks section:** Recipe cards sorted by rating (req 2.5)
 - **Browse by Genre:** Horizontal scrollable genre cards (DishGenre)
-  - Tapping a genre → Search & Browse (page 5) filtered by that genre
+  - Tapping a genre → Search & Browse (page 05) filtered by that genre
   - Note: Kebaps genre card removed — only generic genre categories shown
 - Pull-to-refresh for latest content
-- Tapping any recipe card → Recipe Detail (page 9)
+- Tapping any recipe card → Recipe Detail (page 09)
 
 ## Components
 - Recipe card: thumbnail, title, dish variety, average rating, author name, region tag
@@ -28,6 +28,6 @@ Main landing screen after login. Curated recipe discovery.
 - **Error:** Retry banner
 
 ## Navigation
-- → Recipe Detail (page 9) on recipe tap
-- → Search & Browse (page 5) on genre tap (pre-filtered)
-- → Other User Profile (page 19) on author name tap
+- → Recipe Detail (page 09) on recipe tap
+- → Search & Browse (page 05) on genre tap (pre-filtered)
+- → Other User Profile (page 16) on author name tap

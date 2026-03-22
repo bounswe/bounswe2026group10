@@ -27,5 +27,5 @@ List of all conversations.
 - **Loading:** Skeleton rows
 
 ## Navigation
-- Conversation tap → Chat (page 24)
-- New message → user search → Chat (page 24)
+- Conversation tap → Chat (page 20)
+- New message → user search → Chat (page 20)

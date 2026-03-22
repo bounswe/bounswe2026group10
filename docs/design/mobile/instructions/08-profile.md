@@ -14,8 +14,8 @@ User's own profile — identity, role, published recipes, and quick access to se
   - Region, member since date
 - **Stats row:** Recipes published, total ratings received, average rating
 - **Published recipes:** Grid or list of user's published recipes (no difficulty/time badges)
-- **Edit Profile button** → Edit Profile (page 21)
-- **Settings gear icon** → Settings (page 18)
+- **Edit Profile button** → Edit Profile (page 17)
+- **Settings gear icon** → Settings (page 19)
 - **Logout** option
 
 ## Components
@@ -30,7 +30,7 @@ User's own profile — identity, role, published recipes, and quick access to se
 - **Learner:** No "create recipe" CTA
 
 ## Navigation
-- → Edit Profile (page 21)
-- → Settings (page 18)
-- Recipe tap → Recipe Detail (page 9)
-- → Welcome (page 1) on logout
+- → Edit Profile (page 17)
+- → Settings (page 19)
+- Recipe tap → Recipe Detail (page 09)
+- → Welcome (page 01) on logout

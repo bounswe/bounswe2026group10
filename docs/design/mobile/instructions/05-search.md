@@ -35,6 +35,6 @@ Unified search and browse experience. Default state shows genre browsing; typing
 - **Loading:** Skeleton cards
 
 ## Navigation
-- DishVariety card tap → Dish Variety Detail (page 6)
+- DishVariety card tap → Dish Variety Detail (page 06)
 - Genre card tap → pre-filtered results (stays on search)
 - Filter sheet → inline modal

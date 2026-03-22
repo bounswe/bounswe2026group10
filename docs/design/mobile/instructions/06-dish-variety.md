@@ -22,9 +22,9 @@ Landing page for a specific DishVariety. Shows cultural/historical context and a
   - Each card: title, author, region tag, recipe type badge (COMMUNITY / CULTURAL), thumbnail
   - No difficulty indicators on cards
   - No time estimates on cards
-- **"Add a recipe" CTA** → Create: Basic Info (page 13)
+- **"Add a recipe" CTA** → Create: Basic Info (page 12)
 - Note: Recipe type filter tabs (All | Community | Cultural) are not shown in current mockup
-- Note: Sort bar not shown in current mockup — sort is handled in Search Results (page 5)
+- Note: Sort bar not shown in current mockup — sort is handled in Search Results (page 05)
 
 ## Components
 - Hero image with overlay header
@@ -37,7 +37,7 @@ Landing page for a specific DishVariety. Shows cultural/historical context and a
 - **Loading:** Skeleton cards
 
 ## Navigation
-- Recipe card tap → Recipe Detail (page 9)
-- Author tap → Other User Profile (page 19)
-- "Add a recipe" CTA → Create: Basic Info (page 13)
-- ← Back to Search (page 5) or Home (page 4)
+- Recipe card tap → Recipe Detail (page 09)
+- Author tap → Other User Profile (page 16)
+- "Add a recipe" CTA → Create: Basic Info (page 12)
+- ← Back to Search (page 05) or Home (page 04)

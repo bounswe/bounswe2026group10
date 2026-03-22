@@ -9,9 +9,9 @@ First screen users see. Branding entry point that routes to Register or Login.
 ## Features
 - App name "Roots & Recipes" in Newsreader serif (no logo image — text only)
 - Tagline ("Preserve. Cook. Share.")
-- "Sign In" button → Login (page 3)
-- "Create Account" button → Register (page 2)
-- "Continue as Guest" option → Home (page 4) with view-only access
+- "Sign In" button → Login (page 03)
+- "Create Account" button → Register (page 02)
+- "Continue as Guest" option → Home (page 04) with view-only access
 - **Social auth buttons** (full-width, stacked):
   - "Continue with Google" (Google logo + label)
   - "Continue with Apple" (Apple logo + label, dark background)
@@ -22,6 +22,6 @@ First screen users see. Branding entry point that routes to Register or Login.
 - **Returning user with valid session:** Auto-redirect to Home (req 1.1.2)
 
 ## Navigation
-- → Login (page 3)
-- → Register (page 2)
-- → Home (page 4) as guest
+- → Login (page 03)
+- → Register (page 02)
+- → Home (page 04) as guest

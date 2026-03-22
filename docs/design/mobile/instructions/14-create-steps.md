@@ -27,8 +27,8 @@ Each step has:
 - Auto-numbering updates on reorder/delete
 
 ### Navigation Controls
-- "Next" → Create: Review & Publish (page 17)
-- "Back" → Create: Ingredients & Tools (page 14)
+- "Next" → Create: Review & Publish (page 15)
+- "Back" → Create: Ingredients & Tools (page 13)
 - "Save Draft"
 
 ## Validation
@@ -42,5 +42,5 @@ Each step has:
 - **Validation errors:** Inline per step
 
 ## Navigation
-- → Create: Review & Publish (page 17) on "Next"
-- ← Create: Ingredients & Tools (page 14) on "Back"
+- → Create: Review & Publish (page 15) on "Next"
+- ← Create: Ingredients & Tools (page 13) on "Back"

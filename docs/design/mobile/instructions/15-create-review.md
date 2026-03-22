@@ -30,6 +30,6 @@ Final step of recipe creation. Preview the full recipe before publishing or savi
 - **Publish error:** Error banner with retry
 
 ## Navigation
-- → Recipe Detail (page 9) on publish success
-- → My Library / Drafts (page 7) on save draft
-- ← Create: Steps (page 15) on "Back"
+- → Recipe Detail (page 09) on publish success
+- → My Library / Drafts (page 07) on save draft
+- ← Create: Steps (page 14) on "Back"

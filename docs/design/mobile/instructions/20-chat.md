@@ -9,7 +9,7 @@ One-on-one messaging between users.
 - **Message thread:** Chronological messages with bubbles (sent right, received left)
 - **Message input:** Text field + send button at bottom
 - **Header:** Other user's avatar, full name, role badge
-  - Tapping header → Other User Profile (page 19)
+  - Tapping header → Other User Profile (page 16)
 - **Timestamps:** Grouped by date, individual message time on tap
 - Auto-scroll to latest message
 
@@ -26,5 +26,5 @@ One-on-one messaging between users.
 - **Sending:** Message bubble with pending indicator
 
 ## Navigation
-- → Other User Profile (page 19) on header tap
-- ← Messages Inbox (page 23) on back
+- → Other User Profile (page 16) on header tap
+- ← Messages Inbox (page 18) on back

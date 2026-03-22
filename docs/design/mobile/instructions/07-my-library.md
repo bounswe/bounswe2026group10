@@ -14,7 +14,7 @@ Personal collection: favourited recipes, published recipes, and drafts.
 - Each tab shows a list of recipe cards
   - Cards show: thumbnail, title, region tag, rating
   - No difficulty indicators, no time estimates, no "Heirloom" or other content tags
-- Tap draft → opens recipe creation flow (page 13) pre-filled with draft data
+- Tap draft → opens recipe creation flow (page 12) pre-filled with draft data
 - Empty state per tab with relevant CTA
 
 ## Components
@@ -30,5 +30,5 @@ Personal collection: favourited recipes, published recipes, and drafts.
 - **Learner view:** Drafts tab hidden
 
 ## Navigation
-- Recipe card tap → Recipe Detail (page 9)
-- Draft tap → Create: Basic Info (page 13) with pre-filled data
+- Recipe card tap → Recipe Detail (page 09)
+- Draft tap → Create: Basic Info (page 12) with pre-filled data

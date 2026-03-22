@@ -12,8 +12,8 @@ Account creation with role selection.
 - Role selection: Learner / Cook (with brief role descriptions)
 - Region selector
 - Preferred language selector
-- "Already have an account? Sign In" link → Login (page 3)
-- Submit button → on success, navigate to Home (page 4)
+- "Already have an account? Sign In" link → Login (page 03)
+- Submit button → on success, navigate to Home (page 04)
 - **Social auth buttons** (full-width, stacked — same style as Welcome page):
   - "Continue with Google"
   - "Continue with Apple"
@@ -30,5 +30,5 @@ Account creation with role selection.
 - **Success:** Redirect to Home
 
 ## Navigation
-- → Login (page 3)
-- → Home (page 4) on success
+- → Login (page 03)
+- → Home (page 04) on success

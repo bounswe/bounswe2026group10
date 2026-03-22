@@ -22,7 +22,7 @@ Two side-by-side cards presented before the manual form:
 - **Story** text area — personal or cultural narrative
 - **Dietary tags:** Vegan, Vegetarian, Halal, Kosher, Gluten-Free (chip selector — req 1.4.6)
 - **Allergen tags:** chip selector
-- "Next" button → Create: Ingredients & Tools (page 14)
+- "Next" button → Create: Ingredients & Tools (page 13)
 - "Save Draft" button (req 1.3.3)
 
 ## Validation
@@ -38,6 +38,6 @@ Two side-by-side cards presented before the manual form:
 - **Validation errors:** Inline messages
 
 ## Navigation
-- → Create: Ingredients & Tools (page 14) on "Next"
-- → My Library / Drafts (page 7) on "Save Draft"
+- → Create: Ingredients & Tools (page 13) on "Next"
+- → My Library / Drafts (page 07) on "Save Draft"
 - ← Cancel → confirm discard dialog

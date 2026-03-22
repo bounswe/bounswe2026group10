@@ -30,4 +30,4 @@ Edit user's personal information.
 - **Role upgrade submitted:** Confirmation message
 
 ## Navigation
-- ← Profile (page 8) on cancel or save success
+- ← Profile (page 08) on cancel or save success

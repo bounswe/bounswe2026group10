@@ -24,8 +24,8 @@ Second step of recipe creation. Add ingredients with quantities and tools needed
 - Delete via swipe or X
 
 ### Navigation Controls
-- "Next" → Create: Steps (page 15)
-- "Back" → Create: Basic Info (page 13)
+- "Next" → Create: Steps (page 14)
+- "Back" → Create: Basic Info (page 12)
 - "Save Draft"
 
 ## Validation
@@ -40,5 +40,5 @@ Second step of recipe creation. Add ingredients with quantities and tools needed
 - **Validation errors:** Inline per row
 
 ## Navigation
-- → Create: Steps (page 15) on "Next"
-- ← Create: Basic Info (page 13) on "Back"
+- → Create: Steps (page 14) on "Next"
+- ← Create: Basic Info (page 12) on "Back"

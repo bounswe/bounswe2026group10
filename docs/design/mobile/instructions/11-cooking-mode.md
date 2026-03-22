@@ -27,5 +27,5 @@ Distraction-free cooking walkthrough with step-by-step navigation.
 - **Completion screen:** After last step → prompt to rate the recipe
 
 ## Navigation
-- ← Back to Recipe Detail (page 9) on exit
+- ← Back to Recipe Detail (page 09) on exit
 - → Comments & Ratings (page 10) on completion rating prompt

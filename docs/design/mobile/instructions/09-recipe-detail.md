@@ -10,7 +10,7 @@ Full recipe view — the most feature-rich page in the app.
 
 ### Header
 - Recipe title (Newsreader serif, large)
-- Author name (tappable → Other User Profile page 19)
+- Author name (tappable → Other User Profile page 16)
 - Recipe type badge: COMMUNITY or CULTURAL
 - Average rating (stars) + rating count
 - Region tag
@@ -54,4 +54,4 @@ Full recipe view — the most feature-rich page in the app.
 ## Navigation
 - → Cooking Mode (page 11) on "Start Cooking Mode"
 - → Comments & Ratings (page 10) on "View all"
-- → Other User Profile (page 19) on author tap
+- → Other User Profile (page 16) on author tap

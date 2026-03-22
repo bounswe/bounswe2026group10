@@ -16,7 +16,7 @@ View another user's public profile and their published recipes.
 - **Published recipes:** List of their published recipes
   - Cards show thumbnail, title, region — no difficulty or time indicators
 - **Follow button** → receive notifications when they publish
-- **Send Message button** → Chat (page 24)
+- **Send Message button** → Chat (page 20)
 
 ## What is NOT shown
 - No difficulty/rating labels on recipe cards (Easy / Medium / Expert removed)
@@ -34,6 +34,6 @@ View another user's public profile and their published recipes.
 - **Following:** Follow button shows "Following"
 
 ## Navigation
-- Recipe tap → Recipe Detail (page 9)
-- → Chat (page 24) on "Send Message"
+- Recipe tap → Recipe Detail (page 09)
+- → Chat (page 20) on "Send Message"
 - ← Back to previous screen

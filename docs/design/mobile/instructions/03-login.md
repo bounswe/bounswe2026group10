@@ -10,8 +10,8 @@ Authentication for existing users.
 - Input fields: email, password
 - "Remember me" toggle (persistent session — req 1.1.2)
 - "Forgot Password?" link → forgot password flow
-- Submit button → on success, navigate to Home (page 4)
-- "Don't have an account? Register" link → Register (page 2)
+- Submit button → on success, navigate to Home (page 04)
+- "Don't have an account? Register" link → Register (page 02)
 - **Social auth buttons** (full-width, stacked — identical to Welcome page):
   - "Continue with Google" (Google logo + label)
   - "Continue with Apple" (Apple logo + label, dark background)
@@ -34,5 +34,5 @@ Authentication for existing users.
 - **Success:** Redirect to Home
 
 ## Navigation
-- → Register (page 2)
-- → Home (page 4) on success
+- → Register (page 02)
+- → Home (page 04) on success
