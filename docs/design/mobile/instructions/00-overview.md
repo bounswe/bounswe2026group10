@@ -75,6 +75,7 @@
 | 1.4.1 Search by region | 05 (Country filter chip) |
 | 1.4.1 Search by ingredients | 05 (tune → filter sheet) |
 | 1.4.2 Filter by allergen | 05 (filter chip), 19 (allergen profile) |
+| 1.4.3 Filter dishes by available ingredients | 05 (filter sheet: "Ingredients I have") |
 | 1.4.4 Dynamic filter updates | 05 (implied) |
 | 1.4.5 Exclude allergen dishes | 05 (filter), 19 (allergen profile) |
 | 1.4.6 Tag dietary/allergen | 12 (dietary chips), 13 (allergen tagging) |
