@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Roots & Recipes — Screen Gallery</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #1a1512;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #e0d5c8;
+    min-height: 100vh;
+    padding: 40px 32px 64px;
+  }
+
+  header.gallery-header {
+    position: static;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  header.gallery-header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #fff8f3;
+    letter-spacing: -0.02em;
+  }
+
+  header.gallery-header span {
+    font-size: 0.85rem;
+    color: #86452a;
+    background: #2d1e14;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid #3d2518;
+  }
+
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: flex-start;
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .phone-shell {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 2px #3d3530,
+      0 0 0 4px #1a1512,
+      0 40px 60px rgba(0,0,0,0.6);
+    background: #fff8f3;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .phone-shell iframe {
+    width: 390px;
+    height: 844px;
+    border: none;
+    display: block;
+    pointer-events: none;
+  }
+
+  .card:hover .phone-shell {
+    box-shadow:
+      0 0 0 2px #86452a,
+      0 0 0 4px #1a1512,
+      0 40px 80px rgba(134,69,42,0.3);
+    cursor: pointer;
+  }
+
+  .label {
+    font-size: 0.75rem;
+    color: #8b6355;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  .label strong {
+    display: block;
+    font-size: 0.85rem;
+    color: #e0d5c8;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-bottom: 2px;
+  }
+
+  /* Lightbox */
+  .lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox-inner {
+    width: 390px;
+    height: 844px;
+    border-radius: 48px;
+    overflow: hidden;
+    box-shadow: 0 0 0 2px #86452a, 0 40px 100px rgba(0,0,0,0.8);
+    position: relative;
+  }
+  .lightbox-inner iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    pointer-events: all;
+  }
+  .lightbox-close {
+    position: fixed;
+    top: 24px;
+    right: 32px;
+    background: #2d1e14;
+    border: 1px solid #3d2518;
+    color: #e0d5c8;
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+  }
+  .lightbox-close:hover { background: #86452a; color: #fff; }
+  .lightbox-nav {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #2d1e14;
+    border: 1px solid #3d2518;
+    color: #e0d5c8;
+    font-size: 1.5rem;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+  }
+  .lightbox-nav:hover { background: #86452a; color: #fff; }
+  #lb-prev { left: 24px; }
+  #lb-next { right: 24px; }
+  .lightbox-label {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #8b6355;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    z-index: 1001;
+  }
+</style>
+</head>
+<body>
+
+<header class="gallery-header">
+  <h1>Roots &amp; Recipes</h1>
+  <span>21 screens</span>
+</header>
+
+<div class="grid" id="grid"></div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lb-close">✕</button>
+  <button class="lightbox-nav" id="lb-prev">‹</button>
+  <div class="lightbox-inner">
+    <iframe id="lb-iframe" src=""></iframe>
+  </div>
+  <button class="lightbox-nav" id="lb-next">›</button>
+  <div class="lightbox-label" id="lb-label"></div>
+</div>
+
+<script>
+const SCREENS = [
+  { file: '01-welcome-fixed.html',        label: 'Welcome',            group: 'Auth' },
+  { file: '02-register-fixed.html',       label: 'Register',           group: 'Auth' },
+  { file: '03-login-fixed.html',          label: 'Login',              group: 'Auth' },
+  { file: '04-home-fixed.html',           label: 'Home',               group: 'Main' },
+  { file: '05-search-generic-fixed.html', label: 'Search',             group: 'Main' },
+  { file: '05-search-refined-fixed.html', label: 'Search Results',     group: 'Main' },
+  { file: '06-dish-variety-fixed.html',   label: 'Dish Variety',       group: 'Dish' },
+  { file: '07-my-library-fixed.html',     label: 'My Library',         group: 'Main' },
+  { file: '08-profile-fixed.html',        label: 'Profile',            group: 'Main' },
+  { file: '09-recipe-detail-fixed.html',  label: 'Recipe Detail',      group: 'Recipe' },
+  { file: '10-comments-fixed.html',       label: 'Comments & Ratings', group: 'Recipe' },
+  { file: '11-cooking-mode-fixed.html',   label: 'Cooking Mode',       group: 'Recipe' },
+  { file: '13-create-basic-fixed.html',   label: 'Create: Basic Info', group: 'Create' },
+  { file: '14-create-ingred-fixed.html',  label: 'Create: Ingredients','group': 'Create' },
+  { file: '15-create-steps-fixed.html',   label: 'Create: Steps',      group: 'Create' },
+  { file: '17-create-review-fixed.html',  label: 'Create: Review',     group: 'Create' },
+  { file: '18-settings-fixed.html',       label: 'Settings',           group: 'Profile' },
+  { file: '19-other-profile-fixed.html',  label: 'Other User Profile', group: 'Profile' },
+  { file: '21-edit-profile-fixed.html',   label: 'Edit Profile',       group: 'Profile' },
+  { file: '23-messages-fixed.html',       label: 'Messages',           group: 'Social' },
+  { file: '24-chat-fixed.html',           label: 'Chat',               group: 'Social' },
+];
+
+const grid = document.getElementById('grid');
+const lightbox = document.getElementById('lightbox');
+const lbIframe = document.getElementById('lb-iframe');
+const lbLabel = document.getElementById('lb-label');
+let current = 0;
+
+SCREENS.forEach((s, i) => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="phone-shell">
+      <iframe src="${s.file}" loading="lazy" scrolling="no"></iframe>
+    </div>
+    <div class="label"><strong>${s.label}</strong>${s.group}</div>
+  `;
+  card.querySelector('.phone-shell').addEventListener('click', () => openLightbox(i));
+  grid.appendChild(card);
+});
+
+function openLightbox(i) {
+  current = i;
+  lbIframe.src = SCREENS[i].file;
+  lbLabel.textContent = SCREENS[i].label + ' — ' + SCREENS[i].group;
+  lightbox.classList.add('open');
+}
+
+document.getElementById('lb-close').addEventListener('click', () => {
+  lightbox.classList.remove('open');
+  lbIframe.src = '';
+});
+
+document.getElementById('lb-prev').addEventListener('click', () => {
+  current = (current - 1 + SCREENS.length) % SCREENS.length;
+  openLightbox(current);
+});
+
+document.getElementById('lb-next').addEventListener('click', () => {
+  current = (current + 1) % SCREENS.length;
+  openLightbox(current);
+});
+
+document.addEventListener('keydown', e => {
+  if (!lightbox.classList.contains('open')) return;
+  if (e.key === 'Escape') lightbox.classList.remove('open');
+  if (e.key === 'ArrowLeft') document.getElementById('lb-prev').click();
+  if (e.key === 'ArrowRight') document.getElementById('lb-next').click();
+});
+
+lightbox.addEventListener('click', e => {
+  if (e.target === lightbox) lightbox.classList.remove('open');
+});
+</script>
+</body>
+</html>
