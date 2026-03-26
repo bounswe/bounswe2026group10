@@ -26,7 +26,7 @@ jobs:
             const mapping = {
               'area: backend': ['Furkan-Coban', 'barankrkmz', 'ByRock010'],
               'area: frontend': ['yunusyucesoy', 'Berkayacer13'],
-              'area: mobil': ['hckoseoglu', 'yegeb']
+              'area: mobile': ['hckoseoglu', 'yegeb']
             };
 
             if (!labelName) {
