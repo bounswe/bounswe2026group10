@@ -24,9 +24,9 @@ jobs:
             // Update usernames below with real GitHub usernames in your repo.
             // Keys are label names (case-insensitive because we lower-case incoming label).
             const mapping = {
-              'area: backend': ['backend-user-1'],
-              'area: frontend': ['frontend-user-1'],
-              'area: mobil': ['mobile-user-1']
+              'area: backend': ['Furkan-Coban', 'barankrkmz', 'ByRock010'],
+              'area: frontend': ['yunusyucesoy', 'Berkayacer13'],
+              'area: mobil': ['hckoseoglu', 'yegeb']
             };
 
             if (!labelName) {
