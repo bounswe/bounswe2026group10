@@ -9,7 +9,8 @@ export const USER_ROLES: UserRole[] = ["learner", "cook", "expert"];
 // ─── Authenticated User ────────────────────────────────────────────────────────
 
 export interface AuthenticatedUser {
-  userId: string;
+  userId: string;    // auth.users.id
+  profileId: string; // profiles.id — used as FK in recipes, ratings, comments, etc.
   email: string;
   username: string;
   role: UserRole;
