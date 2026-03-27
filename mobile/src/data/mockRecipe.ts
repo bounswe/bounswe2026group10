@@ -90,6 +90,8 @@ export const mockRecipe: Recipe = {
       title: 'Prepare the Meat',
       description:
         'Hand-mince the lamb and tail fat together using a large knife or zirh. Do not use a grinder — the texture must be coarse.',
+      videoUrl:
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
       durationMinutes: 15,
     },
     {
@@ -97,6 +99,8 @@ export const mockRecipe: Recipe = {
       title: 'Season the Mixture',
       description:
         'Add isot pepper and salt to the minced meat. Knead firmly for 5 minutes until the mixture becomes sticky and holds together.',
+      videoUrl:
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
       durationMinutes: 5,
     },
     {
@@ -104,6 +108,8 @@ export const mockRecipe: Recipe = {
       title: 'Shape onto Skewers',
       description:
         'Divide into 4 portions. Mold each portion onto a flat skewer, pressing firmly to form a long, even shape about 2cm thick.',
+      videoUrl:
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
       durationMinutes: 5,
     },
     {
@@ -111,6 +117,8 @@ export const mockRecipe: Recipe = {
       title: 'Grill over Charcoal',
       description:
         'Grill over hot charcoal for 3–4 minutes per side. The kebabs should have a slight char on the outside but remain juicy inside.',
+      videoUrl:
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
       durationMinutes: 8,
     },
     {
@@ -118,6 +126,8 @@ export const mockRecipe: Recipe = {
       title: 'Serve',
       description:
         'Serve on lavash bread with grilled tomatoes, peppers, and a squeeze of lemon. Add sumac onions on the side.',
+      videoUrl:
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
       durationMinutes: 2,
     },
   ],

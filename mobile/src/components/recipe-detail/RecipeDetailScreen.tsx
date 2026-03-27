@@ -1,5 +1,5 @@
-import React from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, Modal, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Recipe, RecipeCard } from '../../types/recipe';
 import { colors, spacing } from '../../theme';
@@ -15,6 +15,7 @@ import { StepsSection } from './StepsSection';
 import { CookingModeButton } from './CookingModeButton';
 import { RatingPrompt } from './RatingPrompt';
 import { AlternativeVersions } from './AlternativeVersions';
+import { VideoGuideScreen } from '../video-guide/VideoGuideScreen';
 
 interface RecipeDetailScreenProps {
   recipe: Recipe;
@@ -23,6 +24,7 @@ interface RecipeDetailScreenProps {
 
 export function RecipeDetailScreen({ recipe, alternatives }: RecipeDetailScreenProps) {
   const { servings, increment, decrement } = useServingAdjuster(recipe.servings);
+  const [showVideoGuide, setShowVideoGuide] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -69,12 +71,23 @@ export function RecipeDetailScreen({ recipe, alternatives }: RecipeDetailScreenP
 
         <StepsSection steps={recipe.steps} />
 
-        <CookingModeButton />
+        <CookingModeButton onPress={() => setShowVideoGuide(true)} />
 
         <AlternativeVersions cards={alternatives} />
 
         <RatingPrompt />
       </ScrollView>
+      <Modal
+        visible={showVideoGuide}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        statusBarTranslucent
+      >
+        <VideoGuideScreen
+          recipe={recipe}
+          onClose={() => setShowVideoGuide(false)}
+        />
+      </Modal>
     </SafeAreaView>
   );
 }
