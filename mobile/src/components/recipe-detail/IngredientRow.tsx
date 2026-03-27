@@ -22,7 +22,7 @@ export function IngredientRow({ ingredient, scaledQuantity }: IngredientRowProps
     <View style={styles.container}>
       <View style={styles.dot} />
       <Text style={styles.text}>
-        {formatQuantity(scaledQuantity, ingredient.unit)} {ingredient.unit}{' '}
+        {formatQuantity(scaledQuantity)} {ingredient.unit}{' '}
         {ingredient.name}
       </Text>
       {ingredient.substitutionAvailable && (
