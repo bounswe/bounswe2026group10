@@ -3,18 +3,11 @@ import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Ingredient } from '../../types/ingredient';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
+import { formatQuantity } from '../../utils/formatQuantity';
 
 interface IngredientRowProps {
   ingredient: Ingredient;
   scaledQuantity: number;
-}
-
-function formatQuantity(quantity: number, unit: string): string {
-  if (unit === 'piece') {
-    return String(Math.round(quantity));
-  }
-  const formatted = parseFloat(quantity.toFixed(2));
-  return String(formatted);
 }
 
 export function IngredientRow({ ingredient, scaledQuantity }: IngredientRowProps) {
