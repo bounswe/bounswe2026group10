@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { User } from '../../types/user';
-import type { RecipeType } from '../../types/common';
+import type { AllergenTag, DietaryTag, RecipeType } from '../../types/common';
 import { StarRating } from '../shared/StarRating';
 import { Badge } from '../shared/Badge';
 import { IconButton } from '../shared/IconButton';
@@ -14,7 +14,24 @@ interface RecipeHeaderProps {
   ratingCount: number;
   type: RecipeType;
   region: string;
+  tags: DietaryTag[];
+  allergens: AllergenTag[];
   onAuthorPress?: () => void;
+}
+
+const dietaryTagColors: Record<DietaryTag, string> = {
+  VEGAN: '#386a20',
+  VEGETARIAN: '#386a20',
+  HALAL: '#586330',
+  KOSHER: '#586330',
+  GLUTEN_FREE: '#874500',
+  HEARTY: '#86452a',
+};
+
+const allergenTagColor = '#ba1a1a';
+
+function formatTagLabel(tag: string): string {
+  return tag.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export function RecipeHeader({
@@ -24,6 +41,8 @@ export function RecipeHeader({
   ratingCount,
   type,
   region,
+  tags,
+  allergens,
   onAuthorPress,
 }: RecipeHeaderProps) {
   const [bookmarked, setBookmarked] = useState(false);
@@ -52,6 +71,25 @@ export function RecipeHeader({
           textColor={colors.onSurface}
         />
       </View>
+
+      {(tags.length > 0 || allergens.length > 0) && (
+        <View style={styles.tagRow}>
+          {tags.map((tag) => (
+            <Badge
+              key={tag}
+              label={formatTagLabel(tag)}
+              backgroundColor={dietaryTagColors[tag]}
+            />
+          ))}
+          {allergens.map((allergen) => (
+            <Badge
+              key={allergen}
+              label={formatTagLabel(allergen)}
+              backgroundColor={allergenTagColor}
+            />
+          ))}
+        </View>
+      )}
 
       <View style={styles.actions}>
         <IconButton
@@ -93,6 +131,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.md,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
   actions: {
     flexDirection: 'row',

@@ -45,6 +45,8 @@ export function RecipeDetailScreen({ recipe, alternatives }: RecipeDetailScreenP
           region={recipe.origin.city
             ? `${recipe.origin.city}, ${recipe.origin.country}`
             : recipe.origin.country}
+          tags={recipe.tags}
+          allergens={recipe.allergens}
           onAuthorPress={() => Alert.alert('Profile', 'Navigation coming soon')}
         />
 

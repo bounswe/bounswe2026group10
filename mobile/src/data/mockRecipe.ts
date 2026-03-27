@@ -127,7 +127,7 @@ export const mockRecipe: Recipe = {
   },
   dishVarietyId: 'variety-adana-kebab',
   tags: ['HALAL', 'HEARTY'],
-  allergens: [],
+  allergens: ['DAIRY'],
   createdAt: '2025-06-01T12:00:00Z',
   updatedAt: '2025-06-15T08:30:00Z',
 };
