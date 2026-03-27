@@ -1,13 +1,15 @@
 import React from 'react';
-import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Recipe, RecipeCard } from '../../types/recipe';
 import { colors, spacing } from '../../theme';
+import { useServingAdjuster } from '../../hooks/useServingAdjuster';
 import { IconButton } from '../shared/IconButton';
 import { HeroImage } from './HeroImage';
 import { RecipeHeader } from './RecipeHeader';
 import { StoryCard } from './StoryCard';
 import { IngredientsSection } from './IngredientsSection';
+import { ServingAdjuster } from './ServingAdjuster';
 import { ToolsSection } from './ToolsSection';
 import { StepsSection } from './StepsSection';
 import { CookingModeButton } from './CookingModeButton';
@@ -20,6 +22,8 @@ interface RecipeDetailScreenProps {
 }
 
 export function RecipeDetailScreen({ recipe, alternatives }: RecipeDetailScreenProps) {
+  const { servings, increment, decrement } = useServingAdjuster(recipe.servings);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.topBar}>
@@ -49,7 +53,14 @@ export function RecipeDetailScreen({ recipe, alternatives }: RecipeDetailScreenP
         <IngredientsSection
           ingredients={recipe.ingredients}
           baseServings={recipe.servings}
-          servings={recipe.servings}
+          servings={servings}
+          servingAdjuster={
+            <ServingAdjuster
+              servings={servings}
+              onIncrement={increment}
+              onDecrement={decrement}
+            />
+          }
         />
 
         <ToolsSection tools={recipe.tools} />
