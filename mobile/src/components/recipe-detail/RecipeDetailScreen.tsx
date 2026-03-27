@@ -1,22 +1,66 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Recipe, RecipeCard } from '../../types/recipe';
-import { colors, fonts, fontSizes, spacing } from '../../theme';
+import { colors, spacing } from '../../theme';
+import { IconButton } from '../shared/IconButton';
+import { HeroImage } from './HeroImage';
+import { RecipeHeader } from './RecipeHeader';
+import { StoryCard } from './StoryCard';
+import { IngredientsSection } from './IngredientsSection';
+import { ToolsSection } from './ToolsSection';
+import { StepsSection } from './StepsSection';
+import { CookingModeButton } from './CookingModeButton';
+import { RatingPrompt } from './RatingPrompt';
+import { AlternativeVersions } from './AlternativeVersions';
 
 interface RecipeDetailScreenProps {
   recipe: Recipe;
   alternatives: RecipeCard[];
 }
 
-export function RecipeDetailScreen({ recipe }: RecipeDetailScreenProps) {
+export function RecipeDetailScreen({ recipe, alternatives }: RecipeDetailScreenProps) {
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>{recipe.title}</Text>
-        <Text style={styles.subtitle}>
-          by {recipe.author.firstName} {recipe.author.lastName}
-        </Text>
+      <View style={styles.topBar}>
+        <IconButton
+          name="arrow-left"
+          onPress={() => Alert.alert('Back', 'Navigation coming soon')}
+        />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <HeroImage imageUrl={recipe.images[0] ?? ''} />
+
+        <RecipeHeader
+          title={recipe.title}
+          author={recipe.author}
+          rating={recipe.rating}
+          ratingCount={recipe.ratingCount}
+          type={recipe.type}
+          region={recipe.origin.city
+            ? `${recipe.origin.city}, ${recipe.origin.country}`
+            : recipe.origin.country}
+          onAuthorPress={() => Alert.alert('Profile', 'Navigation coming soon')}
+        />
+
+        {recipe.story && <StoryCard story={recipe.story} />}
+
+        <IngredientsSection
+          ingredients={recipe.ingredients}
+          baseServings={recipe.servings}
+          servings={recipe.servings}
+        />
+
+        <ToolsSection tools={recipe.tools} />
+
+        <StepsSection steps={recipe.steps} />
+
+        <CookingModeButton />
+
+        <AlternativeVersions cards={alternatives} />
+
+        <RatingPrompt />
       </ScrollView>
     </SafeAreaView>
   );
@@ -27,18 +71,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
   },
+  topBar: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
   content: {
-    padding: spacing.lg,
-  },
-  title: {
-    fontFamily: fonts.serifBold,
-    fontSize: fontSizes['3xl'],
-    color: colors.onSurface,
-  },
-  subtitle: {
-    fontFamily: fonts.sans,
-    fontSize: fontSizes.lg,
-    color: colors.onSurfaceVariant,
-    marginTop: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing['4xl'],
   },
 });
