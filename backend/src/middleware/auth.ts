@@ -48,6 +48,7 @@ export const requireAuth = async (
 
   (req as AuthenticatedRequest).user = {
     userId: userData.user.id,
+    profileId: profile.id as string,
     email: userData.user.email ?? "",
     username: profile.username as string,
     role: profile.role as UserRole,
