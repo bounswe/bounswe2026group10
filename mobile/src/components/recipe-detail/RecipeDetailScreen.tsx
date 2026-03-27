@@ -81,7 +81,6 @@ export function RecipeDetailScreen({ recipe, alternatives }: RecipeDetailScreenP
         visible={showVideoGuide}
         animationType="slide"
         presentationStyle="fullScreen"
-        statusBarTranslucent
       >
         <VideoGuideScreen
           recipe={recipe}

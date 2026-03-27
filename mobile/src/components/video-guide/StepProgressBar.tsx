@@ -39,12 +39,13 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
     gap: spacing.md,
   },
   closeButton: {
-    padding: spacing.xs,
+    padding: spacing.sm,
   },
   barContainer: {
     flex: 1,
