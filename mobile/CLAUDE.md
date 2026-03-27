@@ -1,5 +1,9 @@
 # Roots & Recipes — Mobile App
 
+## Domain Glossary
+
+See [`docs/glossary.md`](docs/glossary.md) for definitions of **Dish**, **Dish Genre**, **Dish Variety**, and **Recipe** — and why they are grouped under the Dish umbrella.
+
 ## Goal
 
 Implement the mobile client for Roots & Recipes, a cross-generational recipe sharing platform. The app lets users discover, create, and share heritage recipes with features like ingredient substitution, unit conversion, allergen filtering, and step-by-step cooking mode.
