@@ -14,6 +14,7 @@ export interface AuthenticatedUser {
   email: string;
   username: string;
   role: UserRole;
+  accessToken: string;
 }
 
 /** Express Request extended with authenticated user info. */

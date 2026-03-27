@@ -52,6 +52,7 @@ export const requireAuth = async (
     email: userData.user.email ?? "",
     username: profile.username as string,
     role: profile.role as UserRole,
+    accessToken: token,
   };
 
   next();
