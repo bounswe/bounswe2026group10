@@ -1,0 +1,34 @@
+.home-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg, 1.5rem);
+}
+
+.home-page__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md, 1rem);
+}
+
+.home-page__logout {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  color: var(--text-on-main, #fff);
+  background: var(--color-main, #86452a);
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.home-page__logout:hover {
+  background: var(--color-main-dark, #6b3520);
+}
+
+.home-page__logout:focus-visible {
+  outline: 2px solid var(--color-main, #86452a);
+  outline-offset: 2px;
+}

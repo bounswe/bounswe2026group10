@@ -1,0 +1,324 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Welcome / Splash Page
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.welcome {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+/* ── Hero background ───────────────────────────────────────────────────── */
+
+.welcome__hero {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.welcome__hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.welcome__hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(26, 18, 16, 0.15) 0%,
+    rgba(26, 18, 16, 0.25) 30%,
+    rgba(255, 248, 243, 0.7) 55%,
+    rgba(255, 248, 243, 0.92) 75%,
+    rgba(255, 248, 243, 0.98) 100%
+  );
+}
+
+/* ── Content area ──────────────────────────────────────────────────────── */
+
+.welcome__content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: var(--space-2xl) var(--space-lg) var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+/* ── Branding ──────────────────────────────────────────────────────────── */
+
+.welcome__brand {
+  text-align: left;
+  width: 100%;
+}
+
+.welcome__app-name {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--color-main);
+  letter-spacing: 0.01em;
+}
+
+.welcome__headline {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.2rem, 6vw, 3.2rem);
+  line-height: 1.15;
+  color: var(--text-primary);
+  margin-top: var(--space-sm);
+}
+
+.welcome__headline-accent {
+  font-style: italic;
+  color: var(--color-main);
+}
+
+.welcome__tagline {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin-top: var(--space-sm);
+}
+
+.welcome__divider {
+  width: 56px;
+  height: 3px;
+  background: var(--color-main);
+  border-radius: var(--radius-pill);
+  margin-top: var(--space-lg);
+  opacity: 0.7;
+}
+
+/* ── Action buttons ────────────────────────────────────────────────────── */
+
+.welcome__actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.welcome__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 1rem 1.5rem;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all var(--transition-normal);
+  position: relative;
+}
+
+.welcome__btn--primary {
+  background: var(--color-main);
+  color: var(--text-on-main);
+  justify-content: space-between;
+  box-shadow: var(--shadow-md);
+}
+
+.welcome__btn--primary:hover {
+  background: var(--color-main-dark);
+  color: var(--text-on-main);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+.welcome__btn--secondary {
+  background: rgba(255, 248, 243, 0.75);
+  color: var(--text-primary);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-neutral-dark);
+}
+
+.welcome__btn--secondary:hover {
+  background: rgba(255, 248, 243, 0.95);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+/* ── OR divider ────────────────────────────────────────────────────────── */
+
+.welcome__or-divider {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.welcome__or-divider::before,
+.welcome__or-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-neutral-darker);
+}
+
+.welcome__or-divider span {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Social auth buttons ───────────────────────────────────────────────── */
+
+.welcome__social {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.welcome__social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.welcome__social-btn--google {
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border: 1px solid var(--color-neutral-darker);
+}
+
+.welcome__social-btn--google:hover {
+  background: var(--color-neutral-dark);
+  transform: translateY(-1px);
+}
+
+.welcome__social-btn--apple {
+  background: #111111;
+  color: #ffffff;
+}
+
+.welcome__social-btn--apple:hover {
+  background: #000000;
+  transform: translateY(-1px);
+}
+
+.welcome__social-btn--apple img {
+  filter: invert(1);
+}
+
+/* ── Guest link ────────────────────────────────────────────────────────── */
+
+.welcome__guest-link {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: var(--space-sm) var(--space-md);
+  transition: color var(--transition-fast);
+}
+
+.welcome__guest-link:hover {
+  color: var(--color-main);
+}
+
+/* ── Desktop layout ────────────────────────────────────────────────────── */
+
+@media (min-width: 768px) {
+  .welcome {
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .welcome__hero-overlay {
+    background: linear-gradient(
+      to right,
+      rgba(255, 248, 243, 0.96) 0%,
+      rgba(255, 248, 243, 0.88) 40%,
+      rgba(255, 248, 243, 0.4) 65%,
+      rgba(26, 18, 16, 0.1) 100%
+    );
+  }
+
+  .welcome__content {
+    margin: 0;
+    margin-left: 6%;
+    padding: var(--space-3xl) var(--space-2xl);
+    max-width: 480px;
+    align-items: flex-start;
+  }
+
+  .welcome__or-divider,
+  .welcome__social,
+  .welcome__guest-link {
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 1200px) {
+  .welcome__content {
+    margin-left: 8%;
+    max-width: 520px;
+  }
+
+  .welcome__headline {
+    font-size: 3.4rem;
+  }
+}
+
+/* ── Entry animations ──────────────────────────────────────────────────── */
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.welcome__brand {
+  animation: fadeSlideUp 0.7s var(--transition-slow) both;
+}
+
+.welcome__actions {
+  animation: fadeSlideUp 0.7s 0.15s var(--transition-slow) both;
+}
+
+.welcome__or-divider {
+  animation: fadeSlideUp 0.7s 0.25s var(--transition-slow) both;
+}
+
+.welcome__social {
+  animation: fadeSlideUp 0.7s 0.35s var(--transition-slow) both;
+}
+
+.welcome__guest-link {
+  animation: fadeSlideUp 0.7s 0.45s var(--transition-slow) both;
+}

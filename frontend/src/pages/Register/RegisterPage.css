@@ -1,0 +1,418 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Register Page
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.register {
+  min-height: 100vh;
+  background: var(--surface-bg);
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+
+.register__header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md) var(--space-lg);
+  position: relative;
+  border-bottom: 1px solid var(--color-neutral-dark);
+  background: var(--surface-card);
+}
+
+.register__back {
+  position: absolute;
+  left: var(--space-lg);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.register__back:hover {
+  background: var(--surface-overlay);
+  color: var(--text-primary);
+}
+
+.register__header-title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--color-main);
+}
+
+/* ── Form ──────────────────────────────────────────────────────────────── */
+
+.register__form {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg) var(--space-2xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* ── Alert ─────────────────────────────────────────────────────────────── */
+
+.register__alert {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: var(--color-negative);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  animation: fadeSlideUp 0.3s ease both;
+}
+
+/* ── Fields ─────────────────────────────────────────────────────────────── */
+
+.register__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.register__label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-main);
+  letter-spacing: 0.02em;
+}
+
+.register__input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--color-neutral-dark);
+  border-radius: var(--radius-sm);
+  background: var(--surface-input);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.register__input::placeholder {
+  color: var(--text-muted);
+}
+
+.register__input:focus {
+  border-color: var(--color-main);
+  box-shadow: 0 0 0 3px rgba(134, 69, 42, 0.1);
+}
+
+.register__input--error {
+  border-color: var(--color-negative);
+}
+
+.register__input--error:focus {
+  box-shadow: 0 0 0 3px rgba(186, 26, 26, 0.1);
+}
+
+.register__error {
+  font-size: 0.78rem;
+  color: var(--color-negative);
+}
+
+/* ── Password strength ─────────────────────────────────────────────────── */
+
+.register__pw-strength {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: 2px;
+}
+
+.register__pw-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--color-neutral-dark);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.register__pw-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width var(--transition-normal), background var(--transition-normal);
+}
+
+.register__pw-fill--1 { background: var(--color-negative); }
+.register__pw-fill--2 { background: var(--color-tertiary); }
+.register__pw-fill--3 { background: var(--color-secondary); }
+.register__pw-fill--4 { background: var(--color-positive); }
+
+.register__pw-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  min-width: 48px;
+}
+
+.register__pw-label--1 { color: var(--color-negative); }
+.register__pw-label--2 { color: var(--color-tertiary); }
+.register__pw-label--3 { color: var(--color-secondary); }
+.register__pw-label--4 { color: var(--color-positive); }
+
+/* ── Role selection ────────────────────────────────────────────────────── */
+
+.register__roles {
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.register__roles-legend {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.register__role-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-neutral-dark);
+  background: var(--surface-card);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.register__role-card:hover {
+  border-color: var(--color-main);
+  background: var(--surface-overlay);
+}
+
+.register__role-card--active {
+  border-color: var(--color-main);
+  background: rgba(134, 69, 42, 0.04);
+  box-shadow: 0 0 0 3px rgba(134, 69, 42, 0.08);
+}
+
+.register__role-icon {
+  font-size: 1.6rem;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface-input);
+  flex-shrink: 0;
+}
+
+.register__role-card--active .register__role-icon {
+  background: rgba(134, 69, 42, 0.08);
+}
+
+.register__role-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.register__role-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--color-main);
+}
+
+.register__role-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* ── Select ────────────────────────────────────────────────────────────── */
+
+.register__select-wrap {
+  position: relative;
+}
+
+.register__select {
+  width: 100%;
+  padding: 0.8rem 2.5rem 0.8rem 1rem;
+  border: 1px solid var(--color-neutral-dark);
+  border-radius: var(--radius-sm);
+  background: var(--surface-input);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.register__select:focus {
+  border-color: var(--color-main);
+  box-shadow: 0 0 0 3px rgba(134, 69, 42, 0.1);
+}
+
+.register__select-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* ── Submit button ─────────────────────────────────────────────────────── */
+
+.register__submit {
+  width: 100%;
+  padding: 1rem;
+  margin-top: var(--space-md);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--color-main);
+  color: var(--text-on-main);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+}
+
+.register__submit:hover:not(:disabled) {
+  background: var(--color-main-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.register__submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ── Spinner ───────────────────────────────────────────────────────────── */
+
+.register__spinner {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── OR divider ────────────────────────────────────────────────────────── */
+
+.register__or-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.register__or-divider::before,
+.register__or-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-neutral-darker);
+}
+
+.register__or-divider span {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Social auth ───────────────────────────────────────────────────────── */
+
+.register__social {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.register__social-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-neutral-darker);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.register__social-btn:hover {
+  background: var(--color-neutral-dark);
+  transform: translateY(-1px);
+}
+
+.register__social-btn--apple {
+  background: var(--surface-card);
+}
+
+.register__social-btn--apple:hover {
+  background: var(--color-neutral-dark);
+}
+
+/* ── Footer link ───────────────────────────────────────────────────────── */
+
+.register__footer {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: var(--space-sm);
+}
+
+.register__footer-link {
+  font-weight: 600;
+  color: var(--color-main);
+}
+
+.register__footer-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Desktop ───────────────────────────────────────────────────────────── */
+
+@media (min-width: 768px) {
+  .register__form {
+    padding-top: var(--space-2xl);
+    padding-bottom: var(--space-3xl);
+  }
+}
+
+/* ── Entry animations ──────────────────────────────────────────────────── */
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.register__form {
+  animation: fadeSlideUp 0.5s ease both;
+}
