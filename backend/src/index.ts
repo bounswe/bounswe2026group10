@@ -4,6 +4,9 @@ import cors from "cors";
 import helmet from "helmet";
 import authRouter from "./routes/auth.js";
 import recipesRouter from "./routes/recipes.js";
+import dishGenresRouter from "./routes/dish-genres.js";
+import dishVarietiesRouter from "./routes/dish-varieties.js";
+import discoveryRouter from "./routes/discovery.js";
 
 const app = express();
 const PORT = process.env["PORT"] ?? 3000;
@@ -30,6 +33,9 @@ app.get("/meta/regions", (_req, res) => {
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use("/auth", authRouter);
 app.use("/recipes", recipesRouter);
+app.use("/dish-genres", dishGenresRouter);
+app.use("/dish-varieties", dishVarietiesRouter);
+app.use("/discovery", discoveryRouter);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {
