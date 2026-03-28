@@ -40,6 +40,11 @@ app.use((_req, res) => {
   });
 });
 
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error("EXPRESS ERROR:", err);
+  res.status(500).json({ error: { message: err.message, stack: err.stack } });
+});
+
 // ─── Start Server ─────────────────────────────────────────────────────────────
 if (process.env["NODE_ENV"] !== "test") {
   app.listen(PORT, () => {
