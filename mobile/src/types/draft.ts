@@ -8,7 +8,9 @@ export interface RecipeDraft {
   title?: string;
   type?: RecipeType;
   originCountry?: string;
-  originRegion?: string;
+  originCity?: string;
+  originDistrict?: string;
+  genreId?: string;
   description?: string;
   story?: string;
   tags: DietaryTag[];
