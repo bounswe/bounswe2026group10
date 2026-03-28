@@ -4,6 +4,7 @@ import cors from "cors";
 import helmet from "helmet";
 import authRouter from "./routes/auth.js";
 import recipesRouter from "./routes/recipes.js";
+import mediaRouter from "./routes/media.js";
 import dishGenresRouter from "./routes/dish-genres.js";
 import dishVarietiesRouter from "./routes/dish-varieties.js";
 import discoveryRouter from "./routes/discovery.js";
@@ -33,6 +34,7 @@ app.get("/meta/regions", (_req, res) => {
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use("/auth", authRouter);
 app.use("/recipes", recipesRouter);
+app.use("/media", mediaRouter);
 app.use("/dish-genres", dishGenresRouter);
 app.use("/dish-varieties", dishVarietiesRouter);
 app.use("/discovery", discoveryRouter);

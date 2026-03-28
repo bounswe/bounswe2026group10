@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { supabase, createUserClient } from "../config/supabase.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
@@ -395,5 +395,126 @@ router.post("/:id/publish", requireAuth, async (req, res): Promise<void> => {
     })
   );
 });
+
+// ─── POST /recipes/:id/media ──────────────────────────────────────────────────
+
+const attachMediaSchema = z.object({
+  url: z.string().url({ message: "Must be a valid URL." }),
+  type: z.enum(["image", "video"]),
+});
+
+/**
+ * Attach an already-uploaded media URL to a recipe.
+ * Auth required: Yes. Must be the recipe creator.
+ */
+router.post(
+  "/:id/media",
+  requireAuth,
+  validate(attachMediaSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    const user = (req as AuthenticatedRequest).user;
+    const recipeId = req.params["id"] ?? "";
+    const { url, type } = req.body as z.infer<typeof attachMediaSchema>;
+    const userClient = createUserClient(user.accessToken);
+
+    // Verify recipe exists and user is the creator
+    const { data: recipe, error: fetchError } = await userClient
+      .from("recipes")
+      .select("id, creator_id")
+      .eq("id", recipeId)
+      .single();
+
+    if (fetchError || !recipe) {
+      res.status(404).json(errorResponse("NOT_FOUND", "Recipe not found."));
+      return;
+    }
+
+    if (recipe.creator_id !== user.profileId) {
+      res.status(403).json(errorResponse("FORBIDDEN", "You are not the creator of this recipe."));
+      return;
+    }
+
+    const { data, error } = await userClient
+      .from("recipe_media")
+      .insert({ recipe_id: recipeId, url, type })
+      .select("id, url, type, created_at")
+      .single();
+
+    if (error) {
+      res.status(500).json(errorResponse("DB_ERROR", "Failed to attach media to recipe."));
+      return;
+    }
+
+    res.status(201).json(successResponse(data));
+  }
+);
+
+// ─── GET /recipes/:id/media ───────────────────────────────────────────────────
+
+/**
+ * Get all media attached to a recipe.
+ * Public — no auth required.
+ */
+router.get("/:id/media", async (req: Request, res: Response): Promise<void> => {
+  const { data, error } = await supabase
+    .from("recipe_media")
+    .select("id, url, type, created_at")
+    .eq("recipe_id", req.params["id"] ?? "")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    res.status(500).json(errorResponse("DB_ERROR", "Failed to fetch media."));
+    return;
+  }
+
+  res.status(200).json(successResponse(data));
+});
+
+// ─── DELETE /recipes/:id/media/:mediaId ──────────────────────────────────────
+
+/**
+ * Remove a media attachment from a recipe.
+ * Auth required: Yes. Must be the recipe creator.
+ */
+router.delete(
+  "/:id/media/:mediaId",
+  requireAuth,
+  async (req: Request, res: Response): Promise<void> => {
+    const user = (req as AuthenticatedRequest).user;
+    const recipeId = req.params["id"] ?? "";
+    const mediaId = req.params["mediaId"] ?? "";
+    const userClient = createUserClient(user.accessToken);
+
+    // Verify recipe exists and user is the creator
+    const { data: recipe, error: fetchError } = await userClient
+      .from("recipes")
+      .select("id, creator_id")
+      .eq("id", recipeId)
+      .single();
+
+    if (fetchError || !recipe) {
+      res.status(404).json(errorResponse("NOT_FOUND", "Recipe not found."));
+      return;
+    }
+
+    if (recipe.creator_id !== user.profileId) {
+      res.status(403).json(errorResponse("FORBIDDEN", "You are not the creator of this recipe."));
+      return;
+    }
+
+    const { error } = await userClient
+      .from("recipe_media")
+      .delete()
+      .eq("id", mediaId)
+      .eq("recipe_id", recipeId);
+
+    if (error) {
+      res.status(500).json(errorResponse("DB_ERROR", "Failed to delete media."));
+      return;
+    }
+
+    res.status(204).send();
+  }
+);
 
 export default router;
