@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
 import { supabase } from "../config/supabase.js";
-import { validate } from "../middleware/validate.js";
 import { successResponse, errorResponse } from "../utils/response.js";
 
 const router = Router();
@@ -25,12 +24,15 @@ const discoveryQuerySchema = z.object({
 //   ?genreId=1
 //   ?varietyId=1
 //   ?page=1&limit=20
-router.get(
-  "/recipes",
-  validate(discoveryQuerySchema, "query"),
-  async (req, res) => {
-    const { region, excludeAllergens, genreId, varietyId, page, limit } =
-      req.query as z.infer<typeof discoveryQuerySchema>;
+router.get("/recipes", async (req, res) => {
+    const parsed = discoveryQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      const message = parsed.error.issues
+        .map((i) => `${i.path.join(".")}: ${i.message}`)
+        .join("; ");
+      return res.status(400).json(errorResponse("VALIDATION_ERROR", message));
+    }
+    const { region, excludeAllergens, genreId, varietyId, page, limit } = parsed.data;
 
     // ── Step 1: Resolve variety IDs to exclude based on allergens ─────────────
     let excludedRecipeIds: number[] = [];
