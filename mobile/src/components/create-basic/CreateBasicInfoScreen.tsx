@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import type { CreateStackParamList } from '../../navigation/types';
 import type { DietaryTag, AllergenTag } from '../../types/common';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 import { GENRE_OPTIONS, VARIETY_OPTIONS, DIETARY_TAG_OPTIONS, ALLERGEN_TAG_OPTIONS } from '../../constants/recipeForm';
@@ -14,6 +17,7 @@ import { ImportCards } from './ImportCards';
 import { OriginSection } from './OriginSection';
 
 export function CreateBasicInfoScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const [title, setTitle] = useState('');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
@@ -46,7 +50,7 @@ export function CreateBasicInfoScreen() {
 
   const handleNext = () => {
     if (validate()) {
-      Alert.alert('Next', 'Navigation to Ingredients step coming soon.');
+      navigation.navigate('CreateIngredientsTools');
     }
   };
 
