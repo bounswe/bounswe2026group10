@@ -11,9 +11,7 @@ import {
   BeVietnamPro_700Bold,
 } from '@expo-google-fonts/be-vietnam-pro';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { RecipeDetailScreen } from './src/components/recipe-detail/RecipeDetailScreen';
-import { mockRecipe } from './src/data/mockRecipe';
-import { mockAlternatives } from './src/data/mockAlternatives';
+import { CreateBasicInfoScreen } from './src/components/create-basic/CreateBasicInfoScreen';
 import { colors } from './src/theme';
 
 export default function App() {
@@ -35,7 +33,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <RecipeDetailScreen recipe={mockRecipe} alternatives={mockAlternatives} />
+      <CreateBasicInfoScreen />
       <StatusBar style="dark" />
     </SafeAreaProvider>
   );
