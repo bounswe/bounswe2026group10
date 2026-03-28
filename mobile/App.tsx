@@ -11,7 +11,8 @@ import {
   BeVietnamPro_700Bold,
 } from '@expo-google-fonts/be-vietnam-pro';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { CreateBasicInfoScreen } from './src/components/create-basic/CreateBasicInfoScreen';
+import { NavigationContainer } from '@react-navigation/native';
+import { TabNavigator } from './src/navigation/TabNavigator';
 import { colors } from './src/theme';
 
 export default function App() {
@@ -33,7 +34,9 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <CreateBasicInfoScreen />
+      <NavigationContainer>
+        <TabNavigator />
+      </NavigationContainer>
       <StatusBar style="dark" />
     </SafeAreaProvider>
   );
