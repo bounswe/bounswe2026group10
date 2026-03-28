@@ -25,12 +25,12 @@ export interface AuthResponse {
 
 export const authService = {
   async login(payload: LoginRequest): Promise<AuthResponseData> {
-    const { data } = await httpClient.post<AuthResponse>('/api/auth/login', payload)
+    const { data } = await httpClient.post<AuthResponse>('/auth/login', payload)
     return data.data
   },
 
   async register(payload: RegisterRequest): Promise<AuthResponseData> {
-    const { data } = await httpClient.post<AuthResponse>('/api/auth/register', payload)
+    const { data } = await httpClient.post<AuthResponse>('/auth/register', payload)
     return data.data
   },
 }

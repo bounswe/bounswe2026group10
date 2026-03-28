@@ -1,10 +1,21 @@
-import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import googleLogo from '@/assets/logo-google.svg'
 import appleLogo from '@/assets/logo-apple.svg'
 import heroImg from '@/assets/welcome-hero.png'
+import { useAppSelector } from '@/store/hooks'
 import './WelcomePage.css'
 
 export function WelcomePage() {
+  const navigate = useNavigate()
+  const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated)
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/home', { replace: true })
+    }
+  }, [isAuthenticated, navigate])
+
   return (
     <div className="welcome" id="welcome-page">
       {/* Background hero image */}

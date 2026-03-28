@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import googleLogo from '@/assets/logo-google.svg'
 import appleLogo from '@/assets/logo-apple.svg'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import { registerAsync, clearError } from '@/store/slices/auth-slice'
+import { registerAsync, clearError, logout } from '@/store/slices/auth-slice'
 import './RegisterPage.css'
 
 type UserRole = 'learner' | 'cook'
@@ -47,7 +47,7 @@ export function RegisterPage() {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   
-  const { loading, error: serverError, isAuthenticated } = useAppSelector((state) => state.auth)
+  const { loading, error: serverError } = useAppSelector((state) => state.auth)
 
   const [form, setForm] = useState<FormState>({
     firstName: '',
@@ -63,11 +63,15 @@ export function RegisterPage() {
 
   const pwStrength = getPasswordStrength(form.password)
 
+  // Clear any existing session so a logged-in user can register a new account.
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/home')
-    }
-  }, [isAuthenticated, navigate])
+    dispatch(logout())
+    dispatch(clearError())
+  }, [dispatch])
+
+  // Do NOT redirect with useEffect(isAuthenticated): on first mount the closure still
+  // sees isAuthenticated === true before logout re-renders, so it would wrongly
+  // navigate to /home. Navigate only after successful register in handleSubmit (unwrap).
 
   useEffect(() => {
     return () => {
@@ -105,12 +109,19 @@ export function RegisterPage() {
     if (!validate()) return
 
     const username = `${form.firstName.trim().toLowerCase()}_${form.lastName.trim().toLowerCase()}`
-    dispatch(registerAsync({
-      email: form.email.trim(),
-      password: form.password,
-      username,
-      role: form.role,
-    }))
+    try {
+      await dispatch(
+        registerAsync({
+          email: form.email.trim(),
+          password: form.password,
+          username,
+          role: form.role,
+        })
+      ).unwrap()
+      navigate('/home', { replace: true })
+    } catch {
+      // Error message is already in Redux state
+    }
   }
 
   return (
