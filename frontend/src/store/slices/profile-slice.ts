@@ -24,20 +24,14 @@ const initialState: ProfileState = {
   error: null,
 }
 
-const SESSION_EXPIRED = '__SESSION_EXPIRED__'
-
 export const fetchProfileAsync = createAsyncThunk<
   MeResponse,
   void,
   { rejectValue: string }
->('profile/fetchProfile', async (_, { dispatch, rejectWithValue }) => {
+>('profile/fetchProfile', async (_, { rejectWithValue }) => {
   try {
     return await profileService.getCurrentUser()
   } catch (err: unknown) {
-    if (isAxiosError(err) && err.response?.status === 401) {
-      dispatch(logout())
-      return rejectWithValue(SESSION_EXPIRED)
-    }
     const message =
       isAxiosError(err) && err.response?.data
         ? (err.response.data as { error?: { message?: string } }).error?.message
@@ -66,11 +60,13 @@ const profileSlice = createSlice({
       state.error = null
     })
     builder.addCase(fetchProfileAsync.rejected, (state, action) => {
-      if (action.payload === SESSION_EXPIRED) {
-        return initialState
+      /** Interceptor may dispatch `logout` first; avoid overwriting clean idle state with `failed`. */
+      if (state.status !== 'loading') {
+        return
       }
       state.status = 'failed'
-      state.error = (action.payload as string) ?? 'Could not load profile.'
+      state.error =
+        (action.payload as string | undefined) ?? 'Could not load profile.'
       state.userId = null
       state.username = null
       state.email = null
