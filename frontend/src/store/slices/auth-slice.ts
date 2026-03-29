@@ -106,4 +106,21 @@ const authSlice = createSlice({
 })
 
 export const { logout, clearError } = authSlice.actions
+
+/** Calls `POST /auth/logout` when a token exists, then clears local session. */
+export const logoutAsync = createAsyncThunk(
+  'auth/logoutAsync',
+  async (_, { dispatch, getState }) => {
+    const token = (getState() as { auth: AuthState }).auth.accessToken
+    if (token) {
+      try {
+        await authService.logout()
+      } catch {
+        /* still clear local session if network fails */
+      }
+    }
+    dispatch(logout())
+  }
+)
+
 export default authSlice.reducer

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import { logout } from '@/store/slices/auth-slice'
+import { logoutAsync } from '@/store/slices/auth-slice'
 import './HomePage.css'
 
 export function HomePage() {
@@ -10,8 +10,8 @@ export function HomePage() {
   const navigate = useNavigate()
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated)
 
-  function handleLogout() {
-    dispatch(logout())
+  async function handleLogout() {
+    await dispatch(logoutAsync()).unwrap()
     navigate('/', { replace: true })
   }
 
