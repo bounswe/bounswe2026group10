@@ -5,6 +5,7 @@ import appleLogo from '@/assets/logo-apple.svg'
 import { session } from '@/auth/session'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { registerAsync, clearError, logoutAsync } from '@/store/slices/auth-slice'
+import { fetchProfileAsync } from '@/store/slices/profile-slice'
 import './RegisterPage.css'
 
 type UserRole = 'learner' | 'cook' | 'expert'
@@ -121,6 +122,7 @@ export function RegisterPage() {
           role: form.role,
         })
       ).unwrap()
+      await dispatch(fetchProfileAsync()).unwrap()
       navigate('/home', { replace: true })
     } catch {
       // Error message is already in Redux state

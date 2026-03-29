@@ -5,22 +5,14 @@ import { session } from '@/auth/session'
 
 interface AuthState {
   isAuthenticated: boolean
-  accessToken: string | null
-  refreshToken: string | null
-  userId: string | null
   loading: boolean
   /** True while `logoutAsync` is in flight (server call + local clear). Separate from `loading` (login/register). */
   isLoggingOut: boolean
   error: string | null
 }
 
-const tokens = session.getTokens()
-
 const initialState: AuthState = {
-  isAuthenticated: !!tokens.accessToken,
-  accessToken: tokens.accessToken,
-  refreshToken: tokens.refreshToken,
-  userId: tokens.userId,
+  isAuthenticated: !!session.getTokens().accessToken,
   loading: false,
   isLoggingOut: false,
   error: null,
@@ -85,9 +77,6 @@ const authSlice = createSlice({
   reducers: {
     logout(state) {
       state.isAuthenticated = false
-      state.accessToken = null
-      state.refreshToken = null
-      state.userId = null
       state.error = null
       state.isLoggingOut = false
       session.clearTokens()
@@ -102,12 +91,9 @@ const authSlice = createSlice({
       state.loading = true
       state.error = null
     })
-    builder.addCase(loginAsync.fulfilled, (state, action) => {
+    builder.addCase(loginAsync.fulfilled, (state) => {
       state.loading = false
       state.isAuthenticated = true
-      state.accessToken = action.payload.accessToken
-      state.refreshToken = action.payload.refreshToken
-      state.userId = action.payload.userId
     })
     builder.addCase(loginAsync.rejected, (state, action) => {
       state.loading = false
@@ -119,12 +105,9 @@ const authSlice = createSlice({
       state.loading = true
       state.error = null
     })
-    builder.addCase(registerAsync.fulfilled, (state, action) => {
+    builder.addCase(registerAsync.fulfilled, (state) => {
       state.loading = false
       state.isAuthenticated = true
-      state.accessToken = action.payload.accessToken
-      state.refreshToken = action.payload.refreshToken
-      state.userId = action.payload.userId
     })
     builder.addCase(registerAsync.rejected, (state, action) => {
       state.loading = false

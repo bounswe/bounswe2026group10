@@ -1,6 +1,11 @@
 {
   "app": {
     "title": "Roots & Recipes",
-    "logout": "Log out"
+    "logout": "Log out",
+    "roles": {
+      "learner": "Learner",
+      "cook": "Cook",
+      "expert": "Expert"
+    }
   }
 }
