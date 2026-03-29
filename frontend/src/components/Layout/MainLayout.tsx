@@ -1,4 +1,4 @@
-import { Link, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppSelector } from '@/store/hooks'
 import { useLogout } from '@/hooks/useLogout'
@@ -27,10 +27,12 @@ export function MainLayout() {
             Roots &amp; Recipes
           </Link>
 
-          {/* Primary nav — centre (role-aware, hamburger on mobile) */}
-          {isAuthenticated && <NavBar />}
+          {/* Primary nav — centre (Discovery + Create Recipe role-gated, hamburger on mobile) */}
+          {isAuthenticated && (
+            <NavBar onLogout={() => void logout()} isLoggingOut={isLoggingOut} />
+          )}
 
-          {/* User menu — right */}
+          {/* User menu — right: username · profile link · logout */}
           {isAuthenticated && (
             <div className="app-header__trailing">
               <HeaderUser
@@ -41,6 +43,14 @@ export function MainLayout() {
                 errorMessage={profile.error}
                 roleLabel={roleLabel}
               />
+              <NavLink
+                to="/profile"
+                className={({ isActive }) =>
+                  `app-header__profile-link${isActive ? ' app-header__profile-link--active' : ''}`
+                }
+              >
+                {t('nav.profile')}
+              </NavLink>
               <button
                 type="button"
                 className="app-header__logout"

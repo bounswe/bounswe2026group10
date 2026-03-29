@@ -33,9 +33,41 @@
 .app-header__trailing {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+/* ── Profile link (user menu) ────────────────────────────────────────────── */
+
+.app-header__profile-link {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: color var(--transition-fast), background var(--transition-fast);
+  white-space: nowrap;
+}
+
+.app-header__profile-link:hover {
+  color: var(--color-main);
+  background: var(--surface-overlay);
+}
+
+.app-header__profile-link--active {
+  color: var(--color-main);
+  font-weight: 600;
+  background: var(--surface-overlay);
+}
+
+/* Hide profile link and HeaderUser on narrow — accessible via hamburger dropdown */
+@media (max-width: 767px) {
+  .app-header__profile-link,
+  .app-header__trailing .header-user {
+    display: none;
+  }
 }
 
 .app-header__logout {

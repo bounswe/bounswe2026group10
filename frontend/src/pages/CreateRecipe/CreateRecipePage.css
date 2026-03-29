@@ -1,0 +1,594 @@
+/* ── Create Recipe Page ───────────────────────────────────────────────────── */
+
+.cr-page {
+  min-height: 100%;
+  background: var(--surface-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.cr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid rgba(134, 69, 42, 0.2);
+  background: var(--surface-bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.cr-header__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  background: transparent;
+  color: var(--color-main);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+
+.cr-header__back:hover {
+  background: var(--surface-overlay);
+}
+
+.cr-header__title {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.cr-header__draft {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast);
+}
+
+.cr-header__draft:hover:not(:disabled) {
+  color: var(--color-main);
+}
+
+.cr-header__draft:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Progress bar ───────────────────────────────────────────────────────── */
+
+.cr-progress {
+  padding: var(--space-md) var(--space-lg) var(--space-sm);
+}
+
+.cr-progress__bars {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.cr-progress__bar {
+  flex: 1;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-neutral-dark);
+  transition: background var(--transition-normal);
+}
+
+.cr-progress__bar--filled {
+  background: var(--color-main);
+}
+
+.cr-progress__label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: var(--space-sm);
+}
+
+/* ── Scrollable body (leaves room for fixed bottom bar) ─────────────────── */
+
+.cr-body {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 7rem;
+}
+
+.cr-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+}
+
+/* ── Form elements ──────────────────────────────────────────────────────── */
+
+.cr-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.cr-field--half {
+  max-width: 10rem;
+}
+
+.cr-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.cr-required {
+  color: var(--color-negative);
+}
+
+.cr-input {
+  padding: 0.75rem var(--space-md);
+  border: 1px solid rgba(134, 69, 42, 0.2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  outline: none;
+  width: 100%;
+}
+
+.cr-input:focus {
+  border-color: var(--color-main);
+  box-shadow: 0 0 0 3px rgba(134, 69, 42, 0.1);
+}
+
+.cr-input--flex {
+  flex: 1;
+  width: auto;
+}
+
+.cr-input--amount {
+  width: 7rem;
+  flex-shrink: 0;
+}
+
+.cr-textarea {
+  padding: 0.75rem var(--space-md);
+  border: 1px solid rgba(134, 69, 42, 0.2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  resize: vertical;
+  outline: none;
+  width: 100%;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.cr-textarea:focus {
+  border-color: var(--color-main);
+  box-shadow: 0 0 0 3px rgba(134, 69, 42, 0.1);
+}
+
+.cr-textarea--inline {
+  resize: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+  flex: 1;
+  min-height: 3.5rem;
+}
+
+.cr-textarea--inline:focus {
+  border: none;
+  box-shadow: none;
+}
+
+.cr-select {
+  padding: 0.75rem var(--space-md);
+  border: 1px solid rgba(134, 69, 42, 0.2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  appearance: auto;
+}
+
+.cr-select:focus {
+  border-color: var(--color-main);
+  box-shadow: 0 0 0 3px rgba(134, 69, 42, 0.1);
+}
+
+/* ── Recipe type selector ───────────────────────────────────────────────── */
+
+.cr-type-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.cr-type-opt {
+  padding: var(--space-md);
+  border-radius: var(--radius-sm);
+  border: 2px solid rgba(134, 69, 42, 0.2);
+  background: var(--surface-card);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.cr-type-opt:hover:not(.cr-type-opt--disabled) {
+  border-color: rgba(134, 69, 42, 0.5);
+}
+
+.cr-type-opt--active {
+  border-color: var(--color-main);
+  background: rgba(134, 69, 42, 0.05);
+}
+
+.cr-type-opt--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cr-type-opt__title {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.cr-type-opt__desc {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+/* ── List block (ingredients / tools / steps) ───────────────────────────── */
+
+.cr-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.cr-block__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cr-block__title {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.cr-info-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-overlay);
+  border-radius: var(--radius-sm);
+}
+
+.cr-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.cr-add-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid rgba(134, 69, 42, 0.2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--color-main);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.cr-add-btn:hover {
+  background: var(--surface-overlay);
+}
+
+.cr-ingredient-row,
+.cr-row {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.cr-trash-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid rgba(134, 69, 42, 0.2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--color-negative);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.cr-trash-btn:hover {
+  background: rgba(186, 26, 26, 0.06);
+}
+
+/* ── Step cards (instructions) ──────────────────────────────────────────── */
+
+.cr-step-row {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+}
+
+.cr-step-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  flex: 1;
+  padding: var(--space-md);
+  background: var(--surface-card);
+  border: 1px solid rgba(134, 69, 42, 0.2);
+  border-radius: var(--radius-sm);
+}
+
+.cr-step-card__num {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--color-main);
+  color: var(--text-on-main);
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── Review step ────────────────────────────────────────────────────────── */
+
+.cr-review-card {
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.cr-review-card__ready {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-positive);
+}
+
+.cr-review-card__title {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.6rem;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.cr-review-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.cr-badge {
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.cr-badge--community {
+  background: var(--color-main);
+  color: var(--text-on-main);
+}
+
+.cr-badge--cultural {
+  background: var(--color-tertiary);
+  color: var(--text-on-main);
+}
+
+.cr-review-card__variety,
+.cr-review-card__servings {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.cr-review-card__story {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.cr-review-card__divider {
+  border-top: 1px solid rgba(134, 69, 42, 0.1);
+}
+
+.cr-review-counts {
+  display: flex;
+  gap: var(--space-xl);
+}
+
+.cr-review-count {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cr-review-count__label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.cr-review-count__val {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-main);
+}
+
+.cr-review-note {
+  padding: var(--space-md);
+  border-radius: var(--radius-sm);
+  background: var(--surface-overlay);
+}
+
+.cr-review-note p {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  line-height: 1.55;
+}
+
+.cr-error {
+  font-size: 0.875rem;
+  color: var(--color-negative);
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(186, 26, 26, 0.06);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Fixed bottom action bar ────────────────────────────────────────────── */
+
+.cr-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--surface-bg);
+  border-top: 1px solid rgba(134, 69, 42, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  z-index: 10;
+}
+
+.cr-btn {
+  width: 100%;
+  padding: 0.875rem var(--space-lg);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: opacity var(--transition-fast), background var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.cr-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cr-btn--primary {
+  background: var(--color-main);
+  color: var(--text-on-main);
+}
+
+.cr-btn--primary:hover:not(:disabled) {
+  background: var(--color-main-dark);
+}
+
+.cr-btn--secondary {
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border: 1px solid rgba(134, 69, 42, 0.2);
+}
+
+.cr-btn--secondary:hover:not(:disabled) {
+  background: var(--surface-overlay);
+}
+
+/* ── Success screen ─────────────────────────────────────────────────────── */
+
+.cr-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+}
+
+.cr-success__icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: var(--color-positive);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cr-success__icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.cr-success__msg {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+/* ── Wide screen adjustments ────────────────────────────────────────────── */
+
+@media (min-width: 768px) {
+  .cr-body {
+    max-width: 640px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .cr-actions {
+    max-width: 640px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 1px solid rgba(134, 69, 42, 0.2);
+    border-right: 1px solid rgba(134, 69, 42, 0.2);
+  }
+}

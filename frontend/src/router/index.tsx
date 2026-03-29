@@ -2,6 +2,8 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { MainLayout } from '@/components/Layout/MainLayout'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
 import { HomePage } from '@/pages/Home/HomePage'
+import { SearchPage } from '@/pages/Search/SearchPage'
+import { CreateRecipePage } from '@/pages/CreateRecipe/CreateRecipePage'
 import { LoginPage } from '@/pages/Login/LoginPage'
 import { RegisterPage } from '@/pages/Register/RegisterPage'
 import { WelcomePage } from '@/pages/Welcome/WelcomePage'
@@ -26,15 +28,15 @@ export const router = createBrowserRouter([
     errorElement: <RouteError />,
     children: [
       { path: '/home', element: <HomePage /> },
-      // cook + expert only — uncomment when CreateRecipePage is built:
-      // {
-      //   path: '/create-recipe',
-      //   element: (
-      //     <ProtectedRoute roles={['cook', 'expert']}>
-      //       <CreateRecipePage />
-      //     </ProtectedRoute>
-      //   ),
-      // },
+      { path: '/search', element: <SearchPage /> },
+      {
+        path: '/create-recipe',
+        element: (
+          <ProtectedRoute roles={['cook', 'expert']}>
+            <CreateRecipePage />
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
   // ── Catch-all ────────────────────────────────────────────────────────────

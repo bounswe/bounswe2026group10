@@ -4,7 +4,13 @@ import { useTranslation } from 'react-i18next'
 import { useUserRole } from '@/hooks/useUserRole'
 import './NavBar.css'
 
-export function NavBar() {
+interface NavBarProps {
+  /** Passed from MainLayout so mobile dropdown can show profile link and logout */
+  onLogout: () => void
+  isLoggingOut: boolean
+}
+
+export function NavBar({ onLogout, isLoggingOut }: NavBarProps) {
   const { t } = useTranslation('common')
   const role = useUserRole()
   const [open, setOpen] = useState(false)
@@ -50,7 +56,11 @@ export function NavBar() {
         <span className="app-nav__bar" aria-hidden />
       </button>
 
-      {/* Nav link list — horizontal on wide, dropdown on narrow */}
+      {/*
+       * Nav link list:
+       *   Desktop — horizontal row (Discovery + Create Recipe)
+       *   Mobile dropdown — same links + Profile + logout (user menu hidden on small screens)
+       */}
       <ul
         id="app-nav-menu"
         className={`app-nav__list${open ? ' app-nav__list--open' : ''}`}
@@ -62,6 +72,12 @@ export function NavBar() {
           </NavLink>
         </li>
 
+        <li>
+          <NavLink to="/search" className={linkClass} onClick={close}>
+            {t('nav.search')}
+          </NavLink>
+        </li>
+
         {canCreate && (
           <li>
             <NavLink to="/create-recipe" className={linkClass} onClick={close}>
@@ -70,10 +86,23 @@ export function NavBar() {
           </li>
         )}
 
-        <li>
+        {/* Profile and logout appear only in mobile dropdown; hidden on desktop via CSS */}
+        <li className="app-nav__mobile-only">
           <NavLink to="/profile" className={linkClass} onClick={close}>
             {t('nav.profile')}
           </NavLink>
+        </li>
+
+        <li className="app-nav__mobile-only app-nav__mobile-separator">
+          <button
+            type="button"
+            className="app-nav__link app-nav__logout-mobile"
+            onClick={() => { close(); onLogout() }}
+            disabled={isLoggingOut}
+            aria-busy={isLoggingOut}
+          >
+            {isLoggingOut ? <span className="ui-spinner" aria-hidden /> : t('app.logout')}
+          </button>
         </li>
       </ul>
     </nav>

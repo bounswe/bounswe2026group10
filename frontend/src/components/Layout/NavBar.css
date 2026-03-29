@@ -78,6 +78,31 @@
   transition: transform var(--transition-fast), opacity var(--transition-fast);
 }
 
+/* ── Mobile-only items (Profile + logout) — hidden on desktop ────────────── */
+
+.app-nav__mobile-only {
+  display: none;
+}
+
+.app-nav__logout-mobile {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-negative);
+}
+
+.app-nav__logout-mobile:hover {
+  background: rgba(186, 26, 26, 0.06);
+  color: var(--color-negative);
+}
+
+.app-nav__logout-mobile:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 /* ── Narrow layout (<768px) ──────────────────────────────────────────────── */
 
 @media (max-width: 767px) {
@@ -109,5 +134,16 @@
   .app-nav__link {
     display: block;
     padding: 0.55rem 0.75rem;
+  }
+
+  /* Show Profile + logout inside dropdown on narrow */
+  .app-nav__mobile-only {
+    display: block;
+  }
+
+  .app-nav__mobile-separator {
+    border-top: 1px solid var(--color-neutral-dark);
+    margin-top: var(--space-xs);
+    padding-top: var(--space-xs);
   }
 }

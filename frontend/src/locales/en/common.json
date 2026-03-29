@@ -13,7 +13,90 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "discovery": "Discovery",
+    "search": "Search",
     "createRecipe": "Create Recipe",
     "profile": "Profile"
+  },
+  "home": {
+    "featured": "Featured Recipe",
+    "communityPicks": "Community Picks",
+    "browseByGenre": "Browse by Genre",
+    "noRecipes": "No recipes yet. Check back soon!"
+  },
+  "search": {
+    "placeholder": "Search dishes or regions…",
+    "browseByGenre": "Browse by Genre",
+    "sortLabel": "Sort results",
+    "sortBestRating": "Best Rating",
+    "sortRecent": "Most Recent",
+    "sortByRegion": "By Region",
+    "resultsCount": "{{count}} dish varieties found",
+    "noResults": "No dishes found. Try a different search.",
+    "recipes": "recipes"
+  },
+  "common": {
+    "retry": "Try again",
+    "errorRetry": "Something went wrong. Please try again."
+  },
+  "create": {
+    "title": "Create Recipe",
+    "saveDraft": "Save Draft",
+    "continue": "Continue",
+    "stepLabel": "Step {{step}} of 4: {{label}}",
+    "steps": {
+      "1": "Basic Information",
+      "2": "Ingredients & Tools",
+      "3": "Instructions",
+      "4": "Review & Publish"
+    },
+    "fields": {
+      "recipeTitle": "Recipe Title",
+      "recipeTitlePlaceholder": "Enter recipe name",
+      "description": "Description",
+      "descriptionPlaceholder": "Tell the story behind this recipe...",
+      "dishVariety": "Dish Variety",
+      "dishVarietyPlaceholder": "Select a dish variety",
+      "servingSize": "Servings",
+      "servingSizePlaceholder": "e.g. 6",
+      "recipeType": "Recipe Type",
+      "community": "Community Recipe",
+      "communityDesc": "A recipe from your personal collection",
+      "cultural": "Cultural Recipe",
+      "culturalDesc": "Traditional recipe with historical significance",
+      "expertOnly": "Expert role required"
+    },
+    "ingredients": {
+      "title": "Ingredients",
+      "namePlaceholder": "Ingredient name",
+      "amountPlaceholder": "Amount",
+      "add": "Add",
+      "infoNote": "Ingredients are shown for reference only and are not yet saved to the database."
+    },
+    "tools": {
+      "title": "Tools Needed",
+      "placeholder": "Tool name (e.g. Mixing bowl)",
+      "add": "Add"
+    },
+    "instructions": {
+      "title": "Instructions",
+      "stepPlaceholder": "Describe this step...",
+      "addStep": "Add Step"
+    },
+    "review": {
+      "title": "Review & Publish",
+      "readyToPublish": "Ready to publish",
+      "note": "Once published, your recipe will be visible to the community. You can edit or delete it from your profile.",
+      "ingredients": "Ingredients",
+      "tools": "Tools",
+      "steps": "Steps",
+      "items": "items",
+      "stepsUnit": "steps",
+      "servings": "{{count}} servings",
+      "publish": "Publish Recipe",
+      "saveDraft": "Save as Draft"
+    },
+    "successDraft": "Recipe saved as draft!",
+    "successPublished": "Recipe published!",
+    "errorCreate": "Failed to create recipe. Please try again."
   }
 }

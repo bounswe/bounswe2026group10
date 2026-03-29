@@ -1,12 +1,143 @@
+/* ── HomePage ──────────────────────────────────────────────────────────────── */
+
 .home-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg, 1.5rem);
+  gap: var(--space-2xl);
 }
 
-.home-page__header {
+.home-page__section {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.home-page__section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.home-page__section-title {
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* ── Community picks grid ────────────────────────────────────────────────── */
+
+.home-page__picks-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+
+@media (min-width: 768px) {
+  .home-page__picks-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Horizontal cards become more card-like on wide */
+  .home-page__picks-grid .recipe-card--horizontal {
+    flex-direction: column;
+    padding: 0;
+  }
+
+  .home-page__picks-grid .recipe-card--horizontal .recipe-card__thumb {
+    width: 100%;
+    height: 10rem;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+
+  .home-page__picks-grid .recipe-card--horizontal .recipe-card__body {
+    padding: var(--space-md);
+  }
+}
+
+/* ── Genre horizontal scroll ─────────────────────────────────────────────── */
+
+.home-page__genre-scroll {
+  display: flex;
+  gap: var(--space-md);
+  overflow-x: auto;
+  padding-bottom: var(--space-sm);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-neutral-darker) transparent;
+}
+
+.home-page__genre-scroll .genre-card {
+  width: 8rem;
+  height: 8rem;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .home-page__genre-scroll .genre-card {
+    width: 9rem;
+    height: 9rem;
+  }
+}
+
+/* ── Loading skeletons ───────────────────────────────────────────────────── */
+
+@keyframes skeleton-shimmer {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.skeleton-pulse {
+  background: var(--color-neutral-dark);
+  border-radius: var(--radius-md);
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.home-page__skeleton-hero {
+  height: 22rem;
+  width: 100%;
+  border-radius: var(--radius-lg);
+}
+
+.home-page__skeleton-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+}
+
+.home-page__skeleton-card {
+  height: 6rem;
+  border-radius: var(--radius-md);
+}
+
+/* ── Error state ─────────────────────────────────────────────────────────── */
+
+.home-page--error {
   align-items: center;
-  gap: var(--space-md, 1rem);
+  justify-content: center;
+  min-height: 40vh;
+  gap: var(--space-md);
+  color: var(--text-secondary);
+}
+
+.home-page__retry {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 0.45rem 1.2rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-main);
+  background: transparent;
+  color: var(--color-main);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.home-page__retry:hover {
+  background: var(--surface-overlay);
+}
+
+.home-page__empty {
+  color: var(--text-muted);
+  font-size: 0.9rem;
 }
