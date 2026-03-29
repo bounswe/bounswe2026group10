@@ -1,0 +1,35 @@
+.app-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  max-width: 72rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.app-header__logout {
+  font-family: var(--font-body);
+  font-style: normal;
+  font-size: 0.95rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-main);
+  background: transparent;
+  color: var(--color-main);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  min-width: 5.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-header__logout:hover:not(:disabled) {
+  background: var(--surface-overlay);
+}
+
+.app-header__logout:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

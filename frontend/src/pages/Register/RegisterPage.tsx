@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import googleLogo from '@/assets/logo-google.svg'
 import appleLogo from '@/assets/logo-apple.svg'
+import { session } from '@/auth/session'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { registerAsync, clearError, logoutAsync } from '@/store/slices/auth-slice'
 import './RegisterPage.css'
@@ -65,7 +66,9 @@ export function RegisterPage() {
 
   // Clear any existing session so a logged-in user can register a new account.
   useEffect(() => {
-    void dispatch(logoutAsync())
+    if (session.getTokens().accessToken) {
+      void dispatch(logoutAsync())
+    }
     dispatch(clearError())
   }, [dispatch])
 

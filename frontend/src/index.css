@@ -133,6 +133,24 @@ a:hover {
   width: 100%;
 }
 
+/* ── Shared UI (buttons, layout) ───────────────────────────────────────── */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ui-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-neutral-darker);
+  border-top-color: var(--color-main);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
 /* ── Utility: Visually Hidden ──────────────────────────────────────────── */
 
 .sr-only {
