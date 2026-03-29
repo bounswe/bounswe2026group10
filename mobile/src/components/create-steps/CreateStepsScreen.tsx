@@ -1,44 +1,53 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  LayoutAnimation,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { CreateStackParamList } from '../../navigation/types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import type { Tool } from '../../types/ingredient';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 import { IconButton } from '../shared/IconButton';
-import { SectionHeader } from '../shared/SectionHeader';
 import { StepHeader } from '../create-basic/StepHeader';
-import { IngredientRowEditor } from './IngredientRowEditor';
-import type { IngredientFormItem } from './IngredientRowEditor';
-import { ToolSearchSection } from './ToolSearchSection';
+import { StepEditor } from './StepEditor';
+import type { StepFormItem, StepFormItemErrors } from './StepEditor';
+
+if (Platform.OS === 'android') {
+  UIManager.setLayoutAnimationEnabledExperimental?.(true);
+}
 
 let nextId = 1;
 function generateId(): string {
   return String(nextId++);
 }
 
-function createEmptyIngredient(): IngredientFormItem {
-  return { id: generateId(), name: '', quantity: '', unit: 'g' };
+function createEmptyStep(): StepFormItem {
+  return {
+    id: generateId(),
+    title: '',
+    description: '',
+    videoUri: null,
+    videoFileName: null,
+    isExpanded: true,
+  };
 }
 
-export function CreateIngredientsToolsScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
-  const [ingredients, setIngredients] = useState<IngredientFormItem[]>([
-    createEmptyIngredient(),
-  ]);
-  const [tools, setTools] = useState<Tool[]>([]);
-  const [errors, setErrors] = useState<Record<string, { name?: string; quantity?: string }>>({});
+export function CreateStepsScreen() {
+  const navigation = useNavigation();
+  const [steps, setSteps] = useState<StepFormItem[]>([createEmptyStep()]);
+  const [stepErrors, setStepErrors] = useState<Record<string, StepFormItemErrors>>({});
 
-  const handleAddIngredient = () => {
-    setIngredients((prev) => [...prev, createEmptyIngredient()]);
-  };
-
-  const handleUpdateIngredient = (id: string, updated: IngredientFormItem) => {
-    setIngredients((prev) => prev.map((i) => (i.id === id ? updated : i)));
-    if (errors[id]) {
-      setErrors((prev) => {
+  const handleUpdateStep = (id: string, updated: StepFormItem) => {
+    setSteps((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    if (stepErrors[id]) {
+      setStepErrors((prev) => {
         const next = { ...prev };
         delete next[id];
         return next;
@@ -46,54 +55,53 @@ export function CreateIngredientsToolsScreen() {
     }
   };
 
-  const handleRemoveIngredient = (id: string) => {
-    if (ingredients.length <= 1) return;
-    setIngredients((prev) => prev.filter((i) => i.id !== id));
+  const handleAddStep = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSteps((prev) => [...prev, createEmptyStep()]);
   };
 
-  const handleAddTool = (tool: Tool) => {
-    if (!tools.some((t) => t.id === tool.id)) {
-      setTools((prev) => [...prev, tool]);
-    }
-  };
-
-  const handleRemoveTool = (toolId: string) => {
-    setTools((prev) => prev.filter((t) => t.id !== toolId));
+  const handleDeleteStep = (id: string) => {
+    if (steps.length <= 1) return;
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSteps((prev) => prev.filter((s) => s.id !== id));
+    setStepErrors((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   };
 
   const validate = (): boolean => {
-    const newErrors: Record<string, { name?: string; quantity?: string }> = {};
-    let hasValidIngredient = false;
+    const newErrors: Record<string, StepFormItemErrors> = {};
 
-    for (const ing of ingredients) {
-      const rowError: { name?: string; quantity?: string } = {};
-      if (ing.name.trim()) {
-        hasValidIngredient = true;
-        const qty = parseFloat(ing.quantity);
-        if (!ing.quantity.trim() || isNaN(qty) || qty <= 0) {
-          rowError.quantity = 'Enter a valid quantity';
-        }
+    for (const step of steps) {
+      const errs: StepFormItemErrors = {};
+      if (!step.description.trim()) {
+        errs.description = 'Description is required';
       }
-      if (Object.keys(rowError).length > 0) {
-        newErrors[ing.id] = rowError;
+      if (!step.videoUri) {
+        errs.video = 'A video is required for each step';
+      }
+      if (Object.keys(errs).length > 0) {
+        newErrors[step.id] = errs;
       }
     }
 
-    if (!hasValidIngredient) {
-      const firstId = ingredients[0].id;
-      newErrors[firstId] = {
-        ...newErrors[firstId],
-        name: 'Add at least one ingredient',
-      };
+    if (Object.keys(newErrors).length > 0) {
+      setSteps((prev) =>
+        prev.map((s) => (newErrors[s.id] ? { ...s, isExpanded: true } : s))
+      );
+      setStepErrors(newErrors);
+      return false;
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setStepErrors({});
+    return true;
   };
 
   const handleNext = () => {
     if (validate()) {
-      navigation.navigate('CreateSteps');
+      Alert.alert('Next', 'Navigation to Review screen coming soon.');
     }
   };
 
@@ -122,39 +130,28 @@ export function CreateIngredientsToolsScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <StepHeader
-          currentStep={2}
+          currentStep={3}
           totalSteps={4}
-          title="Ingredients & Tools"
-          subtitle="The soul of your dish lies in the details."
+          title="Recipe Steps"
+          subtitle="Break down the preparation into steps, just as they were taught to you."
         />
 
-        <SectionHeader
-          title="Ingredients"
-          rightElement={
-            <TouchableOpacity onPress={handleAddIngredient} style={styles.addButton}>
-              <MaterialCommunityIcons name="plus-circle-outline" size={20} color={colors.primary} />
-              <Text style={styles.addButtonText}>Add Item</Text>
-            </TouchableOpacity>
-          }
-        >
-          {ingredients.map((ingredient) => (
-            <IngredientRowEditor
-              key={ingredient.id}
-              ingredient={ingredient}
-              onUpdate={(updated) => handleUpdateIngredient(ingredient.id, updated)}
-              onRemove={() => handleRemoveIngredient(ingredient.id)}
-              error={errors[ingredient.id]}
-            />
-          ))}
-        </SectionHeader>
-
-        <SectionHeader title="Tools & Equipment">
-          <ToolSearchSection
-            selectedTools={tools}
-            onAddTool={handleAddTool}
-            onRemoveTool={handleRemoveTool}
+        {steps.map((step, index) => (
+          <StepEditor
+            key={step.id}
+            step={step}
+            stepNumber={index + 1}
+            onUpdate={(updated) => handleUpdateStep(step.id, updated)}
+            onDelete={() => handleDeleteStep(step.id)}
+            canDelete={steps.length > 1}
+            errors={stepErrors[step.id]}
           />
-        </SectionHeader>
+        ))}
+
+        <TouchableOpacity style={styles.addStepButton} onPress={handleAddStep} activeOpacity={0.7}>
+          <MaterialCommunityIcons name="plus-circle-outline" size={20} color={colors.primary} />
+          <Text style={styles.addStepText}>Add Step</Text>
+        </TouchableOpacity>
 
         <View style={styles.navigationRow}>
           <TouchableOpacity
@@ -168,7 +165,7 @@ export function CreateIngredientsToolsScreen() {
         </View>
 
         <TouchableOpacity style={styles.nextButton} onPress={handleNext} activeOpacity={0.8}>
-          <Text style={styles.nextButtonText}>Next: Steps</Text>
+          <Text style={styles.nextButtonText}>Next: Review</Text>
           <MaterialCommunityIcons name="arrow-right" size={20} color={colors.white} />
         </TouchableOpacity>
 
@@ -205,14 +202,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing['4xl'],
   },
-  addButton: {
+  addStepButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.xs,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.xl,
   },
-  addButtonText: {
+  addStepText: {
     fontFamily: fonts.sansMedium,
-    fontSize: fontSizes.sm,
+    fontSize: fontSizes.md,
     color: colors.primary,
   },
   navigationRow: {

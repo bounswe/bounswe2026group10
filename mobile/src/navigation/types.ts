@@ -20,6 +20,7 @@ export type SearchStackParamList = {
 export type CreateStackParamList = {
   CreateBasicInfo: undefined;
   CreateIngredientsTools: undefined;
+  CreateSteps: undefined;
 };
 
 export type LibraryStackParamList = {
