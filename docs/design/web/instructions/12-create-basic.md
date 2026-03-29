@@ -21,12 +21,14 @@ First step of recipe creation: import (text/voice) or manual form.
 ## Features
 
 - **Import:** Paste Text (article) + Voice Recording (mic); "or fill in manually" divider
-- **Manual:** Title (Newsreader), recipe type (Community/Cultural), origin, description, story, dietary chips, allergen chips (req 1.4.6)
+- **Manual:** Title (Newsreader), origin, description, story, dietary chips, allergen chips (req 1.4.6)
+- **Recipe type (Community / Cultural):** **Not** shown or selected on this screen. The type is **determined from the signed-in user’s profile role** (and backend rules), e.g. Cook → community-only; Expert → cultural (aligned with API role enforcement). The creator sees no type picker here.
 - **Next** → Ingredients (page 13); **Save Draft**; cancel → discard confirm
 
 ## Validation
 
-- Title required; Cultural rules per mobile; inline errors
+- Title required; inline errors
+- No recipe-type field to validate on this screen (type is implicit from account role). Story or other fields required for publish may still apply per role (see review step / backend).
 
 ## States
 

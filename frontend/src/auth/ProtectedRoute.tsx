@@ -1,3 +1,6 @@
+/**
+ * Not wired in `router/index.tsx` yet — wrap authenticated routes when the team adds route guards.
+ */
 import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAppSelector } from '@/store/hooks'

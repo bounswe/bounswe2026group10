@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import googleLogo from '@/assets/logo-google.svg'
 import appleLogo from '@/assets/logo-apple.svg'
+import { session } from '@/auth/session'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import { registerAsync, clearError, logout } from '@/store/slices/auth-slice'
+import { registerAsync, clearError, logoutAsync } from '@/store/slices/auth-slice'
 import './RegisterPage.css'
 
-type UserRole = 'learner' | 'cook'
+type UserRole = 'learner' | 'cook' | 'expert'
 
 interface FormState {
   firstName: string
@@ -65,7 +66,9 @@ export function RegisterPage() {
 
   // Clear any existing session so a logged-in user can register a new account.
   useEffect(() => {
-    dispatch(logout())
+    if (session.getTokens().accessToken) {
+      void dispatch(logoutAsync())
+    }
     dispatch(clearError())
   }, [dispatch])
 
@@ -288,6 +291,28 @@ export function RegisterPage() {
               <span className="register__role-name">Cook</span>
               <span className="register__role-desc">
                 Sharing and preserving daily kitchen rituals.
+              </span>
+            </div>
+          </label>
+
+          <label
+            className={`register__role-card ${form.role === 'expert' ? 'register__role-card--active' : ''}`}
+            htmlFor="role-expert"
+          >
+            <input
+              type="radio"
+              id="role-expert"
+              name="role"
+              value="expert"
+              checked={form.role === 'expert'}
+              onChange={(e) => handleChange('role', e.target.value)}
+              className="sr-only"
+            />
+            <span className="register__role-icon">🌿</span>
+            <div className="register__role-info">
+              <span className="register__role-name">Expert</span>
+              <span className="register__role-desc">
+                Community and cultural recipes — heritage and tradition.
               </span>
             </div>
           </label>

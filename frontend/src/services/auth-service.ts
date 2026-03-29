@@ -33,4 +33,9 @@ export const authService = {
     const { data } = await httpClient.post<AuthResponse>('/auth/register', payload)
     return data.data
   },
+
+  /** Invalidates server session (`POST /auth/logout`). Requires Bearer (interceptor). 204 No Content. */
+  async logout(): Promise<void> {
+    await httpClient.post('/auth/logout')
+  },
 }
