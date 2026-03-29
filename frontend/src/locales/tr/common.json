@@ -1,6 +1,11 @@
 {
   "app": {
     "title": "Roots & Recipes",
-    "logout": "Çıkış yap"
+    "logout": "Çıkış yap",
+    "roles": {
+      "learner": "Öğrenci",
+      "cook": "Aşçı",
+      "expert": "Uzman"
+    }
   }
 }

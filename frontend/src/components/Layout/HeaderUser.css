@@ -1,0 +1,35 @@
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: min(100%, 14rem);
+}
+
+.header-user__name {
+  font-family: var(--font-body);
+  font-style: normal;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-user__role {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-overlay);
+  color: var(--color-main);
+  border: 1px solid var(--color-neutral-dark);
+}
+
+.header-user--error .header-user__error {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}

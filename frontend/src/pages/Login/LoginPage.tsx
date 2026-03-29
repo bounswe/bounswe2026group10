@@ -4,6 +4,7 @@ import googleLogo from '@/assets/logo-google.svg'
 import appleLogo from '@/assets/logo-apple.svg'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { loginAsync, clearError } from '@/store/slices/auth-slice'
+import { fetchProfileAsync } from '@/store/slices/profile-slice'
 import './LoginPage.css'
 
 interface LoginForm {
@@ -17,6 +18,7 @@ export function LoginPage() {
   const dispatch = useAppDispatch()
   
   const { loading, error: serverError, isAuthenticated } = useAppSelector((state) => state.auth)
+  const profileStatus = useAppSelector((state) => state.profile.status)
 
   const [form, setForm] = useState<LoginForm>({
     email: '',
@@ -30,10 +32,10 @@ export function LoginPage() {
   const [forgotSent, setForgotSent] = useState(false)
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/home')
+    if (isAuthenticated && profileStatus === 'succeeded') {
+      navigate('/home', { replace: true })
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, profileStatus, navigate])
 
   useEffect(() => {
     return () => {
@@ -63,10 +65,18 @@ export function LoginPage() {
     ev.preventDefault()
     if (!validate()) return
 
-    dispatch(loginAsync({
-      email: form.email.trim(),
-      password: form.password,
-    }))
+    try {
+      await dispatch(
+        loginAsync({
+          email: form.email.trim(),
+          password: form.password,
+        })
+      ).unwrap()
+      await dispatch(fetchProfileAsync()).unwrap()
+      navigate('/home', { replace: true })
+    } catch {
+      // Errors surface via Redux (`serverError`)
+    }
   }
 
   function handleForgotSubmit(ev: React.FormEvent) {

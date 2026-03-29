@@ -22,6 +22,18 @@ export const session = {
     localStorage.setItem(USER_KEY, userId)
   },
 
+  /** After `POST /auth/refresh` — backend does not return `userId`; keep existing value. */
+  updateSessionTokens({ accessToken, refreshToken }: { accessToken: string; refreshToken: string }) {
+    if (!localStorage.getItem(USER_KEY)) {
+      localStorage.removeItem(ACCESS_KEY)
+      localStorage.removeItem(REFRESH_KEY)
+      localStorage.removeItem(USER_KEY)
+      return
+    }
+    localStorage.setItem(ACCESS_KEY, accessToken)
+    localStorage.setItem(REFRESH_KEY, refreshToken)
+  },
+
   clearTokens() {
     localStorage.removeItem(ACCESS_KEY)
     localStorage.removeItem(REFRESH_KEY)

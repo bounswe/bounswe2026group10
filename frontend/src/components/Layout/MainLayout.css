@@ -8,6 +8,14 @@
   width: 100%;
 }
 
+.app-header__trailing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .app-header__logout {
   font-family: var(--font-body);
   font-style: normal;
