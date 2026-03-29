@@ -5,10 +5,11 @@ import { successResponse, errorResponse } from "../utils/response.js";
 const router = Router();
 
 // ─── GET /dish-varieties ──────────────────────────────────────────────────────
-// Returns all dish varieties. Optionally filtered by genreId.
-// Query params: ?genreId=<number>
+// Returns all dish varieties. Optionally filtered by genreId and/or search.
+// Query params: ?genreId=<number> ?search=<string>
 router.get("/", async (req, res) => {
   const genreId = req.query["genreId"];
+  const search = req.query["search"];
 
   let query = supabase
     .from("dish_varieties")
@@ -26,6 +27,13 @@ router.get("/", async (req, res) => {
         .json(errorResponse("VALIDATION_ERROR", "genreId must be a positive integer."));
     }
     query = query.eq("genre_id", parsed);
+  }
+
+  if (search !== undefined) {
+    const trimmed = typeof search === "string" ? search.trim() : "";
+    if (trimmed.length > 0) {
+      query = query.ilike("name", `%${trimmed}%`);
+    }
   }
 
   const { data, error } = await query;
