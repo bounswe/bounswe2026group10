@@ -1,6 +1,6 @@
 import request from "supertest";
 import app from "../index.js";
-import { supabase, createUserClient } from "../config/supabase.js";
+import { supabase } from "../config/supabase.js";
 
 jest.mock("../config/supabase.js", () => {
   const mockFrom = jest.fn();
@@ -13,6 +13,138 @@ jest.mock("../config/supabase.js", () => {
     createUserClient: jest.fn(() => ({ from: mockFrom })),
   };
 });
+
+// ─── GET /recipes/:id ────────────────────────────────────────────────────────
+
+describe("GET /recipes/:id", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  const mockRecipeData = {
+    id: "recipe-uuid-1",
+    title: "Classic Adana Kebap",
+    story: "A traditional recipe.",
+    video_url: "https://example.com/video.mp4",
+    serving_size: 4,
+    type: "community",
+    is_published: true,
+    average_rating: 4.5,
+    rating_count: 10,
+    created_at: "2024-01-01",
+    updated_at: "2024-01-01",
+    creator: { id: "profile-1", username: "cook1" },
+    dish_variety: { id: 2, name: "Adana Kebap", dish_genre: { id: 1, name: "Kebap" } },
+    recipe_ingredients: [
+      {
+        id: 1, quantity: 500, unit: "g",
+        ingredient: { id: 2, name: "Minced Meat", ingredient_allergens: [] },
+      },
+    ],
+    recipe_steps: [
+      { id: 2, step_order: 2, description: "Grill for 10 minutes." },
+      { id: 1, step_order: 1, description: "Mix with spices." },
+    ],
+    recipe_tools: [{ id: 1, name: "Grill" }],
+    recipe_media: [{ id: 1, url: "https://example.com/img.jpg", type: "image" }],
+  };
+
+  const setupRecipeMock = (data: any, error: any) => {
+    const mockSingle = jest.fn().mockResolvedValue({ data, error });
+    const mockEq = jest.fn().mockReturnValue({ single: mockSingle });
+    const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "recipes") return { select: mockSelect };
+      return {};
+    });
+  };
+
+  it("returns full recipe detail with 200", async () => {
+    setupRecipeMock(mockRecipeData, null);
+    const res = await request(app).get("/recipes/recipe-uuid-1");
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.title).toBe("Classic Adana Kebap");
+    expect(res.body.data.creatorUsername).toBe("cook1");
+    expect(res.body.data.dishVarietyName).toBe("Adana Kebap");
+    expect(res.body.data.genreName).toBe("Kebap");
+    expect(res.body.data.averageRating).toBe(4.5);
+    expect(res.body.data.ratingCount).toBe(10);
+  });
+
+  it("returns steps sorted by stepOrder", async () => {
+    setupRecipeMock(mockRecipeData, null);
+    const res = await request(app).get("/recipes/recipe-uuid-1");
+    expect(res.status).toBe(200);
+    expect(res.body.data.steps[0].stepOrder).toBe(1);
+    expect(res.body.data.steps[0].description).toBe("Mix with spices.");
+    expect(res.body.data.steps[1].stepOrder).toBe(2);
+  });
+
+  it("returns ingredients with allergens array", async () => {
+    const dataWithAllergens = {
+      ...mockRecipeData,
+      recipe_ingredients: [
+        {
+          id: 1, quantity: 500, unit: "g",
+          ingredient: {
+            id: 2, name: "Minced Meat",
+            ingredient_allergens: [{ allergen: { name: "gluten" } }],
+          },
+        },
+      ],
+    };
+    setupRecipeMock(dataWithAllergens, null);
+    const res = await request(app).get("/recipes/recipe-uuid-1");
+    expect(res.status).toBe(200);
+    expect(res.body.data.ingredients[0].allergens).toEqual(["gluten"]);
+    expect(res.body.data.ingredients[0].ingredientName).toBe("Minced Meat");
+    expect(res.body.data.ingredients[0].quantity).toBe(500);
+    expect(res.body.data.ingredients[0].unit).toBe("g");
+  });
+
+  it("returns empty arrays when no ingredients, steps, tools, or media", async () => {
+    setupRecipeMock(
+      { ...mockRecipeData, recipe_ingredients: [], recipe_steps: [], recipe_tools: [], recipe_media: [] },
+      null
+    );
+    const res = await request(app).get("/recipes/recipe-uuid-1");
+    expect(res.status).toBe(200);
+    expect(res.body.data.ingredients).toHaveLength(0);
+    expect(res.body.data.steps).toHaveLength(0);
+    expect(res.body.data.tools).toHaveLength(0);
+    expect(res.body.data.media).toHaveLength(0);
+  });
+
+  it("returns null for optional fields when not set", async () => {
+    setupRecipeMock(
+      { ...mockRecipeData, story: null, video_url: null, serving_size: null, average_rating: null, dish_variety: null, creator: null },
+      null
+    );
+    const res = await request(app).get("/recipes/recipe-uuid-1");
+    expect(res.status).toBe(200);
+    expect(res.body.data.story).toBeNull();
+    expect(res.body.data.videoUrl).toBeNull();
+    expect(res.body.data.servingSize).toBeNull();
+    expect(res.body.data.averageRating).toBeNull();
+    expect(res.body.data.creatorId).toBeNull();
+    expect(res.body.data.dishVarietyId).toBeNull();
+  });
+
+  it("returns 404 when recipe does not exist", async () => {
+    setupRecipeMock(null, { code: "PGRST116", message: "Not found" });
+    const res = await request(app).get("/recipes/nonexistent-uuid");
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("NOT_FOUND");
+  });
+
+  it("returns 500 on database error", async () => {
+    setupRecipeMock(null, { code: "500", message: "DB timeout" });
+    const res = await request(app).get("/recipes/recipe-uuid-1");
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("DB_ERROR");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 describe("Recipe Endpoints (Creation & Publishing)", () => {
   beforeEach(() => {
