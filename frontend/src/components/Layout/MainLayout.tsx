@@ -1,9 +1,10 @@
-import { Outlet } from 'react-router-dom'
+import { Link, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppSelector } from '@/store/hooks'
 import { useLogout } from '@/hooks/useLogout'
 import { selectProfile } from '@/store/slices/profile-slice'
 import { HeaderUser } from '@/components/Layout/HeaderUser'
+import { NavBar } from '@/components/Layout/NavBar'
 import './MainLayout.css'
 
 export function MainLayout() {
@@ -20,7 +21,16 @@ export function MainLayout() {
     <div className="app-shell">
       <header className="app-header">
         <div className="app-header__inner">
-          <span>Roots & Recipes</span>
+
+          {/* Brand — left */}
+          <Link to="/home" className="app-header__brand" aria-label={t('app.title')}>
+            Roots &amp; Recipes
+          </Link>
+
+          {/* Primary nav — centre (role-aware, hamburger on mobile) */}
+          {isAuthenticated && <NavBar />}
+
+          {/* User menu — right */}
           {isAuthenticated && (
             <div className="app-header__trailing">
               <HeaderUser
@@ -43,6 +53,7 @@ export function MainLayout() {
               </button>
             </div>
           )}
+
         </div>
       </header>
       <main>

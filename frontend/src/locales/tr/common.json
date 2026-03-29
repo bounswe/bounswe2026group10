@@ -7,5 +7,13 @@
       "cook": "Aşçı",
       "expert": "Uzman"
     }
+  },
+  "nav": {
+    "ariaLabel": "Ana gezinti",
+    "openMenu": "Menüyü aç",
+    "closeMenu": "Menüyü kapat",
+    "discovery": "Keşfet",
+    "createRecipe": "Tarif Oluştur",
+    "profile": "Profil"
   }
 }

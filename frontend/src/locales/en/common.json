@@ -7,5 +7,13 @@
       "cook": "Cook",
       "expert": "Expert"
     }
+  },
+  "nav": {
+    "ariaLabel": "Main navigation",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "discovery": "Discovery",
+    "createRecipe": "Create Recipe",
+    "profile": "Profile"
   }
 }

@@ -1,11 +1,33 @@
+/* ── Brand (logo / title) ────────────────────────────────────────────────── */
+
+.app-header__brand {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--color-main);
+  text-decoration: none;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.app-header__brand:hover {
+  color: var(--color-main-dark);
+}
+
+/* ── Header inner layout ─────────────────────────────────────────────────── */
+
 .app-header__inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-md);
   max-width: 72rem;
   margin: 0 auto;
   width: 100%;
+}
+
+/* Nav sits between brand and trailing, taking remaining space */
+.app-header__inner > .app-nav {
+  flex: 1;
 }
 
 .app-header__trailing {

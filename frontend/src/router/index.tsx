@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { MainLayout } from '@/components/Layout/MainLayout'
+import { ProtectedRoute } from '@/auth/ProtectedRoute'
 import { HomePage } from '@/pages/Home/HomePage'
 import { LoginPage } from '@/pages/Login/LoginPage'
 import { RegisterPage } from '@/pages/Register/RegisterPage'
@@ -12,14 +13,28 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage />, errorElement: <RouteError /> },
   { path: '/register', element: <RegisterPage />, errorElement: <RouteError /> },
 
-  // ── Signed-in shell (pathless: no `path` here, so no conflict with '/') ─
-  // MainLayout renders <Outlet />; children use their full absolute paths.
+  // ── Signed-in shell — requires authentication ────────────────────────────
+  // ProtectedRoute (no roles) gates the entire shell; unauthenticated users
+  // are redirected to /login. Role-gated routes wrap their own element with
+  // <ProtectedRoute roles={[…]} /> when the page is built.
   {
-    element: <MainLayout />,
+    element: (
+      <ProtectedRoute>
+        <MainLayout />
+      </ProtectedRoute>
+    ),
     errorElement: <RouteError />,
     children: [
       { path: '/home', element: <HomePage /> },
-      // { path: '/library', element: <LibraryPage /> }
+      // cook + expert only — uncomment when CreateRecipePage is built:
+      // {
+      //   path: '/create-recipe',
+      //   element: (
+      //     <ProtectedRoute roles={['cook', 'expert']}>
+      //       <CreateRecipePage />
+      //     </ProtectedRoute>
+      //   ),
+      // },
     ],
   },
   // ── Catch-all ────────────────────────────────────────────────────────────

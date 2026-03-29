@@ -119,10 +119,6 @@ a:hover {
   padding: 0.75rem 1.25rem;
   border-bottom: 1px solid var(--color-neutral-dark);
   background: var(--surface-card);
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 1.1rem;
-  color: var(--color-main);
 }
 
 .app-shell main {
