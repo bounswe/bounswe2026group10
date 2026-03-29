@@ -62,6 +62,88 @@ const recipeSchema = z.object({
 
 const updateRecipeSchema = recipeSchema.partial();
 
+// ─── GET /recipes/:id ────────────────────────────────────────────────────────
+
+/**
+ * Get full recipe detail including ingredients, tools, steps, media, and story.
+ * Published recipes are public. Unpublished recipes are only visible to their creator.
+ */
+router.get("/:id", async (req: Request, res: Response): Promise<void> => {
+  const recipeId = req.params["id"] ?? "";
+
+  const { data, error } = await supabase
+    .from("recipes")
+    .select(
+      `id, title, story, video_url, serving_size, type, is_published, average_rating, rating_count, created_at, updated_at,
+       creator:profiles!recipes_creator_id_fkey(id, username),
+       dish_variety:dish_varieties(id, name, dish_genre:dish_genres(id, name)),
+       recipe_ingredients(id, quantity, unit, ingredient:ingredients(id, name, ingredient_allergens(allergen:allergens(name)))),
+       recipe_steps(id, step_order, description),
+       recipe_tools(id, name),
+       recipe_media(id, url, type)`
+    )
+    .eq("id", recipeId)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      res.status(404).json(errorResponse("NOT_FOUND", "Recipe not found."));
+      return;
+    }
+    res.status(500).json(errorResponse("DB_ERROR", error.message));
+    return;
+  }
+
+  const steps = [...(data.recipe_steps ?? [])].sort(
+    (a: any, b: any) => a.step_order - b.step_order
+  );
+
+  res.status(200).json(
+    successResponse({
+      id: data.id,
+      creatorId: (data.creator as any)?.id ?? null,
+      creatorUsername: (data.creator as any)?.username ?? null,
+      dishVarietyId: (data.dish_variety as any)?.id ?? null,
+      dishVarietyName: (data.dish_variety as any)?.name ?? null,
+      genreName: (data.dish_variety as any)?.dish_genre?.name ?? null,
+      title: data.title,
+      story: (data as any).story ?? null,
+      videoUrl: (data as any).video_url ?? null,
+      servingSize: (data as any).serving_size ?? null,
+      type: data.type,
+      isPublished: (data as any).is_published,
+      averageRating: (data as any).average_rating ?? null,
+      ratingCount: (data as any).rating_count ?? 0,
+      ingredients: (data.recipe_ingredients ?? []).map((ri: any) => ({
+        id: ri.id,
+        ingredientId: ri.ingredient?.id ?? null,
+        ingredientName: ri.ingredient?.name ?? null,
+        quantity: ri.quantity,
+        unit: ri.unit,
+        allergens: (ri.ingredient?.ingredient_allergens ?? [])
+          .map((ia: any) => ia.allergen?.name)
+          .filter(Boolean),
+      })),
+      steps: steps.map((s: any) => ({
+        id: s.id,
+        stepOrder: s.step_order,
+        description: s.description,
+      })),
+      tools: (data.recipe_tools ?? []).map((t: any) => ({
+        id: t.id,
+        name: t.name,
+      })),
+      media: (data.recipe_media ?? []).map((m: any) => ({
+        id: m.id,
+        url: m.url,
+        type: m.type,
+      })),
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    })
+  );
+});
+
 // ─── POST /recipes ───────────────────────────────────────────────────────────
 
 /**
