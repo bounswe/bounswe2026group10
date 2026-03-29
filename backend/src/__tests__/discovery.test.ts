@@ -18,7 +18,7 @@ jest.mock("../config/supabase.js", () => {
 
 const chainable = (resolved: { data: any; error: any; count?: number | null }) => {
   const mock: any = {};
-  const methods = ["select", "eq", "neq", "in", "not", "order", "range", "filter", "single", "limit"];
+  const methods = ["select", "eq", "neq", "in", "not", "order", "range", "filter", "single", "limit", "ilike"];
   methods.forEach((m) => {
     mock[m] = jest.fn().mockReturnValue(mock);
   });
@@ -123,6 +123,66 @@ describe("GET /dish-varieties", () => {
     const res = await request(app).get("/dish-varieties?genreId=0");
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns matching varieties for a valid search query", async () => {
+    const mockVarieties = [
+      { id: 1, name: "Adana Kebap", description: "", genre_id: 1, dish_genre: { id: 1, name: "Kebap" } },
+    ];
+    (supabase.from as jest.Mock).mockReturnValue(chainable({ data: mockVarieties, error: null }));
+
+    const res = await request(app).get("/dish-varieties?search=adana");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].name).toBe("Adana Kebap");
+  });
+
+  it("returns empty array when no variety matches the search query", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(chainable({ data: [], error: null }));
+
+    const res = await request(app).get("/dish-varieties?search=zzznomatch");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(0);
+  });
+
+  it("returns all varieties when search query is a single character", async () => {
+    const mockVarieties = [
+      { id: 1, name: "Adana Kebap", description: "", genre_id: 1, dish_genre: { id: 1, name: "Kebap" } },
+    ];
+    (supabase.from as jest.Mock).mockReturnValue(chainable({ data: mockVarieties, error: null }));
+
+    const res = await request(app).get("/dish-varieties?search=a");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+
+  it("returns all varieties when search query is empty string", async () => {
+    const mockVarieties = [
+      { id: 1, name: "Adana Kebap", description: "", genre_id: 1, dish_genre: { id: 1, name: "Kebap" } },
+      { id: 2, name: "Mercimek Çorbası", description: "", genre_id: 2, dish_genre: { id: 2, name: "Soup" } },
+    ];
+    (supabase.from as jest.Mock).mockReturnValue(chainable({ data: mockVarieties, error: null }));
+
+    const res = await request(app).get("/dish-varieties?search=");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(2);
+  });
+
+  it("supports combining search and genreId filters", async () => {
+    const mockVarieties = [
+      { id: 1, name: "Adana Kebap", description: "", genre_id: 1, dish_genre: { id: 1, name: "Kebap" } },
+    ];
+    (supabase.from as jest.Mock).mockReturnValue(chainable({ data: mockVarieties, error: null }));
+
+    const res = await request(app).get("/dish-varieties?genreId=1&search=adana");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
   });
 });
 
