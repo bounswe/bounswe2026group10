@@ -1,0 +1,197 @@
+.dish-variety-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 0 var(--spacing-xl);
+}
+
+/* Back */
+.dish-variety-page__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  padding: var(--spacing-md) var(--spacing-md);
+}
+
+.dish-variety-page__back:hover {
+  opacity: 0.8;
+}
+
+/* Header */
+.dish-variety-page__header {
+  padding: 0 var(--spacing-md) var(--spacing-md);
+}
+
+.dish-variety-page__genre {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dish-variety-page__title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: var(--spacing-xs) 0;
+}
+
+.dish-variety-page__description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Section */
+.dish-variety-page__section {
+  padding: 0 var(--spacing-md);
+}
+
+.dish-variety-page__section-title {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-sm);
+  padding-bottom: var(--spacing-xs);
+  border-bottom: 2px solid var(--color-neutral-dark);
+}
+
+.dish-variety-page__empty {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Recipe rows */
+.dish-variety-page__recipes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.variety-recipe-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-neutral-dark);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s;
+}
+
+.variety-recipe-row:hover {
+  background: var(--color-neutral-dark);
+}
+
+.variety-recipe-row__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.variety-recipe-row__title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.variety-recipe-row__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.variety-recipe-row__type {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  color: #fff;
+}
+
+.variety-recipe-row__type--cultural { background: var(--color-accent); }
+.variety-recipe-row__type--community { background: var(--color-primary); }
+
+.variety-recipe-row__region {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.variety-recipe-row__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.variety-recipe-row__arrow {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+/* Error */
+.dish-variety-page--error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  gap: var(--spacing-md);
+  color: var(--color-text-secondary);
+}
+
+.dish-variety-page__back-btn {
+  background: none;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-xs) var(--spacing-md);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+/* Skeletons */
+.dish-variety-page__skeleton-title {
+  height: 2rem;
+  width: 60%;
+  border-radius: 4px;
+  margin: var(--spacing-md);
+}
+
+.dish-variety-page__skeleton-body {
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.dish-variety-page__skeleton-row {
+  height: 64px;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-pulse {
+  background: var(--color-neutral-dark);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

@@ -4,6 +4,8 @@ import { ProtectedRoute } from '@/auth/ProtectedRoute'
 import { HomePage } from '@/pages/Home/HomePage'
 import { SearchPage } from '@/pages/Search/SearchPage'
 import { CreateRecipePage } from '@/pages/CreateRecipe/CreateRecipePage'
+import { RecipeDetailPage } from '@/pages/RecipeDetail/RecipeDetailPage'
+import { DishVarietyPage } from '@/pages/DishVariety/DishVarietyPage'
 import { LoginPage } from '@/pages/Login/LoginPage'
 import { RegisterPage } from '@/pages/Register/RegisterPage'
 import { WelcomePage } from '@/pages/Welcome/WelcomePage'
@@ -29,6 +31,8 @@ export const router = createBrowserRouter([
     children: [
       { path: '/home', element: <HomePage /> },
       { path: '/search', element: <SearchPage /> },
+      { path: '/recipes/:id', element: <RecipeDetailPage /> },
+      { path: '/dish-variety/:id', element: <DishVarietyPage /> },
       {
         path: '/create-recipe',
         element: (

@@ -36,7 +36,27 @@
   },
   "common": {
     "retry": "Try again",
-    "errorRetry": "Something went wrong. Please try again."
+    "errorRetry": "Something went wrong. Please try again.",
+    "goBack": "Go back"
+  },
+  "recipeDetail": {
+    "notFound": "Recipe not found.",
+    "cultural": "Cultural",
+    "community": "Community",
+    "by": "by",
+    "servings": "{{count}} servings",
+    "story": "Story",
+    "ingredients": "Ingredients",
+    "tools": "Tools Needed",
+    "instructions": "Instructions",
+    "video": "Video",
+    "watchVideo": "Watch video",
+    "unknownIngredient": "Unknown ingredient"
+  },
+  "dishVariety": {
+    "notFound": "Dish variety not found.",
+    "recipes": "{{count}} Recipes",
+    "noRecipes": "No published recipes for this dish variety yet."
   },
   "create": {
     "title": "Create Recipe",
