@@ -234,6 +234,148 @@ describe("GET /dish-varieties/:id", () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+describe("GET /dish-varieties/:id/recipes", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  const mockCommunityRecipes = [
+    { id: 10, title: "Community A", type: "community", average_rating: 4.8, rating_count: 20, created_at: "2024-01-01", updated_at: "2024-01-01", creator: { id: "p1", username: "cook1" } },
+    { id: 11, title: "Community B", type: "community", average_rating: 3.5, rating_count: 8, created_at: "2024-01-02", updated_at: "2024-01-02", creator: { id: "p2", username: "cook2" } },
+  ];
+  const mockExpertRecipe = { id: 20, title: "Expert Recipe", type: "cultural", average_rating: 4.9, rating_count: 50, created_at: "2024-01-03", updated_at: "2024-01-03", creator: { id: "p3", username: "expert1" } };
+
+  it("returns expertRecipe and communityRecipes separated", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_varieties") return chainable({ data: { id: 1 }, error: null });
+      if (table === "recipes") return chainable({ data: [mockExpertRecipe, ...mockCommunityRecipes], error: null });
+    });
+
+    const res = await request(app).get("/dish-varieties/1/recipes");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.expertRecipe).not.toBeNull();
+    expect(res.body.data.expertRecipe.type).toBe("cultural");
+    expect(res.body.data.communityRecipes).toHaveLength(2);
+    expect(res.body.data.communityRecipes.every((r: any) => r.type === "community")).toBe(true);
+  });
+
+  it("returns community recipes sorted by rating descending", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_varieties") return chainable({ data: { id: 1 }, error: null });
+      if (table === "recipes") return chainable({ data: mockCommunityRecipes, error: null });
+    });
+
+    const res = await request(app).get("/dish-varieties/1/recipes");
+
+    expect(res.status).toBe(200);
+    const ratings = res.body.data.communityRecipes.map((r: any) => r.average_rating);
+    expect(ratings[0]).toBeGreaterThanOrEqual(ratings[1]);
+  });
+
+  it("returns null expertRecipe when no cultural recipe exists", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_varieties") return chainable({ data: { id: 1 }, error: null });
+      if (table === "recipes") return chainable({ data: mockCommunityRecipes, error: null });
+    });
+
+    const res = await request(app).get("/dish-varieties/1/recipes");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.expertRecipe).toBeNull();
+    expect(res.body.data.communityRecipes).toHaveLength(2);
+  });
+
+  it("returns empty communityRecipes when no community recipes exist", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_varieties") return chainable({ data: { id: 1 }, error: null });
+      if (table === "recipes") return chainable({ data: [mockExpertRecipe], error: null });
+    });
+
+    const res = await request(app).get("/dish-varieties/1/recipes");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.expertRecipe).not.toBeNull();
+    expect(res.body.data.communityRecipes).toHaveLength(0);
+  });
+
+  it("returns empty expertRecipe and empty communityRecipes when no recipes exist", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_varieties") return chainable({ data: { id: 1 }, error: null });
+      if (table === "recipes") return chainable({ data: [], error: null });
+    });
+
+    const res = await request(app).get("/dish-varieties/1/recipes");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.expertRecipe).toBeNull();
+    expect(res.body.data.communityRecipes).toHaveLength(0);
+  });
+
+  it("returns 404 when dish variety not found", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_varieties")
+        return chainable({ data: null, error: { code: "PGRST116", message: "Not found" } });
+    });
+
+    const res = await request(app).get("/dish-varieties/999/recipes");
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("NOT_FOUND");
+  });
+
+  it("returns 400 for non-integer id", async () => {
+    const res = await request(app).get("/dish-varieties/abc/recipes");
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 400 for id = 0", async () => {
+    const res = await request(app).get("/dish-varieties/0/recipes");
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 500 on variety db error", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_varieties")
+        return chainable({ data: null, error: { message: "DB timeout" } });
+    });
+
+    const res = await request(app).get("/dish-varieties/1/recipes");
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("DB_ERROR");
+  });
+
+  it("returns 500 on recipes db error", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_varieties") return chainable({ data: { id: 1 }, error: null });
+      if (table === "recipes") return chainable({ data: null, error: { message: "DB timeout" } });
+    });
+
+    const res = await request(app).get("/dish-varieties/1/recipes");
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("DB_ERROR");
+  });
+
+  it("includes creator info in recipe items", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_varieties") return chainable({ data: { id: 1 }, error: null });
+      if (table === "recipes") return chainable({ data: mockCommunityRecipes, error: null });
+    });
+
+    const res = await request(app).get("/dish-varieties/1/recipes");
+
+    expect(res.status).toBe(200);
+    const recipe = res.body.data.communityRecipes[0];
+    expect(recipe.creator).toBeDefined();
+    expect(recipe.creator.username).toBe("cook1");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 describe("GET /discovery/recipes", () => {
   beforeEach(() => jest.clearAllMocks());
 
