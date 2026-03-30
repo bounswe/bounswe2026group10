@@ -115,19 +115,19 @@ router.get("/recipes", async (req, res) => {
     let query = supabase
       .from("recipes")
       .select(
-        `id, title, type, region, average_rating, rating_count,
+        `id, title, type, average_rating, rating_count,
          created_at, updated_at,
          dish_variety:dish_varieties!recipes_dish_variety_id_fkey(
-           id, name,
+           id, name, region,
            dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name)
          ),
-         profile:profiles!recipes_profile_id_fkey(id, username)`,
+         profile:profiles!recipes_creator_id_fkey(id, username)`,
         { count: "exact" }
       )
       .eq("is_published", true);
 
     if (region) {
-      query = query.eq("region", region);
+      query = query.eq("dish_varieties.region", region);
     }
 
     if (varietyId !== undefined) {
