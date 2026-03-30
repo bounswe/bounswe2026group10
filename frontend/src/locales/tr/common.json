@@ -7,5 +7,96 @@
       "cook": "Aşçı",
       "expert": "Uzman"
     }
+  },
+  "nav": {
+    "ariaLabel": "Ana gezinti",
+    "openMenu": "Menüyü aç",
+    "closeMenu": "Menüyü kapat",
+    "discovery": "Keşfet",
+    "search": "Ara",
+    "createRecipe": "Tarif Oluştur",
+    "profile": "Profil"
+  },
+  "home": {
+    "featured": "Öne Çıkan Tarif",
+    "communityPicks": "Topluluk Seçkileri",
+    "browseByGenre": "Türe Göre Keşfet",
+    "noRecipes": "Henüz tarif yok. Yakında tekrar kontrol edin!"
+  },
+  "search": {
+    "placeholder": "Yemek veya bölge ara…",
+    "browseByGenre": "Türe Göre Keşfet",
+    "sortLabel": "Sonuçları sırala",
+    "sortBestRating": "En İyi Puan",
+    "sortRecent": "En Yeni",
+    "sortByRegion": "Bölgeye Göre",
+    "resultsCount": "{{count}} yemek çeşidi bulundu",
+    "noResults": "Yemek bulunamadı. Farklı bir arama deneyin.",
+    "recipes": "tarif"
+  },
+  "common": {
+    "retry": "Tekrar dene",
+    "errorRetry": "Bir şeyler ters gitti. Lütfen tekrar deneyin."
+  },
+  "create": {
+    "title": "Tarif Oluştur",
+    "saveDraft": "Taslak Kaydet",
+    "continue": "Devam Et",
+    "stepLabel": "Adım {{step}} / 4: {{label}}",
+    "steps": {
+      "1": "Temel Bilgiler",
+      "2": "Malzemeler ve Araçlar",
+      "3": "Talimatlar",
+      "4": "İncele ve Yayınla"
+    },
+    "fields": {
+      "recipeTitle": "Tarif Adı",
+      "recipeTitlePlaceholder": "Tarif adını girin",
+      "description": "Açıklama",
+      "descriptionPlaceholder": "Bu tarifin arkasındaki hikayeyi anlatın...",
+      "dishVariety": "Yemek Çeşidi",
+      "dishVarietyPlaceholder": "Bir yemek çeşidi seçin",
+      "servingSize": "Porsiyon",
+      "servingSizePlaceholder": "örn. 6",
+      "recipeType": "Tarif Türü",
+      "community": "Topluluk Tarifi",
+      "communityDesc": "Kişisel koleksiyonunuzdan bir tarif",
+      "cultural": "Kültürel Tarif",
+      "culturalDesc": "Tarihi önemi olan geleneksel tarif",
+      "expertOnly": "Uzman rolü gereklidir"
+    },
+    "ingredients": {
+      "title": "Malzemeler",
+      "namePlaceholder": "Malzeme adı",
+      "amountPlaceholder": "Miktar",
+      "add": "Ekle",
+      "infoNote": "Malzemeler yalnızca referans için gösterilmektedir ve henüz veritabanına kaydedilmemektedir."
+    },
+    "tools": {
+      "title": "Gerekli Araçlar",
+      "placeholder": "Araç adı (örn. Karıştırma kabı)",
+      "add": "Ekle"
+    },
+    "instructions": {
+      "title": "Talimatlar",
+      "stepPlaceholder": "Bu adımı açıklayın...",
+      "addStep": "Adım Ekle"
+    },
+    "review": {
+      "title": "İncele ve Yayınla",
+      "readyToPublish": "Yayınlamaya hazır",
+      "note": "Yayınlandığında tarifiniz topluluk tarafından görülebilecek. Profilinizden düzenleyebilir veya silebilirsiniz.",
+      "ingredients": "Malzemeler",
+      "tools": "Araçlar",
+      "steps": "Adımlar",
+      "items": "öğe",
+      "stepsUnit": "adım",
+      "servings": "{{count}} porsiyon",
+      "publish": "Tarifi Yayınla",
+      "saveDraft": "Taslak Olarak Kaydet"
+    },
+    "successDraft": "Tarif taslak olarak kaydedildi!",
+    "successPublished": "Tarif yayınlandı!",
+    "errorCreate": "Tarif oluşturulamadı. Lütfen tekrar deneyin."
   }
 }

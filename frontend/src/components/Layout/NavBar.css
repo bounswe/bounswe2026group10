@@ -1,0 +1,149 @@
+/* ── App NavBar ──────────────────────────────────────────────────────────── */
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+/* ── Link list (desktop default: horizontal row) ────────────────────────── */
+
+.app-nav__list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.app-nav__link {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), background var(--transition-fast);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.app-nav__link:hover {
+  color: var(--color-main);
+  background: var(--surface-overlay);
+}
+
+.app-nav__link--active {
+  color: var(--color-main);
+  font-weight: 600;
+  background: var(--surface-overlay);
+}
+
+/* ── Hamburger button (hidden on desktop) ────────────────────────────────── */
+
+.app-nav__toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 2.25rem;
+  height: 2.25rem;
+  background: transparent;
+  border: 1px solid var(--color-neutral-darker);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: 0.4rem;
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+}
+
+.app-nav__toggle:hover {
+  background: var(--surface-overlay);
+}
+
+.app-nav__toggle:focus-visible {
+  outline: 2px solid var(--color-main);
+  outline-offset: 2px;
+}
+
+.app-nav__bar {
+  display: block;
+  width: 1.1rem;
+  height: 2px;
+  background: var(--color-main);
+  border-radius: 2px;
+  transition: transform var(--transition-fast), opacity var(--transition-fast);
+}
+
+/* ── Mobile-only items (Profile + logout) — hidden on desktop ────────────── */
+
+.app-nav__mobile-only {
+  display: none;
+}
+
+.app-nav__logout-mobile {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-negative);
+}
+
+.app-nav__logout-mobile:hover {
+  background: rgba(186, 26, 26, 0.06);
+  color: var(--color-negative);
+}
+
+.app-nav__logout-mobile:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ── Narrow layout (<768px) ──────────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .app-nav__toggle {
+    display: flex;
+  }
+
+  /* List is hidden by default; opens as dropdown below the toggle */
+  .app-nav__list {
+    display: none;
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    background: var(--surface-card);
+    border: 1px solid var(--color-neutral-dark);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-sm);
+    min-width: 11rem;
+    z-index: 200;
+  }
+
+  .app-nav__list--open {
+    display: flex;
+  }
+
+  .app-nav__link {
+    display: block;
+    padding: 0.55rem 0.75rem;
+  }
+
+  /* Show Profile + logout inside dropdown on narrow */
+  .app-nav__mobile-only {
+    display: block;
+  }
+
+  .app-nav__mobile-separator {
+    border-top: 1px solid var(--color-neutral-dark);
+    margin-top: var(--space-xs);
+    padding-top: var(--space-xs);
+  }
+}
