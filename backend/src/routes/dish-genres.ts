@@ -9,7 +9,7 @@ const router = Router();
 router.get("/", async (_req, res) => {
   const { data: genres, error: genreError } = await supabase
     .from("dish_genres")
-    .select("id, name, description, image_url")
+    .select("id, name, description")
     .order("name");
 
   if (genreError) {
