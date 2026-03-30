@@ -19,6 +19,25 @@ export interface DishVariety {
   imageUrl?: string
 }
 
+export interface VarietyRecipeSummary {
+  id: string
+  title: string
+  type: 'community' | 'cultural'
+  averageRating: number | null
+  ratingCount: number
+  region: string | null
+  createdAt: string
+}
+
+export interface DishVarietyDetail {
+  id: string
+  name: string
+  description: string | null
+  genreId: string
+  genre: { id: string; name: string } | null
+  recipes: VarietyRecipeSummary[]
+}
+
 export interface RecipeSummary {
   id: string
   title: string
@@ -132,6 +151,42 @@ export const discoveryService = {
       return raw.map(normalizeVariety)
     } catch {
       return mockVarieties
+    }
+  },
+
+  /** GET /dish-varieties/:id — variety detail with its published recipes. */
+  getVarietyById: async (id: string): Promise<DishVarietyDetail> => {
+    const res = await httpClient.get(`/dish-varieties/${id}`)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const d: any = res.data?.data
+    return {
+      id: String(d.id),
+      name: d.name ?? '',
+      description: d.description ?? null,
+      genreId: String(d.genre_id),
+      genre: d.dish_genre
+        ? { id: String(d.dish_genre.id), name: d.dish_genre.name }
+        : null,
+      recipes: (d.recipes ?? []).map((r: any) => ({
+        id: String(r.id),
+        title: r.title ?? '',
+        type: r.type === 'cultural' ? 'cultural' : 'community',
+        averageRating: r.average_rating ?? null,
+        ratingCount: r.rating_count ?? 0,
+        region: r.region ?? null,
+        createdAt: r.created_at ?? '',
+      })),
+    }
+  },
+
+  /** GET /meta/regions — hardcoded region list from backend. */
+  getRegions: async (): Promise<string[]> => {
+    try {
+      const res = await httpClient.get('/meta/regions')
+      const raw = res.data?.data
+      return Array.isArray(raw) ? raw : []
+    } catch {
+      return []
     }
   },
 }

@@ -36,7 +36,27 @@
   },
   "common": {
     "retry": "Tekrar dene",
-    "errorRetry": "Bir şeyler ters gitti. Lütfen tekrar deneyin."
+    "errorRetry": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
+    "goBack": "Geri dön"
+  },
+  "recipeDetail": {
+    "notFound": "Tarif bulunamadı.",
+    "cultural": "Kültürel",
+    "community": "Topluluk",
+    "by": "tarafından",
+    "servings": "{{count}} porsiyon",
+    "story": "Hikaye",
+    "ingredients": "Malzemeler",
+    "tools": "Gerekli Araçlar",
+    "instructions": "Talimatlar",
+    "video": "Video",
+    "watchVideo": "Videoyu izle",
+    "unknownIngredient": "Bilinmeyen malzeme"
+  },
+  "dishVariety": {
+    "notFound": "Yemek çeşidi bulunamadı.",
+    "recipes": "{{count}} Tarif",
+    "noRecipes": "Bu yemek çeşidi için henüz yayınlanmış tarif yok."
   },
   "create": {
     "title": "Tarif Oluştur",
