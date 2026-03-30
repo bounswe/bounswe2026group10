@@ -68,7 +68,7 @@ function normalizeRecipe(r: any): RecipeSummary {
     id: String(r.id),
     title: r.title ?? '',
     recipeType: r.type === 'cultural' ? 'cultural' : 'community',
-    region: r.region ?? undefined,
+    region: r.dish_variety?.region ?? undefined,
     averageRating: r.average_rating ?? undefined,
     ratingCount: r.rating_count ?? undefined,
     createdAt: r.created_at ?? undefined,
