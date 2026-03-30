@@ -166,4 +166,129 @@ router.get("/recipes", async (req, res) => {
   }
 );
 
+// ─── GET /discovery/recipes/by-ingredients ───────────────────────────────────
+// Returns published recipes whose ingredients are fully covered by the provided
+// ingredient list. Partial matches are excluded.
+//   ?ingredientIds=1,2,3   (comma-separated ingredient IDs, required)
+//   ?page=1&limit=20
+
+const byIngredientsQuerySchema = z.object({
+  ingredientIds: z.string().min(1, "ingredientIds is required"),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+router.get("/recipes/by-ingredients", async (req, res) => {
+    const parsed = byIngredientsQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      const message = parsed.error.issues
+        .map((i) => `${i.path.join(".")}: ${i.message}`)
+        .join("; ");
+      return res.status(400).json(errorResponse("VALIDATION_ERROR", message));
+    }
+
+    const { page, limit } = parsed.data;
+
+    // Parse and validate ingredient IDs
+    const ingredientIds = parsed.data.ingredientIds
+      .split(",")
+      .map(Number)
+      .filter((n) => Number.isInteger(n) && n > 0);
+
+    if (ingredientIds.length === 0) {
+      return res
+        .status(400)
+        .json(errorResponse("VALIDATION_ERROR", "ingredientIds must contain at least one valid positive integer"));
+    }
+
+    // ── Step 1: Find recipes that use ingredients NOT in the provided list ────
+    // These recipes cannot be fully made with the available ingredients.
+    const { data: excludedRows, error: excludeErr } = await supabase
+      .from("recipe_ingredients")
+      .select("recipe_id")
+      .not("ingredient_id", "in", `(${ingredientIds.join(",")})`);
+
+    if (excludeErr) {
+      return res
+        .status(500)
+        .json(errorResponse("DB_ERROR", excludeErr.message));
+    }
+
+    const excludedRecipeIds = [
+      ...new Set(excludedRows?.map((r) => r.recipe_id) ?? []),
+    ];
+
+    // ── Step 2: Find published recipes that have at least one ingredient ──────
+    // (recipes with no ingredients are excluded — they have no ingredient list to match)
+    const { data: recipesWithIngredients, error: riErr } = await supabase
+      .from("recipe_ingredients")
+      .select("recipe_id")
+      .in("ingredient_id", ingredientIds);
+
+    if (riErr) {
+      return res
+        .status(500)
+        .json(errorResponse("DB_ERROR", riErr.message));
+    }
+
+    const candidateRecipeIds = [
+      ...new Set(recipesWithIngredients?.map((r) => r.recipe_id) ?? []),
+    ];
+
+    // Keep only candidates that are NOT excluded
+    const eligibleRecipeIds = candidateRecipeIds.filter(
+      (id) => !excludedRecipeIds.includes(id)
+    );
+
+    if (eligibleRecipeIds.length === 0) {
+      return res.status(200).json(
+        successResponse({
+          recipes: [],
+          pagination: { page, limit, total: 0 },
+        })
+      );
+    }
+
+    // ── Step 3: Fetch full recipe data for eligible IDs ──────────────────────
+    let query = supabase
+      .from("recipes")
+      .select(
+        `id, title, type, average_rating, rating_count,
+         created_at, updated_at,
+         dish_variety:dish_varieties!recipes_dish_variety_id_fkey(
+           id, name, region,
+           dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name)
+         ),
+         profile:profiles!recipes_creator_id_fkey(id, username)`,
+        { count: "exact" }
+      )
+      .eq("is_published", true)
+      .in("id", eligibleRecipeIds);
+
+    // ── Step 4: Pagination ────────────────────────────────────────────────────
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+    query = query.range(from, to).order("average_rating", { ascending: false });
+
+    const { data: recipes, error: recipesError, count } = await query;
+
+    if (recipesError) {
+      return res
+        .status(500)
+        .json(errorResponse("DB_ERROR", recipesError.message));
+    }
+
+    return res.status(200).json(
+      successResponse({
+        recipes,
+        pagination: {
+          page,
+          limit,
+          total: count ?? 0,
+        },
+      })
+    );
+  }
+);
+
 export default router;
