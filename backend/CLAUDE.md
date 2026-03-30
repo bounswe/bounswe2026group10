@@ -51,6 +51,7 @@ backend/
 │   │   ├── recipes.ts           # Recipe CRUD, publish, ratings, media attach
 │   │   ├── media.ts             # File upload (images/videos)
 │   │   ├── discovery.ts         # Recipe discovery with filters
+│   │   ├── dietary-tags.ts      # Dietary/allergen tag listing
 │   │   ├── dish-genres.ts       # Cuisine genre listing
 │   │   └── dish-varieties.ts    # Dish variety listing, search, recipes
 │   ├── types/
@@ -62,6 +63,7 @@ backend/
 │       ├── middleware.test.ts
 │       ├── recipes.test.ts
 │       ├── discovery.test.ts
+│       ├── dietary-tags.test.ts
 │       ├── media.test.ts
 │       └── health.test.ts
 ├── Dockerfile
@@ -83,12 +85,14 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - **recipe_tools** — `id`, `recipe_id` (FK), `name`
 - **recipe_media** — `id`, `recipe_id` (FK), `url`, `type` (image|video), `created_at`
 - **ratings** — `id`, `recipe_id` (FK), `user_id` (FK profiles), `score` (1-5), `created_at`, `updated_at` — unique constraint on (recipe_id, user_id)
+- **recipe_dietary_tags** — `recipe_id` (FK recipes), `tag_id` (FK dietary_tags) — composite PK
 
 ### Reference Tables
 
 - **ingredients** — `id`, `name`
 - **allergens** — `id`, `name`
 - **ingredient_allergens** — `ingredient_id` (FK), `allergen_id` (FK)
+- **dietary_tags** — `id`, `name` (unique), `category` (dietary|allergen)
 - **dish_genres** — `id`, `name`, `description`
 - **dish_varieties** — `id`, `name`, `description`, `genre_id` (FK dish_genres), `region`
 
@@ -111,8 +115,8 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 
 ### Recipes (`/recipes`)
 - `GET /recipes/:id` — Recipe detail (public if published, creator-only if draft)
-- `POST /recipes` — Create recipe (cook/expert only)
-- `PATCH /recipes/:id` — Update draft (creator only, cook/expert)
+- `POST /recipes` — Create recipe (cook/expert only, accepts `tagIds`)
+- `PATCH /recipes/:id` — Update draft (creator only, cook/expert, accepts `tagIds`)
 - `POST /recipes/:id/publish` — Publish draft (validates completeness)
 - `POST /recipes/:id/ratings` — Rate recipe 1-5 (cannot self-rate, upsert)
 - `GET /recipes/:id/ratings/me` — Get own rating
@@ -129,9 +133,12 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - `GET /dish-varieties/:id` — Single variety with published recipes
 - `GET /dish-varieties/:id/recipes` — Variety recipes split into expertRecipe + communityRecipes
 
+### Dietary Tags (`/dietary-tags`)
+- `GET /dietary-tags` — List all supported dietary and allergen tags
+
 ### Discovery (`/discovery`)
 - `GET /discovery/recipes` — Filtered recipe discovery
-  - Query params: `region`, `genreId`, `varietyId`, `excludeAllergens` (comma-separated IDs), `page`, `limit`
+  - Query params: `region`, `genreId`, `varietyId`, `excludeAllergens` (comma-separated IDs), `tagIds` (comma-separated dietary tag IDs — only recipes with ALL specified tags), `page`, `limit`
 - `GET /discovery/recipes/by-ingredients` — Recipes fully makeable with provided ingredients
   - Query params: `ingredientIds` (comma-separated IDs, required), `page`, `limit`
   - Only returns recipes whose every ingredient is in the provided list; partial matches excluded

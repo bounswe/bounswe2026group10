@@ -58,6 +58,10 @@ const recipeSchema = z.object({
     )
     .optional()
     .default([]),
+  tagIds: z
+    .array(z.number().int().positive())
+    .optional()
+    .default([]),
 });
 
 const updateRecipeSchema = recipeSchema.partial();
@@ -80,7 +84,8 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
        recipe_ingredients(id, quantity, unit, ingredient:ingredients(id, name, ingredient_allergens(allergen:allergens(name)))),
        recipe_steps(id, step_order, description),
        recipe_tools(id, name),
-       recipe_media(id, url, type)`
+       recipe_media(id, url, type),
+       recipe_dietary_tags(dietary_tag:dietary_tags(id, name, category))`
     )
     .eq("id", recipeId)
     .single();
@@ -137,6 +142,11 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
         id: m.id,
         url: m.url,
         type: m.type,
+      })),
+      tags: ((data as any).recipe_dietary_tags ?? []).map((rt: any) => ({
+        id: rt.dietary_tag?.id ?? null,
+        name: rt.dietary_tag?.name ?? null,
+        category: rt.dietary_tag?.category ?? null,
       })),
       createdAt: data.created_at,
       updatedAt: data.updated_at,
@@ -234,6 +244,17 @@ router.post(
       );
     }
 
+    if (body.tagIds.length > 0) {
+      insertPromises.push(
+        userClient.from("recipe_dietary_tags").insert(
+          body.tagIds.map((tagId) => ({
+            recipe_id: recipeId,
+            tag_id: tagId,
+          }))
+        ).then(r => r)
+      );
+    }
+
     // Wait for all sub-inserts to complete
     const results = await Promise.all(insertPromises);
     const subError = results.find((r) => r.error);
@@ -258,6 +279,7 @@ router.post(
         ingredients: body.ingredients,
         steps: body.steps,
         tools: body.tools,
+        tagIds: body.tagIds,
         createdAt: recipe.created_at,
       })
     );
@@ -375,6 +397,20 @@ router.patch(
             body.tools.map((t) => ({
               recipe_id: recipeId,
               name: t.name,
+            }))
+          ).then(r => r)
+        );
+      }
+    }
+
+    if (body.tagIds) {
+      await userClient.from("recipe_dietary_tags").delete().eq("recipe_id", recipeId);
+      if (body.tagIds.length > 0) {
+        insertPromises.push(
+          userClient.from("recipe_dietary_tags").insert(
+            body.tagIds.map((tagId) => ({
+              recipe_id: recipeId,
+              tag_id: tagId,
             }))
           ).then(r => r)
         );

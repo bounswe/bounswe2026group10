@@ -11,6 +11,8 @@ const discoveryQuerySchema = z.object({
   region: z.string().optional(),
   // Comma-separated allergen IDs to exclude (e.g. "1,2,3")
   excludeAllergens: z.string().optional(),
+  // Comma-separated dietary tag IDs to require (e.g. "1,3" for Halal + Vegan)
+  tagIds: z.string().optional(),
   genreId: z.coerce.number().int().positive().optional(),
   varietyId: z.coerce.number().int().positive().optional(),
   page: z.coerce.number().int().min(1).default(1),
@@ -32,7 +34,55 @@ router.get("/recipes", async (req, res) => {
         .join("; ");
       return res.status(400).json(errorResponse("VALIDATION_ERROR", message));
     }
-    const { region, excludeAllergens, genreId, varietyId, page, limit } = parsed.data;
+    const { region, excludeAllergens, tagIds, genreId, varietyId, page, limit } = parsed.data;
+
+    // ── Step 0: Resolve tag filter ───────────────────────────────────────────
+    let tagFilteredRecipeIds: string[] | null = null;
+
+    if (tagIds) {
+      const parsedTagIds = tagIds
+        .split(",")
+        .map(Number)
+        .filter((n) => Number.isInteger(n) && n > 0);
+
+      if (parsedTagIds.length > 0) {
+        // Find recipes that have ALL the requested tags
+        const { data: tagRows, error: tagErr } = await supabase
+          .from("recipe_dietary_tags")
+          .select("recipe_id, tag_id")
+          .in("tag_id", parsedTagIds);
+
+        if (tagErr) {
+          return res.status(500).json(errorResponse("DB_ERROR", tagErr.message));
+        }
+
+        // Group by recipe_id and keep only those that have every requested tag
+        const recipeTagCounts = new Map<string, number>();
+        for (const row of tagRows ?? []) {
+          recipeTagCounts.set(
+            row.recipe_id,
+            (recipeTagCounts.get(row.recipe_id) ?? 0) + 1
+          );
+        }
+
+        tagFilteredRecipeIds = [];
+        for (const [recipeId, count] of recipeTagCounts) {
+          if (count >= parsedTagIds.length) {
+            tagFilteredRecipeIds.push(recipeId);
+          }
+        }
+
+        // No recipes match all tags → return empty immediately
+        if (tagFilteredRecipeIds.length === 0) {
+          return res.status(200).json(
+            successResponse({
+              recipes: [],
+              pagination: { page, limit, total: 0 },
+            })
+          );
+        }
+      }
+    }
 
     // ── Step 1: Resolve variety IDs to exclude based on allergens ─────────────
     let excludedRecipeIds: number[] = [];
@@ -138,6 +188,10 @@ router.get("/recipes", async (req, res) => {
 
     if (excludedRecipeIds.length > 0) {
       query = query.not("id", "in", `(${excludedRecipeIds.join(",")})`);
+    }
+
+    if (tagFilteredRecipeIds !== null) {
+      query = query.in("id", tagFilteredRecipeIds);
     }
 
     // ── Step 4: Pagination ────────────────────────────────────────────────────
