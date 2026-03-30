@@ -474,3 +474,278 @@ describe("Recipe Endpoints (Creation & Publishing)", () => {
     });
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Recipe Rating Endpoints", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  // Reuse the same setupMocks helper pattern from the file top-level mock
+  const setupMocks = (
+    role: string,
+    profileId = "profile-123",
+    recipeFromMock?: (table: string) => any
+  ) => {
+    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123", email: "test@example.com" } },
+      error: null,
+    });
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") {
+        const mockSingle = jest.fn().mockResolvedValue({
+          data: { id: profileId, username: "tester", role },
+          error: null,
+        });
+        const mockEq = jest.fn().mockReturnValue({ single: mockSingle });
+        return { select: jest.fn().mockReturnValue({ eq: mockEq }) };
+      }
+      if (recipeFromMock) return recipeFromMock(table);
+      return { select: jest.fn(), insert: jest.fn(), upsert: jest.fn(), delete: jest.fn() };
+    });
+  };
+
+  // ─── Chainable mock helper ─────────────────────────────────────────────────
+  const chainable = (resolved: { data: any; error: any }) => {
+    const mock: any = {};
+    const methods = ["select", "eq", "single", "upsert", "delete", "order"];
+    methods.forEach((m) => { mock[m] = jest.fn().mockReturnValue(mock); });
+    mock.then = (resolve: any) => Promise.resolve(resolved).then(resolve);
+    return mock;
+  };
+
+  // ─── POST /recipes/:id/ratings ─────────────────────────────────────────────
+
+  describe("POST /recipes/:id/ratings", () => {
+    it("returns 401 when unauthenticated", async () => {
+      const res = await request(app)
+        .post("/recipes/recipe-1/ratings")
+        .send({ score: 4 });
+      expect(res.status).toBe(401);
+    });
+
+    it("returns 400 for score = 0", async () => {
+      setupMocks("cook");
+      const res = await request(app)
+        .post("/recipes/recipe-1/ratings")
+        .set("Authorization", "Bearer valid_token")
+        .send({ score: 0 });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("returns 400 for score = 6", async () => {
+      setupMocks("cook");
+      const res = await request(app)
+        .post("/recipes/recipe-1/ratings")
+        .set("Authorization", "Bearer valid_token")
+        .send({ score: 6 });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("returns 400 for non-numeric score", async () => {
+      setupMocks("cook");
+      const res = await request(app)
+        .post("/recipes/recipe-1/ratings")
+        .set("Authorization", "Bearer valid_token")
+        .send({ score: "great" });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("returns 404 when recipe not found", async () => {
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes")
+          return chainable({ data: null, error: { code: "PGRST116", message: "Not found" } });
+      });
+
+      const res = await request(app)
+        .post("/recipes/nonexistent/ratings")
+        .set("Authorization", "Bearer valid_token")
+        .send({ score: 4 });
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe("NOT_FOUND");
+    });
+
+    it("returns 403 when rating own recipe", async () => {
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes")
+          return chainable({ data: { id: "recipe-1", creator_id: "profile-123" }, error: null });
+      });
+
+      const res = await request(app)
+        .post("/recipes/recipe-1/ratings")
+        .set("Authorization", "Bearer valid_token")
+        .send({ score: 5 });
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe("FORBIDDEN");
+    });
+
+    it("returns 200 on successful rating (happy path)", async () => {
+      const mockRating = {
+        id: "rating-1", recipe_id: "recipe-1", profile_id: "profile-123",
+        score: 4, created_at: "2024-01-01", updated_at: "2024-01-01",
+      };
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes")
+          return chainable({ data: { id: "recipe-1", creator_id: "profile-999" }, error: null });
+        if (table === "ratings")
+          return chainable({ data: mockRating, error: null });
+      });
+
+      const res = await request(app)
+        .post("/recipes/recipe-1/ratings")
+        .set("Authorization", "Bearer valid_token")
+        .send({ score: 4 });
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.score).toBe(4);
+    });
+
+    it("allows upsert — same user rating twice returns 200", async () => {
+      const mockRating = {
+        id: "rating-1", recipe_id: "recipe-1", profile_id: "profile-123",
+        score: 5, created_at: "2024-01-01", updated_at: "2024-01-02",
+      };
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes")
+          return chainable({ data: { id: "recipe-1", creator_id: "profile-999" }, error: null });
+        if (table === "ratings")
+          return chainable({ data: mockRating, error: null });
+      });
+
+      const res = await request(app)
+        .post("/recipes/recipe-1/ratings")
+        .set("Authorization", "Bearer valid_token")
+        .send({ score: 5 });
+      expect(res.status).toBe(200);
+      expect(res.body.data.score).toBe(5);
+    });
+
+    it("returns 500 on db error during upsert", async () => {
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes")
+          return chainable({ data: { id: "recipe-1", creator_id: "profile-999" }, error: null });
+        if (table === "ratings")
+          return chainable({ data: null, error: { message: "DB timeout" } });
+      });
+
+      const res = await request(app)
+        .post("/recipes/recipe-1/ratings")
+        .set("Authorization", "Bearer valid_token")
+        .send({ score: 3 });
+      expect(res.status).toBe(500);
+      expect(res.body.error.code).toBe("DB_ERROR");
+    });
+  });
+
+  // ─── GET /recipes/:id/ratings/me ───────────────────────────────────────────
+
+  describe("GET /recipes/:id/ratings/me", () => {
+    it("returns 401 when unauthenticated", async () => {
+      const res = await request(app).get("/recipes/recipe-1/ratings/me");
+      expect(res.status).toBe(401);
+    });
+
+    it("returns existing rating when user has rated", async () => {
+      const mockRating = { id: "rating-1", score: 4, created_at: "2024-01-01", updated_at: "2024-01-01" };
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "ratings")
+          return chainable({ data: mockRating, error: null });
+      });
+
+      const res = await request(app)
+        .get("/recipes/recipe-1/ratings/me")
+        .set("Authorization", "Bearer valid_token");
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.score).toBe(4);
+    });
+
+    it("returns null when user has not rated yet", async () => {
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "ratings")
+          return chainable({ data: null, error: { code: "PGRST116", message: "Not found" } });
+      });
+
+      const res = await request(app)
+        .get("/recipes/recipe-1/ratings/me")
+        .set("Authorization", "Bearer valid_token");
+      expect(res.status).toBe(200);
+      expect(res.body.data).toBeNull();
+    });
+
+    it("returns 500 on db error", async () => {
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "ratings")
+          return chainable({ data: null, error: { message: "DB timeout" } });
+      });
+
+      const res = await request(app)
+        .get("/recipes/recipe-1/ratings/me")
+        .set("Authorization", "Bearer valid_token");
+      expect(res.status).toBe(500);
+      expect(res.body.error.code).toBe("DB_ERROR");
+    });
+  });
+
+  // ─── DELETE /recipes/:id/ratings/me ────────────────────────────────────────
+
+  describe("DELETE /recipes/:id/ratings/me", () => {
+    it("returns 401 when unauthenticated", async () => {
+      const res = await request(app).delete("/recipes/recipe-1/ratings/me");
+      expect(res.status).toBe(401);
+    });
+
+    it("returns 404 when rating does not exist", async () => {
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "ratings")
+          return chainable({ data: null, error: { code: "PGRST116", message: "Not found" } });
+      });
+
+      const res = await request(app)
+        .delete("/recipes/recipe-1/ratings/me")
+        .set("Authorization", "Bearer valid_token");
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe("NOT_FOUND");
+    });
+
+    it("returns 204 on successful delete", async () => {
+      // First call (select to verify existence) succeeds, second call (delete) succeeds
+      let callCount = 0;
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "ratings") {
+          callCount++;
+          if (callCount === 1) return chainable({ data: { id: "rating-1" }, error: null });
+          return chainable({ data: null, error: null });
+        }
+      });
+
+      const res = await request(app)
+        .delete("/recipes/recipe-1/ratings/me")
+        .set("Authorization", "Bearer valid_token");
+      expect(res.status).toBe(204);
+    });
+
+    it("returns 500 on db error during delete", async () => {
+      let callCount = 0;
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "ratings") {
+          callCount++;
+          if (callCount === 1) return chainable({ data: { id: "rating-1" }, error: null });
+          return chainable({ data: null, error: { message: "DB timeout" } });
+        }
+      });
+
+      const res = await request(app)
+        .delete("/recipes/recipe-1/ratings/me")
+        .set("Authorization", "Bearer valid_token");
+      expect(res.status).toBe(500);
+      expect(res.body.error.code).toBe("DB_ERROR");
+    });
+  });
+});
