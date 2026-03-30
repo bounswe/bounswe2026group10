@@ -478,6 +478,147 @@ router.post("/:id/publish", requireAuth, async (req, res): Promise<void> => {
   );
 });
 
+// ─── Rating Schema ────────────────────────────────────────────────────────────
+
+const ratingSchema = z.object({
+  score: z
+    .number({ message: "Score must be a number." })
+    .int({ message: "Score must be an integer." })
+    .min(1, { message: "Score must be at least 1." })
+    .max(5, { message: "Score must be at most 5." }),
+});
+
+// ─── POST /recipes/:id/ratings ────────────────────────────────────────────────
+
+/**
+ * Submit or update a star rating for a recipe.
+ * Upsert logic: one rating per user per recipe.
+ * Cannot rate your own recipe.
+ * DB trigger update_recipe_rating() recalculates average_rating + rating_count automatically.
+ */
+router.post(
+  "/:id/ratings",
+  requireAuth,
+  validate(ratingSchema),
+  async (req, res): Promise<void> => {
+    const user = (req as AuthenticatedRequest).user;
+    const recipeId = req.params["id"];
+    const { score } = req.body as z.infer<typeof ratingSchema>;
+    const userClient = createUserClient(user.accessToken);
+
+    // 1. Verify recipe exists and check ownership
+    const { data: recipe, error: fetchError } = await supabase
+      .from("recipes")
+      .select("id, creator_id")
+      .eq("id", recipeId)
+      .single();
+
+    if (fetchError) {
+      if (fetchError.code === "PGRST116") {
+        res.status(404).json(errorResponse("NOT_FOUND", "Recipe not found."));
+        return;
+      }
+      res.status(500).json(errorResponse("DB_ERROR", fetchError.message));
+      return;
+    }
+
+    // 2. Cannot rate your own recipe
+    if ((recipe as any).creator_id === user.profileId) {
+      res.status(403).json(errorResponse("FORBIDDEN", "You cannot rate your own recipe."));
+      return;
+    }
+
+    // 3. Upsert rating (updates existing if same user already rated)
+    const { data, error: upsertError } = await userClient
+      .from("ratings")
+      .upsert(
+        { recipe_id: recipeId, user_id: user.profileId, score },
+        { onConflict: "recipe_id,user_id" }
+      )
+      .select("id, recipe_id, user_id, score, created_at, updated_at")
+      .single();
+
+    if (upsertError) {
+      res.status(500).json(errorResponse("DB_ERROR", upsertError.message));
+      return;
+    }
+
+    res.status(200).json(successResponse(data));
+  }
+);
+
+// ─── GET /recipes/:id/ratings/me ─────────────────────────────────────────────
+
+/**
+ * Get the current user's rating for a recipe.
+ * Returns null (with 200) if the user hasn't rated yet.
+ */
+router.get("/:id/ratings/me", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as AuthenticatedRequest).user;
+  const recipeId = req.params["id"];
+
+  const { data, error } = await supabase
+    .from("ratings")
+    .select("id, score, created_at, updated_at")
+    .eq("recipe_id", recipeId)
+    .eq("user_id", user.profileId)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      res.status(200).json(successResponse(null));
+      return;
+    }
+    res.status(500).json(errorResponse("DB_ERROR", error.message));
+    return;
+  }
+
+  res.status(200).json(successResponse(data));
+});
+
+// ─── DELETE /recipes/:id/ratings/me ──────────────────────────────────────────
+
+/**
+ * Delete the current user's rating for a recipe.
+ * DB trigger update_recipe_rating() recalculates average_rating + rating_count automatically.
+ */
+router.delete("/:id/ratings/me", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as AuthenticatedRequest).user;
+  const recipeId = req.params["id"];
+  const userClient = createUserClient(user.accessToken);
+
+  // 1. Check if rating exists
+  const { error: fetchError } = await userClient
+    .from("ratings")
+    .select("id")
+    .eq("recipe_id", recipeId)
+    .eq("user_id", user.profileId)
+    .single();
+
+  if (fetchError) {
+    if (fetchError.code === "PGRST116") {
+      res.status(404).json(errorResponse("NOT_FOUND", "Rating not found."));
+      return;
+    }
+    res.status(500).json(errorResponse("DB_ERROR", fetchError.message));
+    return;
+  }
+
+  // 2. Delete it
+  const { error: deleteError } = await userClient
+    .from("ratings")
+    .delete()
+    .eq("recipe_id", recipeId)
+    .eq("user_id", user.profileId);
+
+  if (deleteError) {
+    res.status(500).json(errorResponse("DB_ERROR", deleteError.message));
+    return;
+  }
+
+  res.status(204).send();
+});
+
 // ─── POST /recipes/:id/media ──────────────────────────────────────────────────
 
 const attachMediaSchema = z.object({
