@@ -494,3 +494,194 @@ describe("GET /discovery/recipes", () => {
     expect(res.body.error.code).toBe("DB_ERROR");
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("GET /discovery/recipes/by-ingredients", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  const mockRecipes = [
+    {
+      id: 1, title: "Simple Salad", type: "community",
+      average_rating: 4.2, rating_count: 10,
+      created_at: "2024-01-01", updated_at: "2024-01-01",
+      dish_variety: { id: 1, name: "Green Salad", dish_genre: { id: 1, name: "Salad" } },
+      profile: { id: "p1", username: "cook1" },
+    },
+  ];
+
+  it("returns recipes fully covered by provided ingredients", async () => {
+    // recipe_ingredients NOT in list → no excluded recipes
+    // recipe_ingredients IN list → recipe 1 is a candidate
+    // recipes query → returns recipe 1
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "recipe_ingredients") {
+        const call = (supabase.from as jest.Mock).mock.calls.filter(
+          (c: any[]) => c[0] === "recipe_ingredients"
+        ).length;
+        if (call === 1) {
+          // First call: NOT in ingredientIds → no rows (no missing ingredients)
+          return chainable({ data: [], error: null });
+        }
+        // Second call: IN ingredientIds → recipe 1 uses these ingredients
+        return chainable({ data: [{ recipe_id: 1 }], error: null });
+      }
+      if (table === "recipes") {
+        return chainable({ data: mockRecipes, error: null, count: 1 });
+      }
+    });
+
+    const res = await request(app).get("/discovery/recipes/by-ingredients?ingredientIds=1,2,3");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(res.body.data.recipes[0].title).toBe("Simple Salad");
+    expect(res.body.data.pagination).toMatchObject({ page: 1, limit: 20, total: 1 });
+  });
+
+  it("excludes recipes with ingredients not in provided list", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "recipe_ingredients") {
+        const call = (supabase.from as jest.Mock).mock.calls.filter(
+          (c: any[]) => c[0] === "recipe_ingredients"
+        ).length;
+        if (call === 1) {
+          // Recipe 1 needs ingredient 5 which is NOT in the provided list
+          return chainable({ data: [{ recipe_id: 1 }], error: null });
+        }
+        // Recipe 1 also uses ingredients in the provided list
+        return chainable({ data: [{ recipe_id: 1 }], error: null });
+      }
+    });
+
+    const res = await request(app).get("/discovery/recipes/by-ingredients?ingredientIds=1,2");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(0);
+    expect(res.body.data.pagination.total).toBe(0);
+  });
+
+  it("returns 400 when ingredientIds is missing", async () => {
+    const res = await request(app).get("/discovery/recipes/by-ingredients");
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 400 when ingredientIds contains no valid numbers", async () => {
+    const res = await request(app).get("/discovery/recipes/by-ingredients?ingredientIds=abc,xyz");
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns empty when no recipes have ingredients matching the list", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "recipe_ingredients") {
+        return chainable({ data: [], error: null });
+      }
+    });
+
+    const res = await request(app).get("/discovery/recipes/by-ingredients?ingredientIds=999");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(0);
+    expect(res.body.data.pagination.total).toBe(0);
+  });
+
+  it("respects pagination params", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "recipe_ingredients") {
+        const call = (supabase.from as jest.Mock).mock.calls.filter(
+          (c: any[]) => c[0] === "recipe_ingredients"
+        ).length;
+        if (call === 1) return chainable({ data: [], error: null });
+        return chainable({ data: [{ recipe_id: 1 }], error: null });
+      }
+      if (table === "recipes") {
+        return chainable({ data: mockRecipes, error: null, count: 50 });
+      }
+    });
+
+    const res = await request(app).get("/discovery/recipes/by-ingredients?ingredientIds=1,2&page=2&limit=10");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.pagination).toMatchObject({ page: 2, limit: 10, total: 50 });
+  });
+
+  it("returns 400 for invalid page param", async () => {
+    const res = await request(app).get("/discovery/recipes/by-ingredients?ingredientIds=1&page=0");
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 400 for limit exceeding 100", async () => {
+    const res = await request(app).get("/discovery/recipes/by-ingredients?ingredientIds=1&limit=200");
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 500 on database error in exclusion query", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "recipe_ingredients") {
+        return chainable({ data: null, error: { message: "DB timeout" } });
+      }
+    });
+
+    const res = await request(app).get("/discovery/recipes/by-ingredients?ingredientIds=1,2");
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("DB_ERROR");
+  });
+
+  it("returns 500 on database error in recipe fetch", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "recipe_ingredients") {
+        const call = (supabase.from as jest.Mock).mock.calls.filter(
+          (c: any[]) => c[0] === "recipe_ingredients"
+        ).length;
+        if (call === 1) return chainable({ data: [], error: null });
+        return chainable({ data: [{ recipe_id: 1 }], error: null });
+      }
+      if (table === "recipes") {
+        return chainable({ data: null, error: { message: "DB timeout" }, count: null });
+      }
+    });
+
+    const res = await request(app).get("/discovery/recipes/by-ingredients?ingredientIds=1,2");
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("DB_ERROR");
+  });
+
+  it("ignores negative and zero values in ingredientIds", async () => {
+    const res = await request(app).get("/discovery/recipes/by-ingredients?ingredientIds=0,-1,-5");
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("handles mixed valid and invalid ingredientIds gracefully", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "recipe_ingredients") {
+        const call = (supabase.from as jest.Mock).mock.calls.filter(
+          (c: any[]) => c[0] === "recipe_ingredients"
+        ).length;
+        if (call === 1) return chainable({ data: [], error: null });
+        return chainable({ data: [{ recipe_id: 1 }], error: null });
+      }
+      if (table === "recipes") {
+        return chainable({ data: mockRecipes, error: null, count: 1 });
+      }
+    });
+
+    const res = await request(app).get("/discovery/recipes/by-ingredients?ingredientIds=1,abc,2");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.recipes).toHaveLength(1);
+  });
+});
