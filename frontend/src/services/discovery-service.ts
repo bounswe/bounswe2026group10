@@ -1,5 +1,4 @@
 import { httpClient } from '@/lib/http-client'
-import { mockGenres, mockRecipes, mockVarieties } from '@/mocks/discovery-mock'
 
 // ── Public types (camelCase — used by components) ────────────────────────────
 
@@ -115,43 +114,28 @@ function normalizeVariety(v: any): DishVariety {
 
 export const discoveryService = {
   getRecipes: async (params?: DiscoveryParams): Promise<RecipeSummary[]> => {
-    try {
-      const res = await httpClient.get('/discovery/recipes', { params })
-      const payload = res.data?.data
-      const raw: unknown[] = Array.isArray(payload)
-        ? payload
-        : Array.isArray(payload?.recipes)
-          ? payload.recipes
-          : []
-      if (raw.length === 0) return mockRecipes
-      return raw.map(normalizeRecipe)
-    } catch {
-      return mockRecipes
-    }
+    const res = await httpClient.get('/discovery/recipes', { params })
+    const payload = res.data?.data
+    const raw: unknown[] = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.recipes)
+        ? payload.recipes
+        : []
+    return raw.map(normalizeRecipe)
   },
 
   getGenres: async (): Promise<Genre[]> => {
-    try {
-      const res = await httpClient.get('/dish-genres')
-      const raw: unknown[] = Array.isArray(res.data?.data) ? res.data.data : []
-      if (raw.length === 0) return mockGenres
-      return raw.map(normalizeGenre)
-    } catch {
-      return mockGenres
-    }
+    const res = await httpClient.get('/dish-genres')
+    const raw: unknown[] = Array.isArray(res.data?.data) ? res.data.data : []
+    return raw.map(normalizeGenre)
   },
 
   /** Backend supports ?genreId=<number> only. Text search is done client-side. */
   getVarieties: async (params?: { genreId?: string }): Promise<DishVariety[]> => {
-    try {
-      const query = params?.genreId ? { genreId: params.genreId } : undefined
-      const res = await httpClient.get('/dish-varieties', { params: query })
-      const raw: unknown[] = Array.isArray(res.data?.data) ? res.data.data : []
-      if (raw.length === 0) return mockVarieties
-      return raw.map(normalizeVariety)
-    } catch {
-      return mockVarieties
-    }
+    const query = params?.genreId ? { genreId: params.genreId } : undefined
+    const res = await httpClient.get('/dish-varieties', { params: query })
+    const raw: unknown[] = Array.isArray(res.data?.data) ? res.data.data : []
+    return raw.map(normalizeVariety)
   },
 
   /** GET /dish-varieties/:id — variety detail with its published recipes. */
