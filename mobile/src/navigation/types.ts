@@ -21,6 +21,7 @@ export type CreateStackParamList = {
   CreateBasicInfo: undefined;
   CreateIngredientsTools: undefined;
   CreateSteps: undefined;
+  CreateReview: undefined;
 };
 
 export type LibraryStackParamList = {
