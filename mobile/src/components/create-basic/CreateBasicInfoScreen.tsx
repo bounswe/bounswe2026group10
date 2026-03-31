@@ -15,9 +15,11 @@ import { ChipSelector } from '../shared/ChipSelector';
 import { StepHeader } from './StepHeader';
 import { ImportCards } from './ImportCards';
 import { OriginSection } from './OriginSection';
+import { useRecipeForm } from '../../context/RecipeFormContext';
 
 export function CreateBasicInfoScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
+  const { updateDraft } = useRecipeForm();
   const [title, setTitle] = useState('');
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
@@ -50,6 +52,18 @@ export function CreateBasicInfoScreen() {
 
   const handleNext = () => {
     if (validate()) {
+      updateDraft({
+        title,
+        type: 'COMMUNITY',
+        originCountry: country,
+        originCity: city,
+        originDistrict: district,
+        genreId,
+        varietyId,
+        dietaryTags,
+        allergenTags,
+        story,
+      });
       navigation.navigate('CreateIngredientsTools');
     }
   };

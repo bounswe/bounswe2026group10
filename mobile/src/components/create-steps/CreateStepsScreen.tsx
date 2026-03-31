@@ -18,6 +18,10 @@ import { IconButton } from '../shared/IconButton';
 import { StepHeader } from '../create-basic/StepHeader';
 import { StepEditor } from './StepEditor';
 import type { StepFormItem, StepFormItemErrors } from './StepEditor';
+import { uploadVideo } from '../../api/video';
+import { useRecipeForm } from '../../context/RecipeFormContext';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { CreateStackParamList } from '../../navigation/types';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -40,7 +44,8 @@ function createEmptyStep(): StepFormItem {
 }
 
 export function CreateStepsScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
+  const { updateDraft } = useRecipeForm();
   const [steps, setSteps] = useState<StepFormItem[]>([createEmptyStep()]);
   const [stepErrors, setStepErrors] = useState<Record<string, StepFormItemErrors>>({});
 
@@ -76,8 +81,8 @@ export function CreateStepsScreen() {
 
     for (const step of steps) {
       const errs: StepFormItemErrors = {};
-      if (!step.description.trim()) {
-        errs.description = 'Description is required';
+      if (!step.title.trim()) {
+        errs.title = 'Title is required';
       }
       if (!step.videoUri) {
         errs.video = 'A video is required for each step';
@@ -99,10 +104,28 @@ export function CreateStepsScreen() {
     return true;
   };
 
-  const handleNext = () => {
-    if (validate()) {
-      Alert.alert('Next', 'Navigation to Review screen coming soon.');
-    }
+  const handleNext = async () => {
+    if (!validate()) return;
+
+    console.log('[submit] all steps valid — uploading videos...');
+    const uploadedUrls = await Promise.all(
+      steps.map(async (step, index) => {
+        console.log(`[video] uploading step ${index + 1}:`, step.videoUri);
+        const { url } = await uploadVideo(step.videoUri!);
+        console.log(`[video] step ${index + 1} upload complete:`, url);
+        return url;
+      })
+    );
+    console.log('[submit] all uploads complete:', uploadedUrls);
+
+    updateDraft({
+      steps: steps.map((s, i) => ({
+        title: s.title,
+        description: s.description,
+        videoUrl: uploadedUrls[i],
+      })),
+    });
+    navigation.navigate('CreateReview');
   };
 
   const handleSaveDraft = () => {

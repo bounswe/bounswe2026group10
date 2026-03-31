@@ -13,6 +13,7 @@ import { StepHeader } from '../create-basic/StepHeader';
 import { IngredientRowEditor } from './IngredientRowEditor';
 import type { IngredientFormItem } from './IngredientRowEditor';
 import { ToolSearchSection } from './ToolSearchSection';
+import { useRecipeForm } from '../../context/RecipeFormContext';
 
 let nextId = 1;
 function generateId(): string {
@@ -25,6 +26,7 @@ function createEmptyIngredient(): IngredientFormItem {
 
 export function CreateIngredientsToolsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
+  const { updateDraft } = useRecipeForm();
   const [ingredients, setIngredients] = useState<IngredientFormItem[]>([
     createEmptyIngredient(),
   ]);
@@ -93,6 +95,7 @@ export function CreateIngredientsToolsScreen() {
 
   const handleNext = () => {
     if (validate()) {
+      updateDraft({ ingredients, tools });
       navigation.navigate('CreateSteps');
     }
   };
