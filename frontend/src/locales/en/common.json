@@ -60,6 +60,8 @@
     "by": "by",
     "servings": "{{count}} servings",
     "servingsLabel": "Servings",
+    "servingsDecreaseAria": "Decrease servings",
+    "servingsIncreaseAria": "Increase servings",
     "story": "Story",
     "ingredients": "Ingredients",
     "tools": "Tools Needed",
@@ -68,6 +70,7 @@
     "watchVideo": "Watch video",
     "mediaGallery": "More photos",
     "galleryImageAlt": "Recipe photo {{n}}",
+    "videoPlayerAria": "Recipe video",
     "unknownIngredient": "Unknown ingredient",
     "commentsRatings": "Comments & Ratings ({{count}})",
     "startCookingMode": "Start Cooking Mode",
@@ -129,17 +132,20 @@
       "namePlaceholder": "Ingredient name",
       "amountPlaceholder": "Amount",
       "add": "Add",
+      "removeAria": "Remove ingredient",
       "infoNote": "Ingredients are shown for reference only and are not yet saved to the database."
     },
     "tools": {
       "title": "Tools Needed",
       "placeholder": "Tool name (e.g. Mixing bowl)",
-      "add": "Add"
+      "add": "Add",
+      "removeAria": "Remove tool"
     },
     "instructions": {
       "title": "Instructions",
       "stepPlaceholder": "Describe this step...",
-      "addStep": "Add Step"
+      "addStep": "Add Step",
+      "removeAria": "Remove step"
     },
     "review": {
       "title": "Review & Publish",
@@ -167,7 +173,9 @@
       "errorSizeVideo": "Video must be 100 MB or smaller.",
       "errorMaxFiles": "You can add at most 10 files.",
       "reviewCount": "{{count}} file(s) will upload after save",
-      "errorMediaAfterCreate": "Recipe saved, but uploading media failed. You can try adding files again later."
+      "errorMediaAfterCreate": "Recipe saved, but uploading media failed. You can try adding files again later.",
+      "uploading": "Uploading media…",
+      "chooseAria": "Select photos or MP4 video files from your device"
     }
   }
 }

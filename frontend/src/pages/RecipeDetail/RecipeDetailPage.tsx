@@ -404,12 +404,17 @@ export function RecipeDetailPage() {
                 type="button"
                 className="recipe-detail__servings-btn"
                 onClick={() => setServings((s) => Math.max(1, s - 1))}
-                aria-label="Decrease servings"
+                aria-label={t('recipeDetail.servingsDecreaseAria')}
               >
                 −
               </button>
               <span className="recipe-detail__servings-value">{servings}</span>
-              <button type="button" className="recipe-detail__servings-btn" onClick={() => setServings((s) => s + 1)} aria-label="Increase servings">
+              <button
+                type="button"
+                className="recipe-detail__servings-btn"
+                onClick={() => setServings((s) => s + 1)}
+                aria-label={t('recipeDetail.servingsIncreaseAria')}
+              >
                 +
               </button>
             </div>
@@ -487,6 +492,7 @@ export function RecipeDetailPage() {
                   playsInline
                   preload="metadata"
                   src={m.url}
+                  aria-label={t('recipeDetail.videoPlayerAria')}
                 >
                   {t('recipeDetail.video')}
                 </video>

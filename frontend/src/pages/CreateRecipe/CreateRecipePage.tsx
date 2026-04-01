@@ -127,6 +127,7 @@ export function CreateRecipePage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [pendingMediaFiles, setPendingMediaFiles] = useState<File[]>([])
   const [mediaPickError, setMediaPickError] = useState<string | null>(null)
+  const [uploadingMedia, setUploadingMedia] = useState(false)
 
   // Cook can only create community; expert can create both
   const canCreateCultural = role === 'expert'
@@ -231,12 +232,17 @@ export function CreateRecipePage() {
       recipeCreated = true
 
       if (pendingMediaFiles.length > 0) {
-        for (const file of pendingMediaFiles) {
-          const uploaded = await mediaService.uploadFile(file)
-          await mediaService.attachRecipeMedia(created.id, {
-            url: uploaded.url,
-            type: uploaded.type,
-          })
+        setUploadingMedia(true)
+        try {
+          for (const file of pendingMediaFiles) {
+            const uploaded = await mediaService.uploadFile(file)
+            await mediaService.attachRecipeMedia(created.id, {
+              url: uploaded.url,
+              type: uploaded.type,
+            })
+          }
+        } finally {
+          setUploadingMedia(false)
         }
       }
 
@@ -253,6 +259,7 @@ export function CreateRecipePage() {
         setSubmitError(t('create.errorCreate'))
       }
     } finally {
+      setUploadingMedia(false)
       setSubmitting(false)
     }
   }
@@ -297,7 +304,7 @@ export function CreateRecipePage() {
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="cr-header">
-        <button type="button" className="cr-header__back" onClick={goBack} aria-label="Back">
+        <button type="button" className="cr-header__back" onClick={goBack} aria-label={t('common.goBack')}>
           <ChevronLeftIcon />
         </button>
         <h2 className="cr-header__title">
@@ -422,16 +429,21 @@ export function CreateRecipePage() {
             {/* Photos & video (upload after recipe is created) */}
             <div className="cr-field cr-media">
               <span className="cr-label">{t('create.media.title')}</span>
-              <p className="cr-media__hint">{t('create.media.hint')}</p>
+              <p id="cr-media-hint" className="cr-media__hint">
+                {t('create.media.hint')}
+              </p>
               <div className="cr-media__row">
-                <label className="cr-media__choose">
+                <label className="cr-media__choose" htmlFor="cr-media-input">
                   <input
+                    id="cr-media-input"
                     type="file"
                     className="cr-media__input"
                     accept="image/jpeg,image/png,image/webp,video/mp4"
                     multiple
                     disabled={submitting}
                     onChange={handleMediaFilesChange}
+                    aria-describedby="cr-media-hint"
+                    aria-label={t('create.media.chooseAria')}
                   />
                   <span className="cr-media__choose-btn">{t('create.media.chooseFiles')}</span>
                 </label>
@@ -492,7 +504,7 @@ export function CreateRecipePage() {
                         type="button"
                         className="cr-trash-btn"
                         onClick={() => removeIngredient(idx)}
-                        aria-label="Remove ingredient"
+                        aria-label={t('create.ingredients.removeAria')}
                       >
                         <TrashIcon />
                       </button>
@@ -525,7 +537,7 @@ export function CreateRecipePage() {
                         type="button"
                         className="cr-trash-btn"
                         onClick={() => removeTool(idx)}
-                        aria-label="Remove tool"
+                        aria-label={t('create.tools.removeAria')}
                       >
                         <TrashIcon />
                       </button>
@@ -565,7 +577,7 @@ export function CreateRecipePage() {
                         type="button"
                         className="cr-trash-btn"
                         onClick={() => removeStep(idx)}
-                        aria-label="Remove step"
+                        aria-label={t('create.instructions.removeAria')}
                       >
                         <TrashIcon />
                       </button>
@@ -650,6 +662,12 @@ export function CreateRecipePage() {
           </div>
         )}
       </div>
+
+      {submitting && uploadingMedia && (
+        <div className="cr-media-status" role="status" aria-live="polite">
+          {t('create.media.uploading')}
+        </div>
+      )}
 
       {/* ── Fixed bottom action bar ───────────────────────────────────────── */}
       <div className="cr-actions">
