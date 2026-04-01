@@ -444,6 +444,7 @@
 
 .cr-review-counts {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-xl);
 }
 
@@ -451,6 +452,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+.cr-review-count--full {
+  flex: 1 0 100%;
 }
 
 .cr-review-count__label {
@@ -482,6 +487,88 @@
   padding: var(--space-sm) var(--space-md);
   background: rgba(186, 26, 26, 0.06);
   border-radius: var(--radius-sm);
+}
+
+.cr-error--inline {
+  margin-top: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+/* ── Media picker (step 1) ─────────────────────────────────────────────── */
+
+.cr-media__hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.cr-media__row {
+  margin-top: var(--space-xs);
+}
+
+.cr-media__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cr-media__choose {
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.cr-media__choose-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-main);
+  border: 1px solid rgba(134, 69, 42, 0.35);
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  transition: background var(--transition-fast);
+}
+
+.cr-media__choose:hover .cr-media__choose-btn {
+  background: var(--surface-overlay);
+}
+
+.cr-media__list {
+  list-style: none;
+  margin: var(--space-sm) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.cr-media__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--surface-overlay);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.cr-media__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  color: var(--text-primary);
 }
 
 /* ── Fixed bottom action bar ────────────────────────────────────────────── */

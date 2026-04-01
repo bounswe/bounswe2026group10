@@ -60,12 +60,17 @@
     "by": "tarafından",
     "servings": "{{count}} porsiyon",
     "servingsLabel": "Porsiyon",
+    "servingsDecreaseAria": "Porsiyonu azalt",
+    "servingsIncreaseAria": "Porsiyonu artır",
     "story": "Hikaye",
     "ingredients": "Malzemeler",
     "tools": "Gerekli Araçlar",
     "instructions": "Talimatlar",
     "video": "Video",
     "watchVideo": "Videoyu izle",
+    "mediaGallery": "Diğer fotoğraflar",
+    "galleryImageAlt": "Tarif fotoğrafı {{n}}",
+    "videoPlayerAria": "Tarif videosu",
     "unknownIngredient": "Bilinmeyen malzeme",
     "commentsRatings": "Yorumlar ve Puanlar ({{count}})",
     "startCookingMode": "Pişirme Modunu Başlat",
@@ -127,17 +132,20 @@
       "namePlaceholder": "Malzeme adı",
       "amountPlaceholder": "Miktar",
       "add": "Ekle",
+      "removeAria": "Malzemeyi kaldır",
       "infoNote": "Malzemeler yalnızca referans için gösterilmektedir ve henüz veritabanına kaydedilmemektedir."
     },
     "tools": {
       "title": "Gerekli Araçlar",
       "placeholder": "Araç adı (örn. Karıştırma kabı)",
-      "add": "Ekle"
+      "add": "Ekle",
+      "removeAria": "Aracı kaldır"
     },
     "instructions": {
       "title": "Talimatlar",
       "stepPlaceholder": "Bu adımı açıklayın...",
-      "addStep": "Adım Ekle"
+      "addStep": "Adım Ekle",
+      "removeAria": "Adımı kaldır"
     },
     "review": {
       "title": "İncele ve Yayınla",
@@ -154,6 +162,20 @@
     },
     "successDraft": "Tarif taslak olarak kaydedildi!",
     "successPublished": "Tarif yayınlandı!",
-    "errorCreate": "Tarif oluşturulamadı. Lütfen tekrar deneyin."
+    "errorCreate": "Tarif oluşturulamadı. Lütfen tekrar deneyin.",
+    "media": {
+      "title": "Fotoğraf ve video (isteğe bağlı)",
+      "hint": "JPEG, PNG veya WebP görseller (dosya başına en fazla 10 MB) ve MP4 video (en fazla 100 MB). Dosyalar tarif oluşturulduktan sonra yüklenir.",
+      "chooseFiles": "Dosya seç",
+      "removeAria": "Dosyayı kaldır",
+      "errorType": "Yalnızca JPEG, PNG, WebP görselleri ve MP4 video kabul edilir.",
+      "errorSizeImage": "Her görsel en fazla 10 MB olmalıdır.",
+      "errorSizeVideo": "Video en fazla 100 MB olmalıdır.",
+      "errorMaxFiles": "En fazla 10 dosya ekleyebilirsiniz.",
+      "reviewCount": "Kayıttan sonra yüklenecek {{count}} dosya",
+      "errorMediaAfterCreate": "Tarif kaydedildi ancak medya yüklenemedi. Daha sonra tekrar deneyebilirsiniz.",
+      "uploading": "Medyalar yükleniyor…",
+      "chooseAria": "Cihazınızdan fotoğraf veya MP4 video dosyası seçin"
+    }
   }
 }

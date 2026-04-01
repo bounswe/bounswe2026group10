@@ -1,10 +1,34 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { isAxiosError } from 'axios'
 import { discoveryService, type DishVariety } from '@/services/discovery-service'
 import { recipeService } from '@/services/recipe-service'
+import { mediaService } from '@/services/media-service'
 import { useUserRole } from '@/hooks/useUserRole'
 import './CreateRecipePage.css'
+
+/** Aligned with backend `media.ts` */
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
+const ALLOWED_VIDEO_TYPES = ['video/mp4'] as const
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024
+const MAX_MEDIA_FILES = 10
+
+function validateMediaFile(file: File): string | null {
+  const isImage = ALLOWED_IMAGE_TYPES.includes(file.type as (typeof ALLOWED_IMAGE_TYPES)[number])
+  const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type as (typeof ALLOWED_VIDEO_TYPES)[number])
+  if (!isImage && !isVideo) {
+    return 'create.media.errorType'
+  }
+  if (isImage && file.size > MAX_IMAGE_SIZE) {
+    return 'create.media.errorSizeImage'
+  }
+  if (isVideo && file.size > MAX_VIDEO_SIZE) {
+    return 'create.media.errorSizeVideo'
+  }
+  return null
+}
 
 // ── Local types ────────────────────────────────────────────────────────────────
 
@@ -101,6 +125,9 @@ export function CreateRecipePage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [pendingMediaFiles, setPendingMediaFiles] = useState<File[]>([])
+  const [mediaPickError, setMediaPickError] = useState<string | null>(null)
+  const [uploadingMedia, setUploadingMedia] = useState(false)
 
   // Cook can only create community; expert can create both
   const canCreateCultural = role === 'expert'
@@ -150,11 +177,43 @@ export function CreateRecipePage() {
 
   // ── Submit ───────────────────────────────────────────────────────────────────
 
+  const removePendingMedia = (idx: number) => {
+    setPendingMediaFiles((list) => list.filter((_, i) => i !== idx))
+    setMediaPickError(null)
+  }
+
+  const handleMediaFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMediaPickError(null)
+    const { files } = e.target
+    if (!files?.length) {
+      e.target.value = ''
+      return
+    }
+    const next: File[] = [...pendingMediaFiles]
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const errKey = validateMediaFile(file)
+      if (errKey) {
+        setMediaPickError(t(errKey))
+        break
+      }
+      if (next.length >= MAX_MEDIA_FILES) {
+        setMediaPickError(t('create.media.errorMaxFiles'))
+        break
+      }
+      next.push(file)
+    }
+    setPendingMediaFiles(next)
+    e.target.value = ''
+  }
+
   const handleSubmit = async (publish: boolean) => {
     setSubmitError(null)
+    setMediaPickError(null)
     setSubmitting(true)
+    let recipeCreated = false
     try {
-      await recipeService.create({
+      const created = await recipeService.create({
         title: draft.title.trim(),
         story: draft.story.trim() || undefined,
         type: draft.type,
@@ -170,11 +229,37 @@ export function CreateRecipePage() {
         // API available yet, so they are not submitted. Future work: add GET /ingredients.
         isPublished: publish,
       })
+      recipeCreated = true
+
+      if (pendingMediaFiles.length > 0) {
+        setUploadingMedia(true)
+        try {
+          for (const file of pendingMediaFiles) {
+            const uploaded = await mediaService.uploadFile(file)
+            await mediaService.attachRecipeMedia(created.id, {
+              url: uploaded.url,
+              type: uploaded.type,
+            })
+          }
+        } finally {
+          setUploadingMedia(false)
+        }
+      }
+
       setSuccessMsg(publish ? t('create.successPublished') : t('create.successDraft'))
+      setPendingMediaFiles([])
       setTimeout(() => navigate('/home'), 1800)
-    } catch {
-      setSubmitError(t('create.errorCreate'))
+    } catch (err: unknown) {
+      if (recipeCreated) {
+        setSubmitError(t('create.media.errorMediaAfterCreate'))
+      } else if (isAxiosError(err)) {
+        const msg = (err.response?.data as { error?: { message?: string } } | undefined)?.error?.message
+        setSubmitError(msg || t('create.errorCreate'))
+      } else {
+        setSubmitError(t('create.errorCreate'))
+      }
     } finally {
+      setUploadingMedia(false)
       setSubmitting(false)
     }
   }
@@ -219,7 +304,7 @@ export function CreateRecipePage() {
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="cr-header">
-        <button type="button" className="cr-header__back" onClick={goBack} aria-label="Back">
+        <button type="button" className="cr-header__back" onClick={goBack} aria-label={t('common.goBack')}>
           <ChevronLeftIcon />
         </button>
         <h2 className="cr-header__title">
@@ -340,6 +425,48 @@ export function CreateRecipePage() {
                 })}
               </div>
             </div>
+
+            {/* Photos & video (upload after recipe is created) */}
+            <div className="cr-field cr-media">
+              <span className="cr-label">{t('create.media.title')}</span>
+              <p id="cr-media-hint" className="cr-media__hint">
+                {t('create.media.hint')}
+              </p>
+              <div className="cr-media__row">
+                <label className="cr-media__choose" htmlFor="cr-media-input">
+                  <input
+                    id="cr-media-input"
+                    type="file"
+                    className="cr-media__input"
+                    accept="image/jpeg,image/png,image/webp,video/mp4"
+                    multiple
+                    disabled={submitting}
+                    onChange={handleMediaFilesChange}
+                    aria-describedby="cr-media-hint"
+                    aria-label={t('create.media.chooseAria')}
+                  />
+                  <span className="cr-media__choose-btn">{t('create.media.chooseFiles')}</span>
+                </label>
+              </div>
+              {mediaPickError && <p className="cr-error cr-error--inline">{mediaPickError}</p>}
+              {pendingMediaFiles.length > 0 && (
+                <ul className="cr-media__list">
+                  {pendingMediaFiles.map((file, idx) => (
+                    <li key={`${file.name}-${file.size}-${idx}`} className="cr-media__item">
+                      <span className="cr-media__name">{file.name}</span>
+                      <button
+                        type="button"
+                        className="cr-trash-btn"
+                        onClick={() => removePendingMedia(idx)}
+                        aria-label={t('create.media.removeAria')}
+                      >
+                        <TrashIcon />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         )}
 
@@ -377,7 +504,7 @@ export function CreateRecipePage() {
                         type="button"
                         className="cr-trash-btn"
                         onClick={() => removeIngredient(idx)}
-                        aria-label="Remove ingredient"
+                        aria-label={t('create.ingredients.removeAria')}
                       >
                         <TrashIcon />
                       </button>
@@ -410,7 +537,7 @@ export function CreateRecipePage() {
                         type="button"
                         className="cr-trash-btn"
                         onClick={() => removeTool(idx)}
-                        aria-label="Remove tool"
+                        aria-label={t('create.tools.removeAria')}
                       >
                         <TrashIcon />
                       </button>
@@ -450,7 +577,7 @@ export function CreateRecipePage() {
                         type="button"
                         className="cr-trash-btn"
                         onClick={() => removeStep(idx)}
-                        aria-label="Remove step"
+                        aria-label={t('create.instructions.removeAria')}
                       >
                         <TrashIcon />
                       </button>
@@ -497,6 +624,14 @@ export function CreateRecipePage() {
               <div className="cr-review-card__divider" />
 
               <div className="cr-review-counts">
+                {pendingMediaFiles.length > 0 && (
+                  <div className="cr-review-count cr-review-count--full">
+                    <span className="cr-review-count__label">{t('create.media.title')}</span>
+                    <span className="cr-review-count__val">
+                      {t('create.media.reviewCount', { count: pendingMediaFiles.length })}
+                    </span>
+                  </div>
+                )}
                 <div className="cr-review-count">
                   <span className="cr-review-count__label">{t('create.review.ingredients')}</span>
                   <span className="cr-review-count__val">
@@ -527,6 +662,12 @@ export function CreateRecipePage() {
           </div>
         )}
       </div>
+
+      {submitting && uploadingMedia && (
+        <div className="cr-media-status" role="status" aria-live="polite">
+          {t('create.media.uploading')}
+        </div>
+      )}
 
       {/* ── Fixed bottom action bar ───────────────────────────────────────── */}
       <div className="cr-actions">
