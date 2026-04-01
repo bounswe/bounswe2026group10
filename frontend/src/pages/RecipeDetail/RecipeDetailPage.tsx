@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { isAxiosError } from 'axios'
 import { recipeService, type RecipeDetail, type RecipeIngredient } from '@/services/recipe-service'
+import { ratingService } from '@/services/rating-service'
+import { RecipeRating } from '@/components/RecipeRating/RecipeRating'
+import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal'
+import { useAppSelector } from '@/store/hooks'
 import './RecipeDetailPage.css'
 
 function IconBack() {
@@ -91,6 +96,13 @@ export function RecipeDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [servings, setServings] = useState(4)
   const [favorited, setFavorited] = useState(false)
+  const [myRatingScore, setMyRatingScore] = useState<number | null>(null)
+  const [ratingBusy, setRatingBusy] = useState(false)
+  const [ratingError, setRatingError] = useState<string | null>(null)
+  const [showRemoveRatingModal, setShowRemoveRatingModal] = useState(false)
+
+  const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated)
+  const profile = useAppSelector((s) => s.profile)
 
   useEffect(() => {
     if (!id) return
@@ -102,11 +114,97 @@ export function RecipeDetailPage() {
       .finally(() => setLoading(false))
   }, [id, t])
 
+  /** Own recipe: `GET /auth/me` has no `profileId`; match creator username (same as backend profile ownership). */
+  const isOwnRecipe =
+    !!recipe?.creatorUsername &&
+    profile.status === 'succeeded' &&
+    !!profile.username &&
+    profile.username === recipe.creatorUsername
+
+  useEffect(() => {
+    if (!id || !recipe || !isAuthenticated) {
+      if (!isAuthenticated) {
+        setMyRatingScore(null)
+      }
+      return
+    }
+    if (profile.status === 'loading' || profile.status === 'idle') {
+      return
+    }
+    if (profile.status === 'succeeded' && isOwnRecipe) {
+      setMyRatingScore(null)
+      return
+    }
+    let cancelled = false
+    ratingService
+      .getMyRating(id)
+      .then((r) => {
+        if (!cancelled) {
+          setMyRatingScore(r?.score ?? null)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMyRatingScore(null)
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [id, recipe, isAuthenticated, isOwnRecipe, profile.status])
+
   useEffect(() => {
     if (!recipe) return
     const b = recipe.servingSize && recipe.servingSize > 0 ? recipe.servingSize : 4
     setServings(b)
   }, [recipe])
+
+  const handleRecipeRatingChange = useCallback(
+    async (score: number) => {
+      if (!id || !recipe) {
+        return
+      }
+      setRatingError(null)
+      setRatingBusy(true)
+      try {
+        await ratingService.submitRating(id, score)
+        const updated = await recipeService.getById(id)
+        setRecipe(updated)
+        setMyRatingScore(score)
+      } catch (err: unknown) {
+        const message = isAxiosError(err)
+          ? (err.response?.data as { error?: { message?: string } } | undefined)?.error?.message
+          : undefined
+        setRatingError(message || t('recipeDetail.ratingSubmitError'))
+      } finally {
+        setRatingBusy(false)
+      }
+    },
+    [id, recipe, t]
+  )
+
+  const handleRemoveMyRating = useCallback(async (): Promise<boolean> => {
+    if (!id || !recipe) {
+      return false
+    }
+    setRatingError(null)
+    setRatingBusy(true)
+    try {
+      await ratingService.deleteMyRating(id)
+      const updated = await recipeService.getById(id)
+      setRecipe(updated)
+      setMyRatingScore(null)
+      return true
+    } catch (err: unknown) {
+      const message = isAxiosError(err)
+        ? (err.response?.data as { error?: { message?: string } } | undefined)?.error?.message
+        : undefined
+      setRatingError(message || t('recipeDetail.ratingSubmitError'))
+      return false
+    } finally {
+      setRatingBusy(false)
+    }
+  }, [id, recipe, t])
 
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : ''
@@ -226,6 +324,54 @@ export function RecipeDetailPage() {
           </div>
         )}
 
+        <div className="recipe-detail__rating-section">
+          <p className="recipe-detail__rating-label">
+            {isAuthenticated ? t('recipeDetail.yourRating') : t('recipeDetail.ratingHeading')}
+          </p>
+          {!isAuthenticated && (
+            <p className="recipe-detail__rating-muted">
+              {t('recipeDetail.ratingLoginPrompt')}{' '}
+              <Link to="/login" className="recipe-detail__rating-login">
+                {t('recipeDetail.ratingLoginLink')}
+              </Link>
+            </p>
+          )}
+          {isAuthenticated && (profile.status === 'loading' || profile.status === 'idle') ? (
+            <span className="ui-spinner" aria-hidden />
+          ) : null}
+          {isAuthenticated && profile.status === 'succeeded' && isOwnRecipe ? (
+            <p className="recipe-detail__rating-muted">{t('recipeDetail.ratingOwnRecipe')}</p>
+          ) : null}
+          {isAuthenticated &&
+          ((profile.status === 'succeeded' && !isOwnRecipe) || profile.status === 'failed') ? (
+            <>
+              <div className="recipe-detail__rating-controls">
+                <RecipeRating
+                  value={myRatingScore}
+                  onChange={handleRecipeRatingChange}
+                  busy={ratingBusy}
+                  ariaLabel={t('recipeDetail.ratingAria')}
+                  starSize={32}
+                  size="comfortable"
+                  className="recipe-detail__rating-stars"
+                />
+                {myRatingScore != null && (
+                  <button
+                    type="button"
+                    className="recipe-detail__rating-remove"
+                    onClick={() => setShowRemoveRatingModal(true)}
+                    disabled={ratingBusy}
+                    aria-label={t('recipeDetail.ratingRemoveAria')}
+                  >
+                    {t('recipeDetail.ratingRemove')}
+                  </button>
+                )}
+              </div>
+              {ratingError ? <p className="recipe-detail__rating-error">{ratingError}</p> : null}
+            </>
+          ) : null}
+        </div>
+
         <div className="recipe-detail__card recipe-detail__servings-card">
           <div className="recipe-detail__servings-row">
             <div className="recipe-detail__servings-label">
@@ -331,6 +477,25 @@ export function RecipeDetailPage() {
           <p className="recipe-detail__alternatives-empty">{t('recipeDetail.noAlternatives')}</p>
         </section>
       </div>
+
+      <ConfirmModal
+        isOpen={showRemoveRatingModal}
+        title={t('recipeDetail.ratingRemoveModalTitle')}
+        message={t('recipeDetail.ratingRemoveModalMessage')}
+        confirmLabel={t('recipeDetail.ratingRemoveModalConfirm')}
+        cancelLabel={t('recipeDetail.ratingRemoveModalCancel')}
+        confirmVariant="danger"
+        busy={ratingBusy}
+        onCancel={() => setShowRemoveRatingModal(false)}
+        onConfirm={() => {
+          void (async () => {
+            const ok = await handleRemoveMyRating()
+            if (ok) {
+              setShowRemoveRatingModal(false)
+            }
+          })()
+        }}
+      />
     </div>
   )
 }
