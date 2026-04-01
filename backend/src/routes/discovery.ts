@@ -210,7 +210,11 @@ router.get("/recipes", async (req, res) => {
 
     return res.status(200).json(
       successResponse({
-        recipes,
+        recipes: (recipes ?? []).map((r: any) => {
+          const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
+          const { recipe_media, ...rest } = r;
+          return { ...rest, image_url: firstImage?.url ?? null };
+        }),
         pagination: {
           page,
           limit,
@@ -336,7 +340,11 @@ router.get("/recipes/by-ingredients", async (req, res) => {
 
     return res.status(200).json(
       successResponse({
-        recipes,
+        recipes: (recipes ?? []).map((r: any) => {
+          const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
+          const { recipe_media, ...rest } = r;
+          return { ...rest, image_url: firstImage?.url ?? null };
+        }),
         pagination: {
           page,
           limit,
