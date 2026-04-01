@@ -22,6 +22,7 @@ Wiki: https://github.com/bounswe/bounswe2026group10/wiki
 | File Storage | Supabase Storage |
 | File Uploads | Multer |
 | Security | Helmet, CORS |
+| AI | Google Gemini 2.5 Flash (@google/generative-ai) |
 | Testing | Jest + Supertest + ts-jest |
 | Containerization | Docker (multi-stage, node:20-alpine) |
 
@@ -42,7 +43,10 @@ backend/
 ├── src/
 │   ├── index.ts                 # Express app setup, middleware, route mounting
 │   ├── config/
-│   │   └── supabase.ts          # Supabase client (anon + user-scoped)
+│   │   ├── supabase.ts          # Supabase client (anon + user-scoped)
+│   │   └── gemini.ts            # Google Gemini AI client config
+│   ├── services/
+│   │   └── recipe-parser.ts     # Free-text recipe parser (Gemini AI)
 │   ├── middleware/
 │   │   ├── auth.ts              # requireAuth, requireRole middleware
 │   │   └── validate.ts          # Zod-based request body validation
@@ -53,7 +57,8 @@ backend/
 │   │   ├── discovery.ts         # Recipe discovery with filters
 │   │   ├── dietary-tags.ts      # Dietary/allergen tag listing
 │   │   ├── dish-genres.ts       # Cuisine genre listing
-│   │   └── dish-varieties.ts    # Dish variety listing, search, recipes
+│   │   ├── dish-varieties.ts    # Dish variety listing, search, recipes
+│   │   └── parse.ts             # Free-text recipe parser endpoint
 │   ├── types/
 │   │   └── index.ts             # TypeScript interfaces (roles, auth, response)
 │   ├── utils/
@@ -65,6 +70,7 @@ backend/
 │       ├── discovery.test.ts
 │       ├── dietary-tags.test.ts
 │       ├── media.test.ts
+│       ├── parse.test.ts
 │       └── health.test.ts
 ├── Dockerfile
 ├── jest.config.js
@@ -148,6 +154,12 @@ Database is managed via Supabase (no migration files in repo). Key tables:
   - Images: JPEG/PNG/WebP, max 10 MB
   - Videos: MP4, max 100 MB
 
+### Parse (`/parse`)
+- `POST /parse/recipe-text` — Parse free-text recipe into structured components (cook/expert only)
+  - Body: `{ text: string }` (10–5000 chars)
+  - Returns structured `{ title, ingredients[], steps[], tools[] }` without storing anything
+  - Uses Gemini 2.5 Flash AI for text parsing
+
 ## User Roles & Permissions
 
 | Role | Permissions |
@@ -182,6 +194,7 @@ Use `successResponse(data)` and `errorResponse(code, message)` from `src/utils/r
 - `NOT_FOUND` (404) — Resource not found
 - `CONFLICT` (409) — Duplicate username/email, already published
 - `INCOMPLETE_RECIPE` (400) — Missing fields for publish
+- `PARSE_FAILED` (500) — AI parsing of recipe text failed
 
 ### Validation
 - Zod schemas defined inline in route files
@@ -222,6 +235,7 @@ SUPABASE_URL=<supabase-project-url>
 SUPABASE_ANON_KEY=<supabase-anon-key>
 DATABASE_URL=<postgres-connection-string>
 DIRECT_URL=<postgres-direct-connection-string>
+GEMINI_API_KEY=<google-gemini-api-key>
 ```
 
 ## Docker
