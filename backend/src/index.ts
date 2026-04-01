@@ -9,6 +9,7 @@ import dishGenresRouter from "./routes/dish-genres.js";
 import dishVarietiesRouter from "./routes/dish-varieties.js";
 import discoveryRouter from "./routes/discovery.js";
 import dietaryTagsRouter from "./routes/dietary-tags.js";
+import parseRouter from "./routes/parse.js";
 
 const app = express();
 const PORT = process.env["PORT"] ?? 3000;
@@ -40,6 +41,7 @@ app.use("/dish-genres", dishGenresRouter);
 app.use("/dish-varieties", dishVarietiesRouter);
 app.use("/discovery", discoveryRouter);
 app.use("/dietary-tags", dietaryTagsRouter);
+app.use("/parse", parseRouter);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {
