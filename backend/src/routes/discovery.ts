@@ -171,7 +171,8 @@ router.get("/recipes", async (req, res) => {
            id, name, region,
            dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name)
          ),
-         profile:profiles!recipes_creator_id_fkey(id, username)`,
+         profile:profiles!recipes_creator_id_fkey(id, username),
+         recipe_media(id, url, type)`,
         { count: "exact" }
       )
       .eq("is_published", true);
@@ -313,7 +314,8 @@ router.get("/recipes/by-ingredients", async (req, res) => {
            id, name, region,
            dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name)
          ),
-         profile:profiles!recipes_creator_id_fkey(id, username)`,
+         profile:profiles!recipes_creator_id_fkey(id, username),
+         recipe_media(id, url, type)`,
         { count: "exact" }
       )
       .eq("is_published", true)
