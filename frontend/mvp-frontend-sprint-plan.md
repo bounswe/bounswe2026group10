@@ -2,38 +2,119 @@
 > **Project:** Roots & Recipes — Cross-Generational Recipe Platform  
 > **MVP Deadline:** April 7, 2026  
 > **Responsible (Frontend):** Ökkeş Berkay Acer, Yüksel Ege Boyacı, Hikmet Can Köseoğlu, Yunus Yücesoy  
-> **References:** [Implementation Plan](https://github.com/bounswe/bounswe2026group10/wiki/Implementation-Plan-%28MVP---Final-Milestone%29) · [Development Guideline](https://github.com/bounswe/bounswe2026group10/wiki/Development-Guideline) · [Open Issues](https://github.com/bounswe/bounswe2026group10/issues)
+> **References:** [Implementation Plan (MVP + Final)](https://github.com/bounswe/bounswe2026group10/wiki/Implementation-Plan-%28MVP---Final-Milestone%29) · [Development Guideline](https://github.com/bounswe/bounswe2026group10/wiki/Development-Guideline) · [Open Issues](https://github.com/bounswe/bounswe2026group10/issues)
+
+This document tracks [Frontend tasks](https://github.com/bounswe/bounswe2026group10/wiki/Implementation-Plan-%28MVP---Final-Milestone%29#frontend) for **Milestone 1 (MVP)** from the Wiki. Status legend: **✅** done, **🟡** partial, **⬜** not started.
 
 ---
 
-## Current State of the Project (March 29, 2026)
+## Wiki MVP — Frontend summary (aligned with Implementation Plan)
 
-### Completed Infrastructure
-- React + Vite + TypeScript setup done
-- Redux Toolkit `auth-slice` (login, register, logout) ready
-- `httpClient` (axios + Bearer token interceptor) ready
-- `authService` (login, register, logout endpoint bindings) ready
-- `ProtectedRoute` component ready
-- React Router configured; `/`, `/login`, `/register`, `/home` routes defined
-- i18n infrastructure (Turkish + English) set up
-- `WelcomePage`, `LoginPage`, `RegisterPage` pages completed
-- `MainLayout` basic skeleton ready
-- `HomePage` exists at skeleton level (title only; logout lives in `MainLayout` header via `useLogout`)
+| Wiki item (MVP) | Status |
+|-------------------|--------|
+| Responsive basic UI shell (`MainLayout`, bottom navigation) | ✅ |
+| Registration and login pages | ✅ |
+| Forms wired to backend authentication | ✅ |
+| Recipe listing (`/home`, `/search`, dish variety `/dish-variety/:id`) | ✅ |
+| Recipe detail — ingredients, tools, steps, (optional) video and story | ✅ 🟡 (video link; no comments UI beyond placeholder) |
+| Recipe detail — comments | ⬜ (no comment endpoints in backend) |
+| Recipe detail — rating component (submit) | ✅ (`rating-service`, `RecipeRating`, `POST/GET/DELETE .../ratings`, own-recipe guard via `creatorUsername` vs profile `username`, remove with confirm modal, EN/TR i18n) |
+| Recipe creation form | 🟡 (multi-step + `POST /recipes`; real `ingredientId` / draft–publish flow still incomplete) |
+| Draft save (server-side draft + publish) | 🟡 (`isPublished` in single `POST`; `PATCH` + `publish` not used) |
+| Accessibility — large text, contrast, keyboard | 🟡 (full audit / usability test pending; see **S3-6**) |
+| Usability testing with representative users | ⬜ |
 
-### Existing Backend Endpoints
-- `POST /auth/register` — User registration
-- `POST /auth/login` — Login
-- `POST /auth/logout` — Logout (requires Bearer token)
-- `POST /auth/refresh` — Token refresh
-- `GET /auth/me` — Current user info
-- `POST /recipes` — Create recipe (cook/expert)
-- `PATCH /recipes/:id` — Update recipe (draft)
-- `POST /recipes/:id/publish` — Publish recipe
-- `GET /discovery/recipes` — List published recipes (region, allergen, genre, variety filters)
-- `GET /dish-genres` — List dish genres
-- `GET /dish-varieties` — List dish varieties
+---
 
-### Currently Open Frontend Issues (MVP Scope)
+## Backend — endpoint inventory vs frontend usage
+
+Source: `backend/src/index.ts` and `backend/src/routes/*.ts` (Express). **Comments:** no REST routes defined yet; MVP “comments” feature is not in the backend.
+
+### Root and meta
+
+| Method | Path | Used in frontend? | Notes |
+|--------|------|-------------------|-------|
+| `GET` | `/health` | No | Deploy / CI health |
+| `GET` | `/meta/regions` | Yes | `discoveryService.getRegions()` |
+
+### `/auth`
+
+| Method | Path | Used? |
+|--------|------|-------|
+| `POST` | `/auth/register` | Yes |
+| `POST` | `/auth/login` | Yes |
+| `POST` | `/auth/logout` | Yes (`authService`, `logoutAsync`) |
+| `POST` | `/auth/refresh` | Yes (`refresh-session.ts`, `httpClient` 401 refresh) |
+| `GET` | `/auth/me` | Yes (`profile-service`, bootstrap) |
+
+### `/recipes`
+
+| Method | Path | Used? | Notes |
+|--------|------|-------|-------|
+| `GET` | `/recipes/:id` | Yes | `recipeService.getById` |
+| `POST` | `/recipes` | Yes | `recipeService.create` |
+| `PATCH` | `/recipes/:id` | No | Draft updates |
+| `POST` | `/recipes/:id/publish` | No | Publish with validation |
+| `POST` | `/recipes/:id/ratings` | Yes | `ratingService.submitRating` |
+| `GET` | `/recipes/:id/ratings/me` | Yes | `ratingService.getMyRating` |
+| `DELETE` | `/recipes/:id/ratings/me` | Yes | `ratingService.deleteMyRating` |
+| `POST` | `/recipes/:id/media` | No | Attach URL |
+| `GET` | `/recipes/:id/media` | No | Detail payload from `GET /recipes/:id` |
+| `DELETE` | `/recipes/:id/media/:mediaId` | No | |
+
+### `/media`
+
+| Method | Path | Used? |
+|--------|------|-------|
+| `POST` | `/media/upload` | No |
+
+### `/dish-genres`, `/dish-varieties`
+
+| Method | Path | Used? | Notes |
+|--------|------|-------|-------|
+| `GET` | `/dish-genres` | Yes | |
+| `GET` | `/dish-varieties` | Yes | Optional `?genreId=`; `?search=` exists on backend, UI limited |
+| `GET` | `/dish-varieties/:id` | Yes | Published recipes for variety included |
+| `GET` | `/dish-varieties/:id/recipes` | No | Community/expert split; overlaps with `GET :id` |
+
+### `/discovery`
+
+| Method | Path | Used? | Notes |
+|--------|------|-------|-------|
+| `GET` | `/discovery/recipes` | Yes | `excludeAllergens`, `tagIds` on backend; `DiscoveryParams` still limited in UI |
+| `GET` | `/discovery/recipes/by-ingredients` | No | Search by ingredient IDs |
+
+### `/dietary-tags`
+
+| Method | Path | Used? |
+|--------|------|-------|
+| `GET` | `/dietary-tags` | No | Not sent as `tagIds` in create flow yet |
+
+**Summary:** Auth, discovery listing, genre/variety APIs, recipe read/create, and **recipe ratings (submit / my rating / delete)** are wired. Media upload/attach, recipe update/publish flow, dietary tags, ingredient-based discovery, and some `dish-varieties` sub-routes are **not** in the frontend yet (partly Final milestone or later sprint).
+
+---
+
+## Current State of the Project (April 1, 2026)
+
+### Completed infrastructure
+- ✅ React + Vite + TypeScript
+- ✅ Redux Toolkit: `auth-slice`, `profile-slice` (login, register, logout, profile)
+- ✅ `httpClient` (axios, Bearer, **401 → `POST /auth/refresh`** and retry)
+- ✅ `authService` + `profileService` + `discoveryService` + `recipeService` + **`ratingService`**
+- ✅ `ProtectedRoute` (role: `/create-recipe` for `cook` \| `expert`)
+- ✅ Routes: `/`, `/login`, `/register`, `/home`, `/search`, `/library`, `/profile`, `/recipes/:id`, `/dish-variety/:id`, `/create-recipe`
+- ✅ i18n (TR / EN), including recipe rating and remove-rating modal strings
+- ✅ `WelcomePage`, `LoginPage`, `RegisterPage`
+- ✅ `MainLayout` + `HeaderUser` + `useLogout` (server logout + redirect `/`)
+- ✅ `BottomNav` (role-based “create recipe”)
+- ✅ `HomePage`, `SearchPage`, `DishVarietyPage`, `RecipeDetailPage` (serving scale, **interactive stars**, average/count, login / own-recipe / rate / remove with **`ConfirmModal`**), `CreateRecipePage` (multi-step; ingredients not fully wired to backend IDs)
+- ✅ `useAuthBootstrap` + `GET /auth/me` for session refresh and profile
+
+### Backend overlap — short endpoint list
+- **In use:** `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `POST /auth/refresh`, `GET /auth/me`, `GET /meta/regions`, `GET /discovery/recipes`, `GET /dish-genres`, `GET /dish-varieties`, `GET /dish-varieties/:id`, `GET /recipes/:id`, `POST /recipes`, **`POST /recipes/:id/ratings`**, **`GET /recipes/:id/ratings/me`**, **`DELETE /recipes/:id/ratings/me`**
+- **Not connected yet:** e.g. `PATCH /recipes/:id`, `POST /recipes/:id/publish`, `/media/upload`, `GET /dietary-tags`, `GET /discovery/recipes/by-ingredients`
+
+### Currently open frontend issues (MVP scope)
 | # | Title |
 |---|-------|
 | #223 | [FRONTEND/Task] Integrate server-side logout and clear client session |
@@ -54,527 +135,366 @@
 
 ---
 
-## Sprint Schedule
+## Sprint schedule
 
 | Sprint | Dates | Focus |
 |--------|-------|-------|
-| Sprint 1 | Mar 29 – Apr 1 | Auth completion + Core infrastructure fixes |
-| Sprint 2 | Apr 1 – Apr 4 | Discovery page + Recipe Listing |
-| Sprint 3 | Apr 4 – Apr 7 | Recipe Detail + Recipe creation form + MVP polish |
+| Sprint 1 | Mar 29 – Apr 1 | Auth completion + core infrastructure |
+| Sprint 2 | Apr 1 – Apr 4 | Discovery page + recipe listing |
+| Sprint 3 | Apr 4 – Apr 7 | Recipe detail + creation form + MVP polish |
 
 ---
 
-## Sprint 1 — Auth Completion & Core Infrastructure
+## Sprint 1 — Auth completion & core infrastructure
 **Dates:** March 29 – April 1, 2026
 
 ### Goal
-Complete the user management flow end-to-end: registration, login, session persistence, logout, and profile info display.
+End-to-end user management: registration, login, session persistence, logout, profile display.
 
 ---
 
-### S1-1: Server-Side Logout Integration
+### S1-1: Server-side logout integration
 **Priority:** Critical  
-**Related Issue:** [#223 — FRONTEND/Task: Integrate server-side logout and clear client session](https://github.com/bounswe/bounswe2026group10/issues/223)  
+**Related Issue:** [#223](https://github.com/bounswe/bounswe2026group10/issues/223)  
 **Branch:** `frontend/feature_server-side-logout`
 
 **Tasks:**
-- [ ] Verify `logoutAsync` thunk calls `POST /auth/logout` endpoint ✅ (present in auth-slice, but not fully wired to UI)
-- [ ] Wire the logout button in `MainLayout` or `HomePage` to `logoutAsync`
-- [ ] Clear Redux state and localStorage (`session.clearTokens()`) after logout
-- [ ] Redirect to `/` (WelcomePage) after successful logout
-- [ ] Ensure local session is cleared even if network call fails (current code is correct — verify)
-- [ ] Disable button during loading state
-
-**New Issues to Open:**
-- `[FRONTEND/TASK] Logout button state management and redirect` (if not already covered by #223)
+- [x] Verify `logoutAsync` calls `POST /auth/logout`
+- [x] Wire logout in `MainLayout` via `useLogout`
+- [x] Clear Redux and `localStorage` (`session.clearTokens()`) after logout
+- [x] Redirect to `/` (`WelcomePage`) after successful logout
+- [x] Clear client session even if network fails
+- [x] Disable control while `isLoggingOut`
 
 ---
 
-### S1-2: User Profile Display via `GET /auth/me`
+### S1-2: User profile via `GET /auth/me`
 **Priority:** High  
-**Related Issue:** [#111 — User Registration, Login, and Role-Based Access Control](https://github.com/bounswe/bounswe2026group10/issues/111)  
+**Related Issue:** [#111](https://github.com/bounswe/bounswe2026group10/issues/111)  
 **Branch:** `frontend/feature_user-profile-display`
 
 **Tasks:**
-- [ ] Create `profileService.ts` — wraps `GET /auth/me` call
-- [ ] Create `profile-slice.ts` — stores `userId`, `username`, `email`, `role`
-- [ ] On app startup (App.tsx or AuthGuard), if session exists call `GET /auth/me` and load profile into Redux
-- [ ] Display username + role in `MainLayout` header
-- [ ] Retrieve role from Redux and use it in `ProtectedRoute`s (per learner/cook/expert)
+- [x] `profileService.ts` — `GET /auth/me`
+- [x] `profile-slice.ts` — `userId`, `username`, `email`, `role`
+- [x] On startup (`useAuthBootstrap`), if session exists load profile into Redux
+- [x] Show username + role in `MainLayout` (`HeaderUser`)
+- [x] Use role in `ProtectedRoute` (`/create-recipe` → cook \| expert)
 
-**New Issues to Open:**
-- `[FRONTEND/TASK] Fetch and display authenticated user profile on app load`
-
-#### S1-2 — Required components, modules & file plan
-
-This section lists **what to build** for S1-2: services, state, bootstrap, and UI pieces. Names are suggestions; keep consistency with existing `src/` layout (`services/`, `store/slices/`, `components/`, `hooks/`).
+#### S1-2 — Components, modules & file plan (reference)
 
 ##### 1. API & types
-
-| Artifact | Path (suggested) | Responsibility |
-|----------|-------------------|----------------|
-| **Types** | `src/services/types/auth.ts` or inline in `profile-service.ts` | `MeResponse`, `UserRole` (`learner` \| `cook` \| `expert`) aligned with backend `GET /auth/me` payload (`userId`, `email`, `username`, `role`, `createdAt`). |
-| **Profile service** | `src/services/profile-service.ts` | `getCurrentUser()` → `httpClient.get('/auth/me')`, unwrap `success` envelope (`data`), return typed user object. |
-
-No new React “component” here — pure TS module used by Redux thunks.
-
-##### 2. Redux state
-
-| Artifact | Path (suggested) | Responsibility |
-|----------|-------------------|----------------|
-| **Option A — dedicated slice** | `src/store/slices/profile-slice.ts` | State: `username`, `email`, `role`, `userId`, `status` (`idle` \| `loading` \| `succeeded` \| `failed`), `error`. Reducers + `fetchProfileAsync` (or `loadCurrentUserAsync`) thunk calling `profileService.getCurrentUser()`. |
-| **Option B — extend auth slice** | `src/store/slices/auth-slice.ts` | Same fields + thunk co-located with `loginAsync` / `logoutAsync`. Fewer stores; slightly larger file. **Pick one approach for the team; do not duplicate user fields in two slices.** |
-
-**Exports:** Selectors (e.g. `selectCurrentUser`, `selectUserRole`, `selectProfileStatus`) either in the slice file or `store/selectors/auth.ts` / `profile.ts`.
-
-##### 3. Store registration
-
-| Artifact | Path | Responsibility |
-|----------|------|----------------|
-| **Root reducer** | `src/store/store.ts` | If Option A: register `profileReducer`. If Option B: no new reducer key. |
-
-##### 4. Bootstrap (when to call `GET /auth/me`)
-
 | Artifact | Path (suggested) | Responsibility |
 |----------|------------------|----------------|
-| **Hook** | `src/hooks/useAuthBootstrap.ts` | On mount: if `session.getTokens().accessToken` exists, `dispatch(fetchProfileAsync())`. Optionally skip if profile already `succeeded` for this session. Returns `{ profileStatus }` for optional global loading UI. |
-| **Wrapper component** | `src/auth/AuthBootstrap.tsx` (optional alternative to hook-only) | Renders `children`; runs the same dispatch in `useEffect`. Use if you prefer composition over calling the hook from `App.tsx`. |
-| **App entry** | `src/App.tsx` or `src/main.tsx` | Either render `<AuthBootstrap><RouterProvider /></AuthBootstrap>` or call `useAuthBootstrap()` inside a small inner component under `Provider` + `RouterProvider`. **Requirement:** bootstrap must run **inside** Redux `Provider` and **after** router exists if redirects depend on location. |
+| Types | `src/services/types/auth.ts` or `profile-service.ts` | `MeResponse`, `UserRole` aligned with backend |
+| Profile service | `src/services/profile-service.ts` | `getCurrentUser()` → unwrap `success` envelope |
 
-**Flow:** Token in storage → fetch profile → fill Redux → `MainLayout` can read `username` / `role`. No token → no `GET /auth/me` (guest or logged-out).
-
-##### 5. UI components (header & display)
-
-| Component | Path (suggested) | Responsibility |
-|-----------|------------------|----------------|
-| **`UserBadge` or `HeaderUser`** | `src/components/Layout/HeaderUser.tsx` or `src/components/User/UserBadge.tsx` | Presentational: shows **username** and optional **role** label (string or pill). Props: `username`, `role`, optional `loading`. Used inside `MainLayout` header next to logout. |
-| **`MainLayout` (update)** | `src/components/Layout/MainLayout.tsx` | Compose header: left — app title; right — **`<HeaderUser />`** (only when `isAuthenticated` and profile loaded or loading) + existing **logout** button from `useLogout`. Handle **loading** state: skeleton text or spinner next to name while `profileStatus === 'loading'`. |
-| **`MainLayout.css` (update)** | `src/components/Layout/MainLayout.css` | Flex row for title + `app-header__user` cluster (username, role chip, logout). Responsive: wrap or shorten username on small screens. |
-
-**Optional (not blocking S1-2):**
-
-| Component | Notes |
-|-----------|--------|
-| **`UserAvatar`** | Initials circle from `username`; add when design requires avatars. |
-| **`ProfilePage` placeholder** | Route `/profile` stub — only if issue #111 explicitly requires a profile *page* in S1-2; otherwise defer to later sprint. |
-
-##### 6. Login / register integration
-
+##### 2. Redux
 | Artifact | Path | Responsibility |
 |----------|------|----------------|
-| **After login/register fulfilled** | `auth-slice` thunks | Option A: chain `dispatch(fetchProfileAsync())` in `loginAsync.fulfilled` / `registerAsync.fulfilled` extraReducers or thunk `.unwrap()` handlers in pages. Option B: rely on **bootstrap** only — on success, tokens exist; next navigation or full reload triggers `GET /auth/me`. **Recommended:** dispatch `fetchProfileAsync` once after login/register success so header updates immediately without full page reload. |
+| Slice | `src/store/slices/profile-slice.ts` | Profile state + async load |
 
-##### 7. Logout integration
-
+##### 3. Bootstrap
 | Artifact | Path | Responsibility |
 |----------|------|----------------|
-| **`logout` reducer / `logoutAsync`** | `auth-slice.ts` | Clear **profile** fields when session clears (either `profileSlice` reset action or extraReducer listening to `logout` / `logoutAsync.fulfilled`). Avoid stale username after logout. |
+| Hook | `src/hooks/useAuthBootstrap.ts` | Dispatch profile fetch when token exists |
 
-##### 8. Protected routes & role (S1-2 scope boundary)
+##### 4. UI
+| Component | Path | Responsibility |
+|-----------|------|----------------|
+| `HeaderUser` | `src/components/Layout/HeaderUser.tsx` | Username, role, loading |
+| `MainLayout` | `src/components/Layout/MainLayout.tsx` | Compose header + logout |
 
-| Artifact | Path | Responsibility |
-|----------|------|----------------|
-| **`ProtectedRoute`** | `src/auth/ProtectedRoute.tsx` | Wire into `router/index.tsx` for routes that require auth (minimal for S1-2: optional — can stay “prep only”). |
-| **Role-aware guard** | Same file or `RequireRole.tsx` | **Full role checks** (learner vs cook vs expert) are listed here for traceability but often land in **S1-4**; S1-2 should at least **expose `role` in Redux** and show it in the header. |
-
-##### 9. Summary checklist (files)
-
-**Create (typical set):**
-
-- [ ] `src/services/profile-service.ts`
-- [ ] `src/store/slices/profile-slice.ts` *(if Option A)* **or** extend `auth-slice.ts` *(Option B)*
-- [ ] `src/hooks/useAuthBootstrap.ts`
-- [ ] `src/components/Layout/HeaderUser.tsx` *(or `UserBadge.tsx`)*
-
-**Modify:**
-
-- [ ] `src/store/store.ts` — register reducer if new slice
-- [ ] `src/App.tsx` and/or `src/main.tsx` — bootstrap
-- [ ] `src/components/Layout/MainLayout.tsx` + `MainLayout.css` — user + role + loading
-- [ ] `src/store/slices/auth-slice.ts` — clear profile on logout; optionally dispatch `fetchProfile` after login/register
-
-**Dependencies:** Existing `httpClient`, `session`, i18n for any new strings (role labels if translated).
+##### Summary checklist
+- [x] `profile-service.ts`, `profile-slice.ts`, `useAuthBootstrap.ts`, `HeaderUser.tsx`
+- [x] `store.ts`, `App` / `main`, `MainLayout`, `auth-slice` profile clear on logout
 
 ---
 
-### S1-3: Token Refresh (Refresh Token) Integration
+### S1-3: Token refresh integration
 **Priority:** High  
 **Related Issue:** [#111](https://github.com/bounswe/bounswe2026group10/issues/111)  
 **Branch:** `frontend/feature_token-refresh`
 
 **Tasks:**
-- [ ] Add 401 response interceptor to `httpClient`
-- [ ] On 401, call `POST /auth/refresh` to renew the token
-- [ ] Retry the failed request with the new token
-- [ ] If refresh also fails, sign out and redirect to `/login`
-- [ ] Prevent multiple concurrent requests from triggering refresh simultaneously (mutex/queue)
-
-**New Issues to Open:**
-- `[FRONTEND/TASK] Implement 401 interceptor with automatic token refresh`
+- [x] 401 interceptor on `httpClient`
+- [x] On 401, `POST /auth/refresh` (`refreshSession`) and retry
+- [x] If refresh fails, sign out and redirect to `/login`
+- [x] Serialize concurrent refresh (`refreshPromise` / `ensureRefresh`)
 
 ---
 
-### S1-4: Role-Based UI Display
+### S1-4: Role-based UI
 **Priority:** Medium  
 **Related Issue:** [#111](https://github.com/bounswe/bounswe2026group10/issues/111)  
 **Branch:** `frontend/feature_role-based-ui`
 
 **Tasks:**
-- [ ] Write `useUserRole()` custom hook — reads role from Redux
-- [ ] Show different navigation items based on role:
-  - `learner`: Discovery, Profile
-  - `cook`: Discovery, Create Recipe, Profile
-  - `expert`: Discovery, Create Recipe (including cultural), Profile
-- [ ] "Create Recipe" button/link visible only for cook and expert
-- [ ] Extend `ProtectedRoute` with role-based access control
+- [x] `useUserRole()` — role from Redux
+- [x] Navigation varies by role (`BottomNav`: create for cook/expert only)
+- [x] `ProtectedRoute` for `/create-recipe`
 
 ---
 
-### S1-5: MainLayout Navigation Bar
+### S1-5: MainLayout navigation
 **Priority:** High  
-**Related Issue:** New issue to open  
 **Branch:** `frontend/feature_main-navigation`
 
 **Tasks:**
-- [ ] Fully build out `MainLayout` header into a proper nav bar
-- [ ] Logo + app name (left)
-- [ ] Main navigation links (Discovery, Create Recipe — role-dependent)
-- [ ] User menu (right): username, profile link, logout button
-- [ ] Responsive design (mobile-friendly hamburger menu or simplified version)
-- [ ] Accessibility: keyboard navigation, ARIA labels
-
-**New Issues to Open:**
-- `[FRONTEND/FEATURE] Implement responsive main navigation bar with role-based items`
+- [x] Header: brand + `HeaderUser` + logout
+- [x] Bottom nav: home, search, (role) create, library, profile
+- [x] Profile link `/profile`
+- [x] Mobile-first bottom navigation
+- [x] Sprint 1 scope for navigation is complete. **App-wide accessibility (ARIA, keyboard, full audit)** is **not** a Sprint 1 deliverable; see **S3-6** (moved from earlier S1-5 wording).
 
 ---
 
-### Sprint 1 Acceptance Criteria
-- [ ] User can register and is automatically logged in
-- [ ] User can log in; token persists in localStorage
-- [ ] Session does not expire on page refresh
-- [ ] Token auto-renews when expired
-- [ ] User can log out; server session is also invalidated
-- [ ] Username and role are visible in the header
-- [ ] Navigation items change based on role
+### Sprint 1 acceptance criteria
+- [x] Register and auto-login works
+- [x] Login; token in `localStorage`
+- [x] Session survives refresh
+- [x] Token refresh on 401
+- [x] Logout invalidates server session
+- [x] Username and role in header
+- [x] Role-based nav (bottom nav + create)
+
+**Sprint 1 summary:** No blocking open items for auth/nav; full accessibility audit is **S3-6**.
 
 ---
 
-## Sprint 2 — Discovery Page & Recipe Listing
+## Sprint 2 — Discovery page & recipe listing
 **Dates:** April 1 – April 4, 2026
 
 ### Goal
-Build the screens that let users explore dish genres/regions and list recipes.
+Screens to explore genres/regions and list recipes.
 
 ---
 
-### S2-1: Discovery Page — Region, Genre & Filter Navigation
+### S2-1: Discovery — region, genre & filters
 **Priority:** Critical  
-**Related Issues:**  
-- [#112 — Recipe Discovery: Region Selector, Allergen Filter, and Dish Genre/Variety Navigation](https://github.com/bounswe/bounswe2026group10/issues/112)  
-- [#170 — FRONTEND/TASK: Dish Name Search Bar on Discovery Page](https://github.com/bounswe/bounswe2026group10/issues/170)  
+**Related Issues:** [#112](https://github.com/bounswe/bounswe2026group10/issues/112), [#170](https://github.com/bounswe/bounswe2026group10/issues/170)  
 **Branch:** `frontend/feature_discovery-page`
 
 **Tasks:**
-- [ ] Create `discoveryService.ts`:
-  - `GET /discovery/recipes` (region, excludeAllergens, genreId, varietyId, page, limit)
-  - `GET /dish-genres`
-  - `GET /dish-varieties`
-- [ ] Add `DiscoveryPage` route: `/discovery`
-- [ ] Add `/discovery` to the router (under MainLayout, behind ProtectedRoute)
-- [ ] **Region Selector:**
-  - Display Turkish regions as a dropdown or card list
-  - Filter recipe list by selected region
-- [ ] **Dish Genre Cards:**
-  - Fetch genres with `GET /dish-genres`
-  - Render a visual card for each genre (e.g. Soups, Meat Dishes, Desserts)
-- [ ] **Dish Variety Navigation:**
-  - When a genre is selected, list its varieties
-  - `GET /dish-varieties?genreId=X`
-- [ ] **Allergen Filter:**
-  - Fetch allergen list from the backend
-  - Exclude recipes containing selected allergens from discovery results
-- [ ] **Search Bar (Dish Name Search):** [#170]
-  - Text input for recipe name search
-  - `GET /discovery/recipes?search=xxx` (or via existing query param)
-- [ ] Sync filter state with URL query params (filters preserved on page refresh)
-- [ ] Loading skeleton + error state display
-
-**New Issues to Open:**
-- `[FRONTEND/FEATURE] Discovery page with region, genre, variety and allergen filters` (if not fully covered by #112)
+- [x] `discoveryService`: `GET /discovery/recipes`, `GET /dish-genres`, `GET /dish-varieties`, `GET /meta/regions`, `GET /dish-varieties/:id`
+- [x] Separate `/discovery` route — **not required for MVP**; flow is `/home` + `/search` + `/dish-variety/:id`
+- [x] Discovery under protected shell (`/home`, `/search`)
+- [x] Region: `getRegions()` + filter (Home / Search)
+- [x] Genre cards: `getGenres()` + UI
+- [x] Varieties: `getVarieties({ genreId })` + `/dish-variety/:id`
+- [ ] **Allergen filter:** backend supports `excludeAllergens`; UI may still need full selection / list source
+- [ ] **Dish name search:** [#170] — client filter or backend `search` query TBD
+- [ ] Sync filter state to URL query params
+- [x] Loading / error (partial)
 
 ---
 
-### S2-2: Recipe Listing Page
+### S2-2: Recipe listing page
 **Priority:** Critical  
-**Related Issues:**  
-- [#158 — FRONTEND/TASK: Recipe Listing Page for a Dish Variety](https://github.com/bounswe/bounswe2026group10/issues/158)  
-- [#113 — Community/Expert Recipe Listing with Rating-Based Sorting](https://github.com/bounswe/bounswe2026group10/issues/113)  
+**Related Issues:** [#158](https://github.com/bounswe/bounswe2026group10/issues/158), [#113](https://github.com/bounswe/bounswe2026group10/issues/113)  
 **Branch:** `frontend/feature_recipe-listing`
 
 **Tasks:**
-- [ ] Add `/recipes` or `/discovery/variety/:varietyId` route
-- [ ] Create `RecipeListingPage` component
-- [ ] **Recipe Card** (`RecipeCard`) component:
-  - Recipe title
-  - Dish variety name
-  - Average rating (`average_rating`) — star display
-  - Date (`created_at`)
-  - Author (`username`)
-  - Recipe type badge: `community` / `cultural`
-- [ ] **Sorting:** Descending by rating (already supported by backend)
-- [ ] **Pagination:** Page navigation using `pagination.total` from backend
-- [ ] Empty state: "No recipes yet for this variety" message
-- [ ] Navigate to this page when a variety is selected from the Discovery page
+- [x] Variety-based list: `/dish-variety/:id` (`DishVarietyPage`)
+- [x] `RecipeCard` / list rows
+- [x] Title, variety, rating, date, author, type — as applicable
+- [x] Sorting: by rating where backend provides it
+- [ ] Pagination: `GET /discovery/recipes` pagination may not be fully used in the service
+- [x] Empty states (partial)
+- [x] Navigation from discovery to variety
 
 ---
 
-### S2-3: Shared Service Layer for Discovery & Listing
+### S2-3: Shared service layer
 **Priority:** High  
 **Branch:** `frontend/feature_recipe-services`
 
 **Tasks:**
-- [ ] Create `recipeService.ts`:
-  - `getDiscoveryRecipes(params)` — `GET /discovery/recipes`
-  - `getRecipesByVariety(varietyId, page)` — `GET /discovery/recipes?varietyId=X`
-  - `getDishGenres()` — `GET /dish-genres`
-  - `getDishVarieties(genreId?)` — `GET /dish-varieties`
-- [ ] `useDiscovery` custom hook — filter state, async fetch, loading/error
-- [ ] Error boundary or global error display
-
-**New Issues to Open:**
-- `[FRONTEND/TASK] Create recipe and discovery service layer`
+- [x] `discovery-service.ts` + `recipe-service.ts`
+- [ ] Optional `useDiscovery` refactor (pages use local state today)
+- [ ] Global error boundary
 
 ---
 
-### Sprint 2 Acceptance Criteria
-- [ ] Discovery page works with region, genre and allergen filters
-- [ ] Dish name search bar works
-- [ ] Selecting a variety lists its recipes
-- [ ] Recipes arrive sorted by rating
-- [ ] Pagination works
-- [ ] Loading and error states are displayed
+### Sprint 2 acceptance criteria
+- [x] Discovery: region + genre + variety flow works
+- [ ] Dish name search (strategy TBD)
+- [x] Recipes list when variety is selected
+- [x] Rating-based ordering where supported
+- [ ] Full pagination
+- [x] Loading / error (partial)
 
 ---
 
-## Sprint 3 — Recipe Detail + Recipe Creation Form + MVP Polish
+## Sprint 3 — Recipe detail + recipe creation + MVP polish
 **Dates:** April 4 – April 7, 2026
 
 ### Goal
-Complete the recipe detail page (ingredients, steps, video, story, rating, comments) and the recipe creation form. Bring the MVP to a ready state for end-user testing.
+Recipe detail (ingredients, steps, video, story, **rating**), creation form, MVP readiness. **Comments** remain blocked without backend.
 
 ---
 
-### S3-1: Recipe Detail Page
+### S3-1: Recipe detail page
 **Priority:** Critical  
-**Related Issues:**  
-- [#161 — FRONTEND/TASK: Recipe Detail Page with Video Guide and Story](https://github.com/bounswe/bounswe2026group10/issues/161)  
-- [#114 — TASK: Recipe Detail Page — Ingredients, Steps, Video Guide & Story](https://github.com/bounswe/bounswe2026group10/issues/114)  
+**Related Issues:** [#161](https://github.com/bounswe/bounswe2026group10/issues/161), [#114](https://github.com/bounswe/bounswe2026group10/issues/114)  
 **Branch:** `frontend/feature_recipe-detail`
 
 **Tasks:**
-- [ ] Add `/recipes/:id` route (under MainLayout)
-- [ ] Add `getRecipeById(id)` function to `recipeService.ts` — `GET /recipes/:id` (open backend issue if endpoint is missing)
-- [ ] **`RecipeDetailPage`** component:
-  - Title and dish variety/genre
-  - **Story:** Show if present, hide if absent
-  - **Video Guide:** Embed YouTube/Vimeo player or show link button if `videoUrl` is present
-  - **Ingredient List:** quantity, unit, ingredient name
-  - **Preparation Steps:** numbered step list
-  - **Tools:** show if present
-  - **Average Rating:** star display + vote count
-  - **Author Info:** username, role badge
-  - **Date:** publication date
-- [ ] Add "Go to Detail" link to recipe cards in the listing page
-
-**New Issues to Open:**
-- `[FRONTEND/TASK] Recipe detail page — basic layout with ingredients, steps, video, story`
-- `[BACKEND/TASK] GET /recipes/:id detail endpoint` (if not yet implemented)
+- [x] `/recipes/:id` under `MainLayout`
+- [x] `recipeService.getById` — `GET /recipes/:id`
+- [x] **`RecipeDetailPage`:** title, variety/genre, story, video link, ingredients, steps, tools, **average rating & count**, **interactive rating (logged-in, not own recipe)**, author
+- [ ] **Comments** — placeholder only; no API
+- [x] Navigation from lists to detail
 
 ---
 
-### S3-2: Serving Size Control
+### S3-2: Serving size control
 **Priority:** High  
-**Related Issues:**  
-- [#164 — FRONTEND/TASK: Serving Size Control on Recipe Detail Page](https://github.com/bounswe/bounswe2026group10/issues/164)  
-- [#115 — TASK: Serving Size Adjustment with Dynamic Ingredient Recalculation](https://github.com/bounswe/bounswe2026group10/issues/115)  
+**Related Issues:** [#164](https://github.com/bounswe/bounswe2026group10/issues/164), [#115](https://github.com/bounswe/bounswe2026group10/issues/115)  
 **Branch:** `frontend/feature_serving-size-control`
 
 **Tasks:**
-- [ ] Add a serving size input/stepper to the recipe detail page
-- [ ] When the user changes the serving count, recalculate ingredient quantities proportionally (frontend-side)
-- [ ] Multiply each ingredient's quantity by the ratio between the selected serving and the reference `servingSize`
-- [ ] Show updated quantities in the ingredient list (original amount in grey, new amount in bold)
+- [x] Serving stepper (`RecipeDetailPage`)
+- [x] Proportional ingredient amounts vs reference `servingSize`
+- [ ] Optional: two-tone typography for original vs scaled amounts
 
 ---
 
-### S3-3: Rating and Comment Components
+### S3-3: Rating and comment components
 **Priority:** High  
-**Related Issues:** New issues to open  
-**Branch:** `frontend/feature_rating-comment`
+**Branch:** `frontend/feature_rating-comment` (rating); comments pending backend
 
 **Tasks:**
-- [ ] Create `ratingService.ts`:
-  - `POST /recipes/:id/ratings` — submit rating
-  - `GET /recipes/:id/ratings` — fetch ratings
-- [ ] Create `commentService.ts`:
-  - `POST /recipes/:id/comments` — post comment
-  - `GET /recipes/:id/comments` — list comments
-- [ ] **Rating Component:**
-  - Logged-in user can give a 1–5 star rating
-  - If user has already rated, display their current rating (no edit)
-  - `learner` role can rate
-- [ ] **Comment Component:**
-  - Comment list (avatar, username, date, text)
-  - Comment input area + submit button for logged-in users
-  - Optimistic UI update
-- [ ] Non-logged-in users cannot rate/comment — show "Log in" link
-
-**New Issues to Open:**
-- `[FRONTEND/TASK] Rating component on recipe detail page`
-- `[FRONTEND/TASK] Comment section on recipe detail page`
+- [x] `rating-service.ts` — `POST /recipes/:id/ratings`, `GET /recipes/:id/ratings/me`, `DELETE /recipes/:id/ratings/me`
+- [ ] `commentService` — no backend route yet
+- [x] **`RecipeRating`** — stars, hover/focus, `busy`; **`RecipeDetailPage`** loads `getMyRating`, submits `submitRating`, refetches recipe; **own recipe** hidden via `creatorUsername === profile.username` (no `profileId` on `GET /auth/me`)
+- [x] **Remove rating** — `deleteMyRating` + **`ConfirmModal`** (stable loading button width, no dismiss while busy)
+- [x] Logged-out: copy + link to `/login`
+- [ ] **Comment UI** — after API exists
 
 ---
 
-### S3-4: Recipe Creation Form
+### S3-4: Recipe creation form
 **Priority:** Critical  
-**Related Issues:** New issue to open  
 **Branch:** `frontend/feature_recipe-creation-form`
 
 **Tasks:**
-- [ ] Add `/recipes/new` route (ProtectedRoute, cook and expert only)
-- [ ] Create `RecipeCreatePage` component — multi-step form (stepper):
+- [x] `/create-recipe` (`ProtectedRoute` cook \| expert)
+- [x] `CreateRecipePage` — multi-step form
 
-**Step 1 — Basic Information:**
-- [ ] Recipe title (required)
-- [ ] Recipe type: `community` / `cultural` (expert only)
-- [ ] Dish variety selection: `GET /dish-varieties` dropdown
-- [ ] Serving size
-- [ ] Story (optional textarea)
-- [ ] Video URL (optional)
+**Step 1 — Basic information:**
+- [x] Title, type (cultural for expert), variety, servings, story, video URL
 
 **Step 2 — Ingredients:**
-- [ ] Ingredient entry row: name (autocomplete), quantity, unit
-- [ ] Ingredient list: add/remove rows
-- [ ] `GET /ingredients` or inline text entry (depending on backend support)
+- [ ] Rows exist; backend needs **`ingredientId`** — no `GET /ingredients` in use; not sent
 
-**Step 3 — Preparation Steps:**
-- [ ] Numbered step list
-- [ ] Add/remove/reorder steps (drag & drop optional)
+**Step 3 — Preparation steps:**
+- [x] Numbered steps, add/remove
 
-**Step 4 — Tools (Optional):**
-- [ ] Tool name input, add/remove as a list
+**Step 4 — Tools (optional):**
+- [x] Tool list
 
-**Draft & Publish:**
-- [ ] "Save Draft" button — `POST /recipes` with `isPublished: false`
-- [ ] "Publish" button — `POST /recipes` followed by `POST /recipes/:id/publish`
-- [ ] Form validation (title required; cannot publish without at least 1 ingredient and 1 step)
-- [ ] Success message and redirect to recipe detail page
-
-**New Issues to Open:**
-- `[FRONTEND/TASK] Multi-step recipe creation form with draft and publish`
+**Draft & publish:**
+- [x] Draft / publish via single `POST /recipes` with `isPublished`
+- [ ] Full MVP flow: `PATCH` draft + `POST .../publish` (when ingredients are persisted)
+- [x] Validation (title, at least one step)
+- [x] Success + redirect `/home`
 
 ---
 
-### S3-5: Allergen & Dietary Tag Selection (in Recipe Creation)
+### S3-5: Allergen & dietary tags (creation)
 **Priority:** Medium  
-**Related Issue:** [#191 — FRONTEND/TASK: Dietary and Allergen Tag Selection in Recipe Creation Form](https://github.com/bounswe/bounswe2026group10/issues/191)  
+**Related Issue:** [#191](https://github.com/bounswe/bounswe2026group10/issues/191)  
 **Branch:** `frontend/feature_allergen-dietary-tags`
 
 **Tasks:**
-- [ ] Add allergen and dietary tag selection to the recipe creation form
-- [ ] Fetch allergen list from backend (`GET /allergens`)
-- [ ] Multi-select checkbox/tag component
-- [ ] Send selected tags together with the recipe payload
+- [ ] `tagIds` + `GET /dietary-tags`
+- [ ] Allergen list (clarify if no `GET /allergens`)
+- [ ] Multi-select UI
+- [ ] Send in payload
 
 ---
 
-### S3-6: Accessibility Improvements
+### S3-6: Accessibility improvements
 **Priority:** Medium  
-**Related Issues:** New issue to open  
 **Branch:** `frontend/feature_accessibility`
 
 **Tasks:**
-- [ ] Verify readable font sizes across all pages (min 16px body)
-- [ ] Review high-contrast color palette
-- [ ] Test keyboard navigation — verify Tab order is logical
-- [ ] ARIA labels: form fields, buttons, navigation
-- [ ] Form error messages compatible with screen readers
+- [ ] **Scope moved from S1-5:** `MainLayout` header and `BottomNav` plus **all pages** — ARIA, tab order, keyboard use; forms and primary actions (first-pass audit)
+- [ ] Minimum ~16px body text where applicable
+- [ ] Contrast review
+- [ ] Screen-reader-friendly error messages
 - [ ] Visible focus styles
-
-**New Issues to Open:**
-- `[FRONTEND/TASK] Accessibility audit and improvements for MVP`
 
 ---
 
-### S3-7: MVP Final Polish & Testing
+### S3-7: MVP final polish & testing
 **Priority:** High  
 **Branch:** `frontend/fix_mvp-polish`
 
 **Tasks:**
-- [ ] Consistent loading state and error handling across all pages
-- [ ] 404 and error pages (improve `RouteError` component)
-- [ ] Responsive design: tablet and desktop compatibility
-- [ ] Meaningful messages for empty states
-- [ ] Test all form validation scenarios
-- [ ] Test all role combinations (learner, cook, expert)
-- [ ] End-to-end test of the token refresh flow
-- [ ] Environment variable check before deployment (`VITE_API_BASE_URL`)
+- [ ] Consistent loading/error across pages
+- [ ] Improve `RouteError`
+- [ ] Tablet / desktop layouts
+- [ ] Meaningful empty states
+- [ ] Form scenarios
+- [ ] Role combinations
+- [ ] Token refresh E2E smoke
+- [ ] `VITE_API_BASE_URL` for deploy
 
 ---
 
-### Sprint 3 Acceptance Criteria
-- [ ] Cook/Expert can create a recipe, save a draft, and publish it
-- [ ] Recipe detail page displays all information correctly
-- [ ] Changing serving size updates ingredient quantities
-- [ ] Users can rate and comment on recipes
-- [ ] Accessibility standards are met
-- [ ] All MVP flows work end-to-end
+### Sprint 3 acceptance criteria
+- [ ] Cook/Expert: full draft + server publish (`PATCH` + `publish` + ingredients) — **not done**
+- [x] Recipe detail content (except real comments)
+- [x] Serving scale recalculates ingredients
+- [x] **Submit / view / remove own rating** (comments still ⬜)
+- [ ] Accessibility standard (S3-6)
+- [ ] End-to-end MVP including comments / ingredient search — **partial** (rating done; comments & some discovery/create gaps remain)
 
 ---
 
-## Summary of New Issues to Open
+## Summary of issues to open (or refine)
 
-The following issues have been identified as not yet opened or requiring more specific definitions:
+Many items below are already implemented or tracked; this table is historical. **Rating on detail** is implemented (`rating-service`, `RecipeRating`, `RecipeDetailPage`, `ConfirmModal`).
 
 ### Sprint 1
-| Issue Title | Suggested Branch | Priority |
-|-------------|-----------------|----------|
-| [FRONTEND/TASK] Fetch and display authenticated user profile on app load | `frontend/feature_user-profile-display` | High |
-| [FRONTEND/TASK] Implement 401 interceptor with automatic token refresh | `frontend/feature_token-refresh` | High |
-| [FRONTEND/FEATURE] Implement responsive main navigation bar with role-based items | `frontend/feature_main-navigation` | High |
+| Issue title | Suggested branch | Priority |
+|-------------|------------------|----------|
+| Profile on load | `frontend/feature_user-profile-display` | High |
+| 401 refresh interceptor | `frontend/feature_token-refresh` | High |
+| Main navigation | `frontend/feature_main-navigation` | High |
 
 ### Sprint 2
-| Issue Title | Suggested Branch | Priority |
-|-------------|-----------------|----------|
-| [FRONTEND/TASK] Create recipe and discovery service layer | `frontend/feature_recipe-services` | High |
-| [FRONTEND/FEATURE] Discovery page with full filter support | `frontend/feature_discovery-page` | Critical |
+| Issue title | Suggested branch | Priority |
+|-------------|------------------|----------|
+| Discovery + recipe services | `frontend/feature_recipe-services` | High |
+| Discovery filters (full) | `frontend/feature_discovery-page` | Critical |
 
 ### Sprint 3
-| Issue Title | Suggested Branch | Priority |
-|-------------|-----------------|----------|
-| [FRONTEND/TASK] Recipe detail page — basic layout | `frontend/feature_recipe-detail` | Critical |
-| [FRONTEND/TASK] Rating component on recipe detail page | `frontend/feature_rating-comment` | High |
-| [FRONTEND/TASK] Comment section on recipe detail page | `frontend/feature_rating-comment` | High |
-| [FRONTEND/TASK] Multi-step recipe creation form with draft and publish | `frontend/feature_recipe-creation-form` | Critical |
-| [FRONTEND/TASK] Accessibility audit and improvements for MVP | `frontend/feature_accessibility` | Medium |
-| [BACKEND/TASK] GET /recipes/:id detail endpoint | — | Critical (Backend) |
+| Issue title | Suggested branch | Priority |
+|-------------|------------------|----------|
+| Recipe detail layout | `frontend/feature_recipe-detail` | Critical |
+| ~~Rating on recipe detail~~ | — | **Done (current codebase)** |
+| Comment section | `frontend/feature_rating-comment` | High (blocked by backend) |
+| Multi-step create + draft/publish | `frontend/feature_recipe-creation-form` | Critical |
+| Accessibility audit | `frontend/feature_accessibility` | Medium |
 
 ---
 
-## Suggested Task Assignment
+## Suggested task assignment
 
 | Developer | Sprint 1 | Sprint 2 | Sprint 3 |
 |-----------|----------|----------|----------|
-| **Yunus Yücesoy** | S1-1 (Logout), S1-3 (Token Refresh) | S2-3 (Service layer) | S3-7 (Polish & deploy) |
-| **Yüksel Ege Boyacı** | S1-2 (Profile), S1-4 (Role-based UI) | S2-1 (Discovery filters) | S3-4 (Recipe creation form) |
+| **Yunus Yücesoy** | S1-1 (Logout), S1-3 (Token refresh) | S2-3 (Service layer) | S3-7 (Polish & deploy) |
+| **Yüksel Ege Boyacı** | S1-2 (Profile), S1-4 (Role UI) | S2-1 (Discovery filters) | S3-4 (Recipe creation form) |
 | **Hikmet Can Köseoğlu** | S1-5 (Nav bar) | S2-2 (Recipe listing) | S3-1 (Recipe detail) |
-| **Ökkeş Berkay Acer** | S1-4 (Role UI support) | S2-1 (Allergen, search) | S3-3 (Rating & Comment), S3-6 (Accessibility) |
+| **Ökkeş Berkay Acer** | S1-4 (Role UI support) | S2-1 (Allergen, search) | S3-3 (Comments + accessibility), S3-6 (Accessibility) |
 
-> Note: S3-2 (Serving size) and S3-5 (Allergen tags) are secondary priority and should be addressed after the core MVP flows are complete.
+> Note: S3-2 (Serving size) and S3-5 (Allergen tags) are secondary after core flows. **S3-3 rating** is largely implemented; **comments** remain with Ökkeş / team when API exists.
 
 ---
 
-## Git Convention Reminders
+## Git convention reminders
 
 ```
 # Branch format
@@ -589,17 +509,17 @@ feat(discovery): add region and allergen filters to discovery page (#112)
 
 ---
 
-## Dependency Map
+## Dependency map
 
 ```
 Sprint 1 (Auth infrastructure)
     └── Sprint 2 (Discovery & Listing — requires auth)
-            └── Sprint 3 (Detail & Creation — discovery and listing must be complete)
-                    ├── S3-1 Recipe Detail (navigated to from listing cards)
-                    ├── S3-3 Rating/Comment (requires S3-1 detail page)
+            └── Sprint 3 (Detail & Creation — discovery and listing should be usable)
+                    ├── S3-1 Recipe Detail (from listing cards)
+                    ├── S3-3 Rating (done) / Comment (needs API)
                     └── S3-4 Recipe Creation (requires S1-4 role control)
 ```
 
 ---
 
-*Last updated: March 29, 2026 — Yunus Yücesoy*
+*Last updated: April 1, 2026 — full English pass; rating integration and endpoint inventory aligned with current frontend.*
