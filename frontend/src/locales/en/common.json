@@ -66,6 +66,8 @@
     "instructions": "Instructions",
     "video": "Video",
     "watchVideo": "Watch video",
+    "mediaGallery": "More photos",
+    "galleryImageAlt": "Recipe photo {{n}}",
     "unknownIngredient": "Unknown ingredient",
     "commentsRatings": "Comments & Ratings ({{count}})",
     "startCookingMode": "Start Cooking Mode",

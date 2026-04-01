@@ -243,7 +243,10 @@ export function RecipeDetailPage() {
     )
   }
 
-  const coverImage = recipe.media.find((m) => m.type === 'image')
+  const imageMedia = recipe.media.filter((m) => m.type === 'image')
+  const coverImage = imageMedia[0]
+  const extraGalleryImages = imageMedia.slice(1)
+  const uploadedVideos = recipe.media.filter((m) => m.type === 'video')
   const rating = recipe.averageRating
   const baseServings = recipe.servingSize && recipe.servingSize > 0 ? recipe.servingSize : 4
   const regionLine = recipe.dishVarietyName ?? recipe.genreName ?? ''
@@ -311,6 +314,24 @@ export function RecipeDetailPage() {
             <p className="recipe-detail__lede">{recipe.story}</p>
           )}
         </div>
+
+        {extraGalleryImages.length > 0 && (
+          <section className="recipe-detail__block recipe-detail__media-gallery-wrap" aria-label={t('recipeDetail.mediaGallery')}>
+            <h2 className="recipe-detail__h2">{t('recipeDetail.mediaGallery')}</h2>
+            <div className="recipe-detail__media-gallery">
+              {extraGalleryImages.map((m, i) => (
+                <div key={m.id} className="recipe-detail__media-gallery-item">
+                  <img
+                    src={m.url}
+                    alt={t('recipeDetail.galleryImageAlt', { n: i + 2 })}
+                    className="recipe-detail__media-gallery-img"
+                    loading="lazy"
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {(rating !== null || recipe.ratingCount > 0) && (
           <div className="recipe-detail__stats">
@@ -454,12 +475,23 @@ export function RecipeDetailPage() {
           </section>
         )}
 
-        {recipe.videoUrl && (
+        {uploadedVideos.length > 0 && (
           <section className="recipe-detail__block">
             <h2 className="recipe-detail__h2">{t('recipeDetail.video')}</h2>
-            <a href={recipe.videoUrl} target="_blank" rel="noopener noreferrer" className="recipe-detail__video-link">
-              {t('recipeDetail.watchVideo')}
-            </a>
+            <div className="recipe-detail__uploaded-videos">
+              {uploadedVideos.map((m) => (
+                <video
+                  key={m.id}
+                  className="recipe-detail__uploaded-video"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  src={m.url}
+                >
+                  {t('recipeDetail.video')}
+                </video>
+              ))}
+            </div>
           </section>
         )}
 

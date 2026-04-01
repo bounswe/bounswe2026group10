@@ -66,6 +66,8 @@
     "instructions": "Talimatlar",
     "video": "Video",
     "watchVideo": "Videoyu izle",
+    "mediaGallery": "Diğer fotoğraflar",
+    "galleryImageAlt": "Tarif fotoğrafı {{n}}",
     "unknownIngredient": "Bilinmeyen malzeme",
     "commentsRatings": "Yorumlar ve Puanlar ({{count}})",
     "startCookingMode": "Pişirme Modunu Başlat",
