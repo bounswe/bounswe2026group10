@@ -19,11 +19,25 @@
 }
 
 .home-page__section-title {
-  font-family: var(--font-body);
-  font-size: 1.1rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.5rem;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
+}
+
+.home-page__featured-label {
+  width: fit-content;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-main);
+  background: var(--surface-overlay);
+  border-radius: var(--radius-pill);
+  padding: 0.2rem 0.55rem;
 }
 
 /* ── Community picks grid ────────────────────────────────────────────────── */
@@ -35,6 +49,10 @@
 }
 
 @media (min-width: 768px) {
+  .recipe-card--hero .recipe-card__hero-img {
+    height: 20rem;
+  }
+
   .home-page__picks-grid {
     grid-template-columns: repeat(3, 1fr);
   }

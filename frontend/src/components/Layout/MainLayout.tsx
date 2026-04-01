@@ -1,14 +1,15 @@
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Link, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppSelector } from '@/store/hooks'
 import { useLogout } from '@/hooks/useLogout'
 import { selectProfile } from '@/store/slices/profile-slice'
 import { HeaderUser } from '@/components/Layout/HeaderUser'
-import { NavBar } from '@/components/Layout/NavBar'
+import { BottomNav } from '@/components/Layout/BottomNav'
 import './MainLayout.css'
 
 export function MainLayout() {
   const { t } = useTranslation('common')
+  const location = useLocation()
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated)
   const profile = useAppSelector(selectProfile)
   const { logout, isLoggingOut } = useLogout()
@@ -17,22 +18,18 @@ export function MainLayout() {
     profile.status === 'idle' || profile.status === 'loading'
   const roleLabel = profile.role ? t(`app.roles.${profile.role}`) : ''
 
+  const hideBottomNav = location.pathname === '/create-recipe'
+  const mainClassName = hideBottomNav ? undefined : 'app-main--bottom-inset'
+
   return (
     <div className="app-shell">
       <header className="app-header">
         <div className="app-header__inner">
 
-          {/* Brand — left */}
           <Link to="/home" className="app-header__brand" aria-label={t('app.title')}>
             Roots &amp; Recipes
           </Link>
 
-          {/* Primary nav — centre (Discovery + Create Recipe role-gated, hamburger on mobile) */}
-          {isAuthenticated && (
-            <NavBar onLogout={() => void logout()} isLoggingOut={isLoggingOut} />
-          )}
-
-          {/* User menu — right: username · profile link · logout */}
           {isAuthenticated && (
             <div className="app-header__trailing">
               <HeaderUser
@@ -43,14 +40,6 @@ export function MainLayout() {
                 errorMessage={profile.error}
                 roleLabel={roleLabel}
               />
-              <NavLink
-                to="/profile"
-                className={({ isActive }) =>
-                  `app-header__profile-link${isActive ? ' app-header__profile-link--active' : ''}`
-                }
-              >
-                {t('nav.profile')}
-              </NavLink>
               <button
                 type="button"
                 className="app-header__logout"
@@ -66,9 +55,10 @@ export function MainLayout() {
 
         </div>
       </header>
-      <main>
+      <main className={mainClassName}>
         <Outlet />
       </main>
+      {isAuthenticated && !hideBottomNav && <BottomNav />}
     </div>
   )
 }

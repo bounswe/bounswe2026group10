@@ -81,8 +81,9 @@
 }
 
 .search-page__section-title {
-  font-family: var(--font-body);
-  font-size: 1.1rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.45rem;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
@@ -104,6 +105,11 @@
 @media (min-width: 768px) {
   .search-page__genre-grid {
     grid-template-columns: repeat(4, 1fr);
+  }
+
+  .search-page__results {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

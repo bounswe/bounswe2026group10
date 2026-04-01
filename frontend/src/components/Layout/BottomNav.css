@@ -1,0 +1,99 @@
+/* ── Bottom navigation (primary IA: Home | Search | Create | Library | Profile) ─ */
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-sm)
+    max(0.5rem, env(safe-area-inset-bottom, 0px));
+  background: var(--surface-card);
+  border-top: 1px solid rgba(134, 69, 42, 0.2);
+  box-shadow: 0 -2px 12px rgba(26, 18, 16, 0.06);
+}
+
+.bottom-nav__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1;
+  max-width: 5.5rem;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-family: var(--font-body);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.bottom-nav__item:hover {
+  color: var(--color-main);
+  background: var(--surface-overlay);
+}
+
+.bottom-nav__item--active {
+  color: var(--color-main);
+}
+
+.bottom-nav__item--active .bottom-nav__label {
+  font-weight: 500;
+}
+
+.bottom-nav__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bottom-nav__label {
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Central FAB — create recipe */
+.bottom-nav__fab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-top: -1.5rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-main);
+  color: var(--text-on-main);
+  box-shadow: 0 4px 12px rgba(134, 69, 42, 0.3);
+  text-decoration: none;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.bottom-nav__fab:hover {
+  background: var(--color-main-dark);
+  transform: translateY(-1px);
+}
+
+.bottom-nav__fab--disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+.bottom-nav__fab--disabled:hover {
+  background: var(--color-main);
+  transform: none;
+}
