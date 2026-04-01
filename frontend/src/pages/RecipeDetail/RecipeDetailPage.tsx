@@ -5,6 +5,7 @@ import { isAxiosError } from 'axios'
 import { recipeService, type RecipeDetail, type RecipeIngredient } from '@/services/recipe-service'
 import { ratingService } from '@/services/rating-service'
 import { RecipeRating } from '@/components/RecipeRating/RecipeRating'
+import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal'
 import { useAppSelector } from '@/store/hooks'
 import './RecipeDetailPage.css'
 
@@ -98,6 +99,7 @@ export function RecipeDetailPage() {
   const [myRatingScore, setMyRatingScore] = useState<number | null>(null)
   const [ratingBusy, setRatingBusy] = useState(false)
   const [ratingError, setRatingError] = useState<string | null>(null)
+  const [showRemoveRatingModal, setShowRemoveRatingModal] = useState(false)
 
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated)
   const profile = useAppSelector((s) => s.profile)
@@ -180,6 +182,29 @@ export function RecipeDetailPage() {
     },
     [id, recipe, t]
   )
+
+  const handleRemoveMyRating = useCallback(async (): Promise<boolean> => {
+    if (!id || !recipe) {
+      return false
+    }
+    setRatingError(null)
+    setRatingBusy(true)
+    try {
+      await ratingService.deleteMyRating(id)
+      const updated = await recipeService.getById(id)
+      setRecipe(updated)
+      setMyRatingScore(null)
+      return true
+    } catch (err: unknown) {
+      const message = isAxiosError(err)
+        ? (err.response?.data as { error?: { message?: string } } | undefined)?.error?.message
+        : undefined
+      setRatingError(message || t('recipeDetail.ratingSubmitError'))
+      return false
+    } finally {
+      setRatingBusy(false)
+    }
+  }, [id, recipe, t])
 
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : ''
@@ -320,12 +345,28 @@ export function RecipeDetailPage() {
           {isAuthenticated &&
           ((profile.status === 'succeeded' && !isOwnRecipe) || profile.status === 'failed') ? (
             <>
-              <RecipeRating
-                value={myRatingScore}
-                onChange={handleRecipeRatingChange}
-                busy={ratingBusy}
-                ariaLabel={t('recipeDetail.ratingAria')}
-              />
+              <div className="recipe-detail__rating-controls">
+                <RecipeRating
+                  value={myRatingScore}
+                  onChange={handleRecipeRatingChange}
+                  busy={ratingBusy}
+                  ariaLabel={t('recipeDetail.ratingAria')}
+                  starSize={32}
+                  size="comfortable"
+                  className="recipe-detail__rating-stars"
+                />
+                {myRatingScore != null && (
+                  <button
+                    type="button"
+                    className="recipe-detail__rating-remove"
+                    onClick={() => setShowRemoveRatingModal(true)}
+                    disabled={ratingBusy}
+                    aria-label={t('recipeDetail.ratingRemoveAria')}
+                  >
+                    {t('recipeDetail.ratingRemove')}
+                  </button>
+                )}
+              </div>
               {ratingError ? <p className="recipe-detail__rating-error">{ratingError}</p> : null}
             </>
           ) : null}
@@ -436,6 +477,25 @@ export function RecipeDetailPage() {
           <p className="recipe-detail__alternatives-empty">{t('recipeDetail.noAlternatives')}</p>
         </section>
       </div>
+
+      <ConfirmModal
+        isOpen={showRemoveRatingModal}
+        title={t('recipeDetail.ratingRemoveModalTitle')}
+        message={t('recipeDetail.ratingRemoveModalMessage')}
+        confirmLabel={t('recipeDetail.ratingRemoveModalConfirm')}
+        cancelLabel={t('recipeDetail.ratingRemoveModalCancel')}
+        confirmVariant="danger"
+        busy={ratingBusy}
+        onCancel={() => setShowRemoveRatingModal(false)}
+        onConfirm={() => {
+          void (async () => {
+            const ok = await handleRemoveMyRating()
+            if (ok) {
+              setShowRemoveRatingModal(false)
+            }
+          })()
+        }}
+      />
     </div>
   )
 }

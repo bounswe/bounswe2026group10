@@ -82,7 +82,13 @@
     "yourRating": "Puanınız",
     "ratingHeading": "Puanlama",
     "ratingAria": "Bu tarif için verdiğiniz puan",
-    "ratingLoginLink": "Giriş yap"
+    "ratingLoginLink": "Giriş yap",
+    "ratingRemove": "Puanımı kaldır",
+    "ratingRemoveAria": "Bu tarif için verdiğiniz puanı kaldır",
+    "ratingRemoveModalTitle": "Puanınızı kaldırmak istiyor musunuz?",
+    "ratingRemoveModalMessage": "Bu tarif için verdiğiniz yıldız puanı silinecek. İsterseniz sonra yeniden puan verebilirsiniz.",
+    "ratingRemoveModalConfirm": "Kaldır",
+    "ratingRemoveModalCancel": "Vazgeç"
   },
   "dishVariety": {
     "notFound": "Yemek çeşidi bulunamadı.",

@@ -11,6 +11,14 @@
   gap: 0.125rem;
 }
 
+.recipe-rating--comfortable .recipe-rating__stars {
+  gap: 0.2rem;
+}
+
+.recipe-rating--comfortable .recipe-rating__star {
+  padding: 0.35rem;
+}
+
 .recipe-rating__star {
   display: inline-flex;
   align-items: center;
@@ -29,6 +37,7 @@
 
 .recipe-rating__star:hover:not(:disabled) {
   color: var(--color-main, #8b4513);
+  transform: scale(1.08);
 }
 
 .recipe-rating__star:focus {
@@ -60,6 +69,7 @@
   opacity: 1;
   fill: var(--color-main, #c17f3a);
   color: var(--color-main, #c17f3a);
+  filter: drop-shadow(0 1px 1px rgba(42, 24, 16, 0.12));
 }
 
 .recipe-rating--disabled .recipe-rating__svg--filled {

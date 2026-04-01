@@ -16,8 +16,10 @@ export interface RecipeRatingProps {
   /** `role="group"` label for the interactive control. */
   ariaLabel?: string
   className?: string
-  /** Pixel size for each star icon. */
+  /** Pixel size for each star icon. Default 28. */
   starSize?: number
+  /** Larger tap targets and spacing. */
+  size?: 'default' | 'comfortable'
 }
 
 function StarGlyph({ filled, size }: { filled: boolean; size: number }) {
@@ -43,6 +45,7 @@ export function RecipeRating({
   ariaLabel = 'Star rating',
   className = '',
   starSize = 28,
+  size = 'default',
 }: RecipeRatingProps) {
   const [hover, setHover] = useState<number | null>(null)
 
@@ -51,6 +54,7 @@ export function RecipeRating({
 
   const rootClass = [
     'recipe-rating',
+    size === 'comfortable' && 'recipe-rating--comfortable',
     busy && 'recipe-rating--busy',
     disabled && 'recipe-rating--disabled',
     readOnly && 'recipe-rating--readonly',

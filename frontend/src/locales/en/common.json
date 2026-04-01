@@ -82,7 +82,13 @@
     "yourRating": "Your rating",
     "ratingHeading": "Rating",
     "ratingAria": "Your rating for this recipe",
-    "ratingLoginLink": "Log in"
+    "ratingLoginLink": "Log in",
+    "ratingRemove": "Remove my rating",
+    "ratingRemoveAria": "Remove your rating for this recipe",
+    "ratingRemoveModalTitle": "Remove your rating?",
+    "ratingRemoveModalMessage": "Your star rating for this recipe will be deleted. You can submit a new rating anytime.",
+    "ratingRemoveModalConfirm": "Remove",
+    "ratingRemoveModalCancel": "Cancel"
   },
   "dishVariety": {
     "notFound": "Dish variety not found.",
