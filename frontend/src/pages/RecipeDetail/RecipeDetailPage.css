@@ -211,6 +211,47 @@
   color: var(--rd-muted);
 }
 
+/* User rating (interactive) */
+.recipe-detail__rating-section {
+  margin-top: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--rd-muted-bg);
+  border-radius: var(--radius-md);
+}
+
+.recipe-detail__rating-label {
+  margin: 0 0 var(--space-sm);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--rd-fg);
+}
+
+.recipe-detail__rating-muted {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--rd-muted);
+}
+
+.recipe-detail__rating-login {
+  color: var(--color-main);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.recipe-detail__rating-login:focus-visible {
+  outline: 2px solid var(--color-main);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.recipe-detail__rating-error {
+  margin: var(--space-sm) 0 0;
+  font-size: 0.875rem;
+  color: #b42318;
+}
+
 /* Servings card */
 .recipe-detail__card {
   background: var(--surface-card);

@@ -75,7 +75,14 @@
     "favoriteAria": "Add to favorites",
     "shareAria": "Share recipe",
     "cookingModeSoon": "Cooking mode will be available soon.",
-    "commentsSoon": "Comments will be available soon."
+    "commentsSoon": "Comments will be available soon.",
+    "ratingLoginPrompt": "Log in to rate this recipe.",
+    "ratingOwnRecipe": "You cannot rate your own recipe.",
+    "ratingSubmitError": "Could not save your rating. Please try again.",
+    "yourRating": "Your rating",
+    "ratingHeading": "Rating",
+    "ratingAria": "Your rating for this recipe",
+    "ratingLoginLink": "Log in"
   },
   "dishVariety": {
     "notFound": "Dish variety not found.",

@@ -75,7 +75,14 @@
     "favoriteAria": "Favorilere ekle",
     "shareAria": "Tarifi paylaş",
     "cookingModeSoon": "Pişirme modu yakında gelecek.",
-    "commentsSoon": "Yorumlar yakında gelecek."
+    "commentsSoon": "Yorumlar yakında gelecek.",
+    "ratingLoginPrompt": "Bu tarifi puanlamak için giriş yapın.",
+    "ratingOwnRecipe": "Kendi tarifinize puan veremezsiniz.",
+    "ratingSubmitError": "Puanınız kaydedilemedi. Lütfen tekrar deneyin.",
+    "yourRating": "Puanınız",
+    "ratingHeading": "Puanlama",
+    "ratingAria": "Bu tarif için verdiğiniz puan",
+    "ratingLoginLink": "Giriş yap"
   },
   "dishVariety": {
     "notFound": "Yemek çeşidi bulunamadı.",
