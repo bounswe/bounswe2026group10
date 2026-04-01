@@ -154,6 +154,18 @@
     },
     "successDraft": "Tarif taslak olarak kaydedildi!",
     "successPublished": "Tarif yayınlandı!",
-    "errorCreate": "Tarif oluşturulamadı. Lütfen tekrar deneyin."
+    "errorCreate": "Tarif oluşturulamadı. Lütfen tekrar deneyin.",
+    "media": {
+      "title": "Fotoğraf ve video (isteğe bağlı)",
+      "hint": "JPEG, PNG veya WebP görseller (dosya başına en fazla 10 MB) ve MP4 video (en fazla 100 MB). Dosyalar tarif oluşturulduktan sonra yüklenir.",
+      "chooseFiles": "Dosya seç",
+      "removeAria": "Dosyayı kaldır",
+      "errorType": "Yalnızca JPEG, PNG, WebP görselleri ve MP4 video kabul edilir.",
+      "errorSizeImage": "Her görsel en fazla 10 MB olmalıdır.",
+      "errorSizeVideo": "Video en fazla 100 MB olmalıdır.",
+      "errorMaxFiles": "En fazla 10 dosya ekleyebilirsiniz.",
+      "reviewCount": "Kayıttan sonra yüklenecek {{count}} dosya",
+      "errorMediaAfterCreate": "Tarif kaydedildi ancak medya yüklenemedi. Daha sonra tekrar deneyebilirsiniz."
+    }
   }
 }
