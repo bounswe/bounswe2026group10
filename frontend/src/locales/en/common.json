@@ -48,6 +48,27 @@
     "noResults": "No dishes found. Try a different search.",
     "recipes": "recipes"
   },
+  "discovery": {
+    "title": "Discover Recipes",
+    "filters": "Filters",
+    "region": "Region",
+    "selectRegion": "Select a region",
+    "allergens": "Avoid Allergens",
+    "selectAllergens": "Choose allergens to avoid",
+    "dietaryTags": "Dietary Preferences",
+    "selectDietaryTags": "Select dietary preferences",
+    "clearFilters": "Clear all filters",
+    "noRegionSelected": "All regions",
+    "noAllergenSelected": "None",
+    "noDietarySelected": "None",
+    "resultsCount": "{{count}} recipes found",
+    "noResults": "No recipes match your filters. Try adjusting them.",
+    "applyFilters": "Apply Filters",
+    "pagination": "Page {{page}} of {{total}}",
+    "previousPage": "Previous",
+    "nextPage": "Next",
+    "loading": "Loading recipes…"
+  },
   "common": {
     "retry": "Try again",
     "errorRetry": "Something went wrong. Please try again.",
