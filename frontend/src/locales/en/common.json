@@ -12,10 +12,24 @@
     "ariaLabel": "Main navigation",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
+    "home": "Home",
     "discovery": "Discovery",
     "search": "Search",
+    "library": "Library",
     "createRecipe": "Create Recipe",
+    "createDisabledHint": "Only cooks and experts can create recipes.",
     "profile": "Profile"
+  },
+  "library": {
+    "title": "My Library",
+    "placeholder": "Favorites, drafts, and your published recipes will appear here."
+  },
+  "profileScreen": {
+    "title": "Profile",
+    "loading": "Loading profile…",
+    "username": "Username",
+    "email": "Email",
+    "role": "Role"
   },
   "home": {
     "featured": "Featured Recipe",
@@ -45,13 +59,23 @@
     "community": "Community",
     "by": "by",
     "servings": "{{count}} servings",
+    "servingsLabel": "Servings",
     "story": "Story",
     "ingredients": "Ingredients",
     "tools": "Tools Needed",
     "instructions": "Instructions",
     "video": "Video",
     "watchVideo": "Watch video",
-    "unknownIngredient": "Unknown ingredient"
+    "unknownIngredient": "Unknown ingredient",
+    "commentsRatings": "Comments & Ratings ({{count}})",
+    "startCookingMode": "Start Cooking Mode",
+    "alternativeRecipes": "Alternative cultural recipes",
+    "noAlternatives": "No alternative recipes listed yet.",
+    "substituteAria": "Substitute for {{name}}",
+    "favoriteAria": "Add to favorites",
+    "shareAria": "Share recipe",
+    "cookingModeSoon": "Cooking mode will be available soon.",
+    "commentsSoon": "Comments will be available soon."
   },
   "dishVariety": {
     "notFound": "Dish variety not found.",

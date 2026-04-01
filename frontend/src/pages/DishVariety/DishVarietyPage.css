@@ -1,96 +1,109 @@
+/* ── Dish Variety Page ────────────────────────────────────────────────────── */
+
 .dish-variety-page {
-  max-width: 720px;
+  max-width: 72rem;
   margin: 0 auto;
-  padding: 0 0 var(--spacing-xl);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
 }
 
-/* Back */
 .dish-variety-page__back {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  background: none;
+  gap: var(--space-xs);
+  width: fit-content;
   border: none;
-  color: var(--color-primary);
-  font-size: var(--font-size-sm);
+  background: transparent;
+  color: var(--color-main);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
   font-weight: 500;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  padding: var(--spacing-md) var(--spacing-md);
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .dish-variety-page__back:hover {
-  opacity: 0.8;
+  background: var(--surface-overlay);
+  color: var(--color-main-dark);
 }
 
-/* Header */
 .dish-variety-page__header {
-  padding: 0 var(--spacing-md) var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
 .dish-variety-page__genre {
-  font-size: var(--font-size-xs);
+  width: fit-content;
+  font-size: 0.72rem;
   font-weight: 600;
-  color: var(--color-primary);
-  text-transform: uppercase;
   letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-main);
+  background: var(--surface-overlay);
+  border-radius: var(--radius-pill);
+  padding: 0.2rem 0.55rem;
 }
 
 .dish-variety-page__title {
-  font-size: var(--font-size-xl);
-  font-weight: 700;
-  color: var(--color-text-primary);
-  margin: var(--spacing-xs) 0;
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(1.7rem, 3.1vw, 2.4rem);
+  line-height: 1.15;
+  color: var(--text-primary);
 }
 
 .dish-variety-page__description {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  line-height: 1.6;
   margin: 0;
-}
-
-/* Section */
-.dish-variety-page__section {
-  padding: 0 var(--spacing-md);
+  color: var(--text-secondary);
+  line-height: 1.7;
 }
 
 .dish-variety-page__section-title {
-  font-size: var(--font-size-md);
-  font-weight: 700;
-  color: var(--color-text-primary);
-  margin: 0 0 var(--spacing-sm);
-  padding-bottom: var(--spacing-xs);
-  border-bottom: 2px solid var(--color-neutral-dark);
+  margin: 0 0 var(--space-sm);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.3rem;
+  color: var(--text-primary);
 }
 
 .dish-variety-page__empty {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  margin: 0;
+  color: var(--text-secondary);
 }
 
-/* Recipe rows */
 .dish-variety-page__recipes {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--space-sm);
 }
 
 .variety-recipe-row {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-neutral-dark);
-  border-radius: var(--radius-md);
-  cursor: pointer;
+  gap: var(--space-sm);
   text-align: left;
-  width: 100%;
-  transition: background 0.15s;
+  padding: var(--space-md);
+  border: 1px solid rgba(134, 69, 42, 0.12);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  cursor: pointer;
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
 .variety-recipe-row:hover {
-  background: var(--color-neutral-dark);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.variety-recipe-row:focus-visible {
+  outline: 2px solid var(--color-main);
+  outline-offset: 2px;
 }
 
 .variety-recipe-row__body {
@@ -99,10 +112,10 @@
 }
 
 .variety-recipe-row__title {
-  font-size: var(--font-size-sm);
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
   font-weight: 600;
-  color: var(--color-text-primary);
-  margin: 0 0 4px;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -111,78 +124,85 @@
 .variety-recipe-row__meta {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
   flex-wrap: wrap;
+  gap: var(--space-sm);
 }
 
 .variety-recipe-row__type {
-  font-size: var(--font-size-xs);
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-pill);
+  color: var(--text-on-main);
+  font-size: 0.72rem;
   font-weight: 600;
-  padding: 1px 8px;
-  border-radius: var(--radius-full);
-  color: #fff;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-.variety-recipe-row__type--cultural { background: var(--color-accent); }
-.variety-recipe-row__type--community { background: var(--color-primary); }
+.variety-recipe-row__type--cultural {
+  background: var(--color-tertiary);
+}
+
+.variety-recipe-row__type--community {
+  background: var(--color-secondary);
+}
 
 .variety-recipe-row__region {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
 }
 
 .variety-recipe-row__rating {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: var(--font-size-xs);
+  gap: 0.2rem;
+  color: var(--color-tertiary);
+  font-size: 0.82rem;
   font-weight: 600;
-  color: var(--color-accent);
 }
 
 .variety-recipe-row__arrow {
+  color: var(--text-muted);
   flex-shrink: 0;
-  color: var(--color-text-secondary);
 }
 
-/* Error */
 .dish-variety-page--error {
+  min-height: 40vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-xl);
-  gap: var(--spacing-md);
-  color: var(--color-text-secondary);
+  gap: var(--space-md);
+  color: var(--text-secondary);
+  text-align: center;
 }
 
 .dish-variety-page__back-btn {
-  background: none;
-  border: 1px solid var(--color-primary);
-  color: var(--color-primary);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px solid var(--color-main);
+  background: transparent;
+  color: var(--color-main);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 1rem;
   cursor: pointer;
-  font-size: var(--font-size-sm);
 }
 
-/* Skeletons */
+.dish-variety-page__back-btn:hover {
+  background: var(--surface-overlay);
+}
+
 .dish-variety-page__skeleton-title {
   height: 2rem;
-  width: 60%;
-  border-radius: 4px;
-  margin: var(--spacing-md);
+  width: min(22rem, 70%);
+  border-radius: var(--radius-sm);
 }
 
 .dish-variety-page__skeleton-body {
-  padding: var(--spacing-md);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--space-sm);
 }
 
 .dish-variety-page__skeleton-row {
-  height: 64px;
+  height: 4.2rem;
   border-radius: var(--radius-md);
 }
 
@@ -192,6 +212,28 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (min-width: 768px) {
+  .dish-variety-page {
+    grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
+    align-items: start;
+    column-gap: var(--space-2xl);
+  }
+
+  .dish-variety-page__back {
+    grid-column: 1 / -1;
+  }
+
+  .dish-variety-page__header {
+    position: sticky;
+    top: 5.5rem;
+  }
 }

@@ -69,6 +69,7 @@ export function HomePage() {
 
       {/* ── Featured Recipe ─────────────────────────────────────────────── */}
       <section className="home-page__section">
+        <span className="home-page__featured-label">{t('home.featured')}</span>
         <h2 className="home-page__section-title">{t('home.featured')}</h2>
         {featured ? (
           <RecipeCard

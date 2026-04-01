@@ -9,6 +9,8 @@ import { DishVarietyPage } from '@/pages/DishVariety/DishVarietyPage'
 import { LoginPage } from '@/pages/Login/LoginPage'
 import { RegisterPage } from '@/pages/Register/RegisterPage'
 import { WelcomePage } from '@/pages/Welcome/WelcomePage'
+import { LibraryPage } from '@/pages/Library/LibraryPage'
+import { ProfilePage } from '@/pages/Profile/ProfilePage'
 import { RouteError } from '@/router/RouteError'
 
 export const router = createBrowserRouter([
@@ -31,6 +33,8 @@ export const router = createBrowserRouter([
     children: [
       { path: '/home', element: <HomePage /> },
       { path: '/search', element: <SearchPage /> },
+      { path: '/library', element: <LibraryPage /> },
+      { path: '/profile', element: <ProfilePage /> },
       { path: '/recipes/:id', element: <RecipeDetailPage /> },
       { path: '/dish-variety/:id', element: <DishVarietyPage /> },
       {

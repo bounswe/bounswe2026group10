@@ -129,6 +129,11 @@ a:hover {
   width: 100%;
 }
 
+/* Space for fixed bottom nav (hidden on /create-recipe) */
+.app-shell main.app-main--bottom-inset {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+
 /* ── Shared UI (buttons, layout) ───────────────────────────────────────── */
 
 @keyframes spin {

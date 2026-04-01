@@ -12,10 +12,24 @@
     "ariaLabel": "Ana gezinti",
     "openMenu": "Menüyü aç",
     "closeMenu": "Menüyü kapat",
+    "home": "Ana Sayfa",
     "discovery": "Keşfet",
     "search": "Ara",
+    "library": "Kütüphane",
     "createRecipe": "Tarif Oluştur",
+    "createDisabledHint": "Tarif oluşturmak yalnızca aşçı ve uzman rolleri içindir.",
     "profile": "Profil"
+  },
+  "library": {
+    "title": "Kütüphanem",
+    "placeholder": "Favoriler, taslaklar ve yayınladığınız tarifler burada görünecek."
+  },
+  "profileScreen": {
+    "title": "Profil",
+    "loading": "Profil yükleniyor…",
+    "username": "Kullanıcı adı",
+    "email": "E-posta",
+    "role": "Rol"
   },
   "home": {
     "featured": "Öne Çıkan Tarif",
@@ -45,13 +59,23 @@
     "community": "Topluluk",
     "by": "tarafından",
     "servings": "{{count}} porsiyon",
+    "servingsLabel": "Porsiyon",
     "story": "Hikaye",
     "ingredients": "Malzemeler",
     "tools": "Gerekli Araçlar",
     "instructions": "Talimatlar",
     "video": "Video",
     "watchVideo": "Videoyu izle",
-    "unknownIngredient": "Bilinmeyen malzeme"
+    "unknownIngredient": "Bilinmeyen malzeme",
+    "commentsRatings": "Yorumlar ve Puanlar ({{count}})",
+    "startCookingMode": "Pişirme Modunu Başlat",
+    "alternativeRecipes": "Alternatif kültürel tarifler",
+    "noAlternatives": "Henüz alternatif tarif listelenmedi.",
+    "substituteAria": "{{name}} için alternatif",
+    "favoriteAria": "Favorilere ekle",
+    "shareAria": "Tarifi paylaş",
+    "cookingModeSoon": "Pişirme modu yakında gelecek.",
+    "commentsSoon": "Yorumlar yakında gelecek."
   },
   "dishVariety": {
     "notFound": "Yemek çeşidi bulunamadı.",
