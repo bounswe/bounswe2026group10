@@ -1,5 +1,5 @@
 import type { UserRole } from '../types/common';
-import { mockDelay } from './client';
+import { fetchApi, setToken } from './client';
 
 export interface RegisterParams {
   email: string;
@@ -31,48 +31,37 @@ export interface MeResponse {
 }
 
 export async function register(params: RegisterParams): Promise<AuthTokens> {
-  await mockDelay();
-  return {
-    userId: 'mock-user-001',
-    email: params.email,
-    username: params.username,
-    role: params.role.toUpperCase() as UserRole,
-    accessToken: 'mock-access-token',
-    refreshToken: 'mock-refresh-token',
-  };
+  const data = await fetchApi<AuthTokens>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+  setToken(data.accessToken);
+  return data;
 }
 
 export async function login(params: LoginParams): Promise<AuthTokens> {
-  await mockDelay();
-  return {
-    userId: 'mock-user-001',
-    email: params.email,
-    username: 'mock_user',
-    role: 'COOK',
-    accessToken: 'mock-access-token',
-    refreshToken: 'mock-refresh-token',
-  };
+  const data = await fetchApi<AuthTokens>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+  setToken(data.accessToken);
+  return data;
 }
 
 export async function logout(): Promise<void> {
-  await mockDelay(200);
+  await fetchApi<void>('/auth/logout', { method: 'POST' });
+  setToken(null);
 }
 
-export async function refreshToken(token: string): Promise<Pick<AuthTokens, 'accessToken' | 'refreshToken'>> {
-  await mockDelay(200);
-  return {
-    accessToken: 'mock-access-token-refreshed',
-    refreshToken: token,
-  };
+export async function refreshToken(
+  token: string
+): Promise<Pick<AuthTokens, 'accessToken' | 'refreshToken'>> {
+  return fetchApi('/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken: token }),
+  });
 }
 
 export async function getMe(): Promise<MeResponse> {
-  await mockDelay();
-  return {
-    userId: 'mock-user-001',
-    email: 'mock@example.com',
-    username: 'mock_user',
-    role: 'COOK',
-    createdAt: new Date().toISOString(),
-  };
+  return fetchApi<MeResponse>('/auth/me');
 }
