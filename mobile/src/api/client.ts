@@ -1,4 +1,22 @@
-export const BASE_URL = 'http://localhost:3000';
+import Constants from 'expo-constants';
+
+// In development, derive the backend host from Expo's dev server URL so the
+// app reaches the correct machine whether running on simulator, emulator, or
+// a physical device on the same network.
+// In production, replace this with your deployed API URL.
+function getBaseUrl(): string {
+  if (__DEV__) {
+    const hostUri = Constants.expoConfig?.hostUri ?? Constants.manifest?.debuggerHost;
+    if (hostUri) {
+      const host = hostUri.split(':')[0]; // strip the Metro port, keep only the IP
+      console.log('[API] resolved backend host:', host);
+      return `http://${host}:3000`;
+    }
+  }
+  return 'http://localhost:3000';
+}
+
+export const BASE_URL = getBaseUrl();
 
 export interface ApiResponse<T> {
   success: boolean;
