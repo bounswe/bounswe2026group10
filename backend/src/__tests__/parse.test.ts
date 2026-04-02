@@ -20,9 +20,10 @@ jest.mock("../config/supabase.js", () => {
 
 jest.mock("../services/recipe-parser.js", () => ({
   parseRecipeText: jest.fn(),
+  standardizeUnits: jest.fn(),
 }));
 
-import { parseRecipeText } from "../services/recipe-parser.js";
+import { parseRecipeText, standardizeUnits } from "../services/recipe-parser.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -178,5 +179,157 @@ describe("POST /parse/recipe-text", () => {
     expect(res.status).toBe(500);
     expect(res.body.error.code).toBe("PARSE_FAILED");
     expect(res.body.error.message).toContain("Failed to parse");
+  });
+});
+
+// ─── POST /parse/standardize-units ──────────────────────────────────────────
+
+const standardizePayload = {
+  ingredients: [
+    { name: "flour", quantity: 1, unit: "tea glass" },
+    { name: "sugar", quantity: 1, unit: "pinch" },
+  ],
+  steps: [
+    { stepOrder: 1, description: "Hamuru kulak memesi kıvamına getirin." },
+    { stepOrder: 2, description: "Göz kararı tuz ekleyin." },
+  ],
+  region: "Turkey",
+};
+
+const mockStandardizedResult = {
+  ingredients: [
+    {
+      name: "flour",
+      originalQuantity: 1,
+      originalUnit: "tea glass",
+      standardQuantity: 100,
+      standardUnit: "ml",
+    },
+    {
+      name: "sugar",
+      originalQuantity: 1,
+      originalUnit: "pinch",
+      standardQuantity: 1,
+      standardUnit: "g",
+    },
+  ],
+  steps: [
+    {
+      stepOrder: 1,
+      originalDescription: "Hamuru kulak memesi kıvamına getirin.",
+      standardDescription: "Knead the dough until it is soft and smooth, similar to the texture of an earlobe (not sticky, slightly firm).",
+    },
+    {
+      stepOrder: 2,
+      originalDescription: "Göz kararı tuz ekleyin.",
+      standardDescription: "Add salt approximately to your preference.",
+    },
+  ],
+};
+
+describe("POST /parse/standardize-units", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("returns 401 if not authenticated", async () => {
+    const res = await request(app)
+      .post("/parse/standardize-units")
+      .send(standardizePayload);
+
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 403 if user is a learner", async () => {
+    setupAuthMock("learner");
+
+    const res = await request(app)
+      .post("/parse/standardize-units")
+      .set("Authorization", "Bearer valid_token")
+      .send(standardizePayload);
+
+    expect(res.status).toBe(403);
+  });
+
+  it("returns 400 if ingredients array is empty", async () => {
+    setupAuthMock("cook");
+
+    const res = await request(app)
+      .post("/parse/standardize-units")
+      .set("Authorization", "Bearer valid_token")
+      .send({ ingredients: [] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 400 if ingredients is missing", async () => {
+    setupAuthMock("cook");
+
+    const res = await request(app)
+      .post("/parse/standardize-units")
+      .set("Authorization", "Bearer valid_token")
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns 200 with standardized ingredients and steps", async () => {
+    setupAuthMock("cook");
+    (standardizeUnits as jest.Mock).mockResolvedValue(mockStandardizedResult);
+
+    const res = await request(app)
+      .post("/parse/standardize-units")
+      .set("Authorization", "Bearer valid_token")
+      .send(standardizePayload);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.ingredients).toHaveLength(2);
+    expect(res.body.data.ingredients[0].originalUnit).toBe("tea glass");
+    expect(res.body.data.ingredients[0].standardQuantity).toBe(100);
+    expect(res.body.data.ingredients[0].standardUnit).toBe("ml");
+    expect(res.body.data.steps).toHaveLength(2);
+    expect(res.body.data.steps[0].originalDescription).toContain("kulak memesi");
+    expect(res.body.data.steps[0].standardDescription).toContain("earlobe");
+    expect(standardizeUnits).toHaveBeenCalledWith(
+      standardizePayload.ingredients,
+      standardizePayload.steps,
+      "Turkey"
+    );
+  });
+
+  it("works without steps and region", async () => {
+    setupAuthMock("expert");
+    (standardizeUnits as jest.Mock).mockResolvedValue({
+      ingredients: mockStandardizedResult.ingredients,
+      steps: [],
+    });
+
+    const res = await request(app)
+      .post("/parse/standardize-units")
+      .set("Authorization", "Bearer valid_token")
+      .send({ ingredients: standardizePayload.ingredients });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.ingredients).toHaveLength(2);
+    expect(res.body.data.steps).toHaveLength(0);
+    expect(standardizeUnits).toHaveBeenCalledWith(
+      standardizePayload.ingredients,
+      undefined,
+      undefined
+    );
+  });
+
+  it("returns 500 if standardization service fails", async () => {
+    setupAuthMock("cook");
+    (standardizeUnits as jest.Mock).mockRejectedValue(new Error("Gemini timeout"));
+
+    const res = await request(app)
+      .post("/parse/standardize-units")
+      .set("Authorization", "Bearer valid_token")
+      .send(standardizePayload);
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("STANDARDIZATION_FAILED");
   });
 });

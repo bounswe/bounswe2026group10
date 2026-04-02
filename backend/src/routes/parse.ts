@@ -4,7 +4,7 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import type { AuthenticatedRequest } from "../types/index.js";
 import { errorResponse, successResponse } from "../utils/response.js";
-import { parseRecipeText } from "../services/recipe-parser.js";
+import { parseRecipeText, standardizeUnits } from "../services/recipe-parser.js";
 
 const router = Router();
 
@@ -49,6 +49,66 @@ router.post(
       res
         .status(500)
         .json(errorResponse("PARSE_FAILED", "Failed to parse recipe text. Please try again."));
+    }
+  }
+);
+
+// ─── Zod Schema — Standardize Units ─────────────────────────────────────────
+
+const standardizeUnitsSchema = z.object({
+  ingredients: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        quantity: z.number().positive(),
+        unit: z.string().min(1),
+      })
+    )
+    .min(1, { message: "At least one ingredient is required." })
+    .max(50, { message: "Maximum 50 ingredients allowed." }),
+  steps: z
+    .array(
+      z.object({
+        stepOrder: z.number().int().positive(),
+        description: z.string().min(1),
+      })
+    )
+    .max(50)
+    .optional(),
+  region: z.string().optional(),
+});
+
+// ─── POST /parse/standardize-units ──────────────────────────────────────────
+
+/**
+ * Convert informal/colloquial ingredient units and step descriptions
+ * to standard measurements and clear instructions.
+ * Accepts structured ingredients and optional steps (from parsing or manual entry).
+ *
+ * Auth required: Yes (cook or expert).
+ */
+router.post(
+  "/standardize-units",
+  requireAuth,
+  requireRole("cook", "expert"),
+  validate(standardizeUnitsSchema),
+  async (req, res: Response): Promise<void> => {
+    const { ingredients, steps, region } = req.body as z.infer<typeof standardizeUnitsSchema>;
+
+    try {
+      const standardized = await standardizeUnits(ingredients, steps, region);
+
+      res.status(200).json(successResponse(standardized));
+    } catch (err: any) {
+      console.error("Standardization error:", err);
+      res
+        .status(500)
+        .json(
+          errorResponse(
+            "STANDARDIZATION_FAILED",
+            "Failed to standardize recipe. Please try again."
+          )
+        );
     }
   }
 );
