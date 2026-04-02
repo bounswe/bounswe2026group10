@@ -1,20 +1,32 @@
-import { mockDelay } from '../client';
+import { fetchApi } from '../client';
 
 export interface UploadVideoResult {
   url: string;
 }
 
 /**
- * Uploads a video file and returns its hosted URL.
- * Currently mocked — backend stores a single videoUrl per recipe.
- * Per-step video support is pending a backend schema update.
+ * Uploads a video file to Supabase Storage via the backend media endpoint.
+ * Requires cook/expert role auth token to be set.
  *
  * @param localUri - Local file URI from expo-image-picker (e.g. file:///...)
  */
 export async function uploadVideo(localUri: string): Promise<UploadVideoResult> {
-  await mockDelay(800);
   const filename = localUri.split('/').pop() ?? 'video.mp4';
-  return {
-    url: `https://mock-cdn.rootsandrecipes.app/videos/${filename}`,
-  };
+
+  const formData = new FormData();
+  formData.append('file', {
+    uri: localUri,
+    name: filename,
+    type: 'video/mp4',
+  } as any);
+
+  const result = await fetchApi<{ url: string; type: string; size: number }>(
+    '/media/upload',
+    {
+      method: 'POST',
+      body: formData,
+    }
+  );
+
+  return { url: result.url };
 }
