@@ -1,5 +1,4 @@
-import type { RecipeType } from '../types/common';
-import { mockDelay } from './client';
+import { fetchApi } from './client';
 
 export interface CreateRecipeStep {
   stepOrder: number;
@@ -18,7 +17,7 @@ export interface CreateRecipeTool {
 
 export interface CreateRecipeParams {
   title: string;
-  type: RecipeType;
+  type: 'community' | 'cultural';
   dishVarietyId?: number;
   story?: string;
   videoUrl?: string;
@@ -27,6 +26,7 @@ export interface CreateRecipeParams {
   ingredients: CreateRecipeIngredient[];
   steps: CreateRecipeStep[];
   tools: CreateRecipeTool[];
+  tagIds?: number[];
 }
 
 export interface RecipeResponse {
@@ -37,7 +37,7 @@ export interface RecipeResponse {
   story: string | null;
   videoUrl: string | null;
   servingSize: number | null;
-  type: RecipeType;
+  type: 'community' | 'cultural';
   isPublished: boolean;
   ingredients: CreateRecipeIngredient[];
   steps: CreateRecipeStep[];
@@ -48,33 +48,24 @@ export interface RecipeResponse {
 export type UpdateRecipeParams = Partial<CreateRecipeParams>;
 
 export async function createRecipe(params: CreateRecipeParams): Promise<RecipeResponse> {
-  await mockDelay();
-  return {
-    id: 'mock-recipe-001',
-    creatorId: 'mock-user-001',
-    dishVarietyId: params.dishVarietyId ?? null,
-    title: params.title,
-    story: params.story ?? null,
-    videoUrl: params.videoUrl ?? null,
-    servingSize: params.servingSize ?? null,
-    type: params.type,
-    isPublished: params.isPublished ?? false,
-    ingredients: params.ingredients,
-    steps: params.steps,
-    tools: params.tools,
-    createdAt: new Date().toISOString(),
-  };
+  return fetchApi<RecipeResponse>('/recipes', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
 }
 
 export async function updateRecipe(
   id: string,
   params: UpdateRecipeParams
 ): Promise<{ message: string; id: string }> {
-  await mockDelay();
-  return { message: 'Recipe updated successfully.', id };
+  return fetchApi<{ message: string; id: string }>(`/recipes/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(params),
+  });
 }
 
 export async function publishRecipe(id: string): Promise<{ id: string; isPublished: boolean }> {
-  await mockDelay();
-  return { id, isPublished: true };
+  return fetchApi<{ id: string; isPublished: boolean }>(`/recipes/${id}/publish`, {
+    method: 'POST',
+  });
 }
