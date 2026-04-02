@@ -61,6 +61,7 @@ backend/
 │   │   ├── parse.ts             # Free-text recipe parser endpoint
 │   │   ├── ingredients.ts       # Ingredient search/autocomplete
 │   │   └── tools.ts             # Tool search/autocomplete
+│   │   └── units.ts             # Unit search/autocomplete
 │   ├── types/
 │   │   └── index.ts             # TypeScript interfaces (roles, auth, response)
 │   ├── utils/
@@ -75,6 +76,7 @@ backend/
 │       ├── parse.test.ts
 │       ├── ingredients.test.ts
 │       ├── tools.test.ts
+│       ├── units.test.ts
 │       └── health.test.ts
 ├── Dockerfile
 ├── jest.config.js
@@ -167,6 +169,10 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - `GET /tools` — List/search tools by partial name (case-insensitive)
   - Query params: `search` (optional — filters by partial name match when provided)
   - Returns distinct tool names from `recipe_tools`; without `search`, returns all known tools; supports autocomplete use case
+### Units (`/units`)
+- `GET /units` — List/search units by partial name (case-insensitive)
+  - Query params: `search` (optional — filters by partial name match when provided)
+  - Returns distinct unit values from `recipe_ingredients`; without `search`, returns all known units; supports autocomplete use case
 
 ### Parse (`/parse`)
 - `POST /parse/recipe-text` — Parse free-text recipe into structured components (cook/expert only)

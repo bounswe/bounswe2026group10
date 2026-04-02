@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import googleLogo from '@/assets/logo-google.svg'
 import appleLogo from '@/assets/logo-apple.svg'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { loginAsync, clearError } from '@/store/slices/auth-slice'
 import { fetchProfileAsync } from '@/store/slices/profile-slice'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import './LoginPage.css'
 
 interface LoginForm {
@@ -13,10 +16,20 @@ interface LoginForm {
   rememberMe: boolean
 }
 
+function validateLogin(t: TFunction<'common'>, form: LoginForm): { email?: string; password?: string } {
+  const e: { email?: string; password?: string } = {}
+  if (!form.email.trim()) e.email = t('auth.login.errors.emailRequired')
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+    e.email = t('auth.login.errors.emailInvalid')
+  if (!form.password) e.password = t('auth.login.errors.passwordRequired')
+  return e
+}
+
 export function LoginPage() {
+  const { t } = useTranslation('common')
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
-  
+
   const { loading, error: serverError, isAuthenticated } = useAppSelector((state) => state.auth)
   const profileStatus = useAppSelector((state) => state.profile.status)
 
@@ -52,11 +65,7 @@ export function LoginPage() {
   }
 
   function validate(): boolean {
-    const e: { email?: string; password?: string } = {}
-    if (!form.email.trim()) e.email = 'Email is required.'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      e.email = 'Please enter a valid email address.'
-    if (!form.password) e.password = 'Password is required.'
+    const e = validateLogin(t, form)
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -87,29 +96,26 @@ export function LoginPage() {
 
   return (
     <div className="login" id="login-page">
-      {/* Header */}
       <header className="login__header">
-        <Link to="/" className="login__back" aria-label="Go back">
+        <Link to="/" className="login__back" aria-label={t('auth.login.backAria')}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
         </Link>
-        <span className="login__header-title">Roots &amp; Recipes</span>
+        <span className="login__header-title">{t('auth.login.brand')}</span>
+        <div className="login__lang">
+          <LanguageSwitcher variant="compact" />
+        </div>
       </header>
 
-      {/* Main content */}
       <div className="login__body">
-        {/* Heading */}
         <div className="login__heading">
           <h1 className="login__title">
-            Welcome <em>back</em>
+            {t('auth.login.title')} <em>{t('auth.login.titleEm')}</em>
           </h1>
-          <p className="login__subtitle">
-            Rediscover the tastes that connect generations.
-          </p>
+          <p className="login__subtitle">{t('auth.login.subtitle')}</p>
         </div>
 
-        {/* Form */}
         <form className="login__form" onSubmit={handleSubmit} noValidate>
           {serverError && (
             <div className="login__alert" role="alert" id="login-server-error">
@@ -117,13 +123,12 @@ export function LoginPage() {
             </div>
           )}
 
-          {/* Email */}
           <div className="login__field">
             <input
               className={`login__input ${errors.email ? 'login__input--error' : ''}`}
               id="login-email"
               type="email"
-              placeholder="Email Address"
+              placeholder={t('auth.login.emailPlaceholder')}
               value={form.email}
               onChange={(e) => handleChange('email', e.target.value)}
               autoComplete="email"
@@ -131,14 +136,13 @@ export function LoginPage() {
             {errors.email && <span className="login__error">{errors.email}</span>}
           </div>
 
-          {/* Password */}
           <div className="login__field">
             <div className="login__input-wrap">
               <input
                 className={`login__input ${errors.password ? 'login__input--error' : ''}`}
                 id="login-password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Password"
+                placeholder={t('auth.login.passwordPlaceholder')}
                 value={form.password}
                 onChange={(e) => handleChange('password', e.target.value)}
                 autoComplete="current-password"
@@ -147,7 +151,7 @@ export function LoginPage() {
                 type="button"
                 className="login__toggle-pw"
                 onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-label={showPassword ? t('auth.login.hidePassword') : t('auth.login.showPassword')}
                 id="login-toggle-password"
               >
                 {showPassword ? (
@@ -170,13 +174,12 @@ export function LoginPage() {
               onClick={() => setShowForgotModal(true)}
               id="login-forgot-password"
             >
-              Forgot Password?
+              {t('auth.login.forgotPassword')}
             </button>
           </div>
 
-          {/* Remember me */}
           <label className="login__remember" htmlFor="login-remember">
-            <span>Remember me</span>
+            <span>{t('auth.login.rememberMe')}</span>
             <div className="login__toggle">
               <input
                 type="checkbox"
@@ -188,93 +191,88 @@ export function LoginPage() {
             </div>
           </label>
 
-          {/* Submit */}
           <button
             type="submit"
             className="login__submit"
             id="login-submit"
             disabled={loading}
           >
-            {loading ? <span className="login__spinner" /> : 'Sign In'}
+            {loading ? <span className="login__spinner" /> : t('auth.login.signIn')}
           </button>
         </form>
 
-        {/* Social divider */}
         <div className="login__or-divider">
-          <span>OR CONTINUE WITH</span>
+          <span>{t('auth.login.orContinue')}</span>
         </div>
 
-        {/* Social auth */}
         <div className="login__social">
           <button className="login__social-btn login__social-btn--google" id="login-google-auth" type="button">
             <img src={googleLogo} alt="" width="20" height="20" />
-            <span>Continue with Google</span>
+            <span>{t('auth.login.continueGoogle')}</span>
           </button>
           <button className="login__social-btn login__social-btn--apple" id="login-apple-auth" type="button">
             <img src={appleLogo} alt="" width="20" height="20" />
-            <span>Continue with Apple</span>
+            <span>{t('auth.login.continueApple')}</span>
           </button>
         </div>
 
-        {/* Footer */}
         <p className="login__footer">
-          Don't have an account?{' '}
+          {t('auth.login.footerNoAccount')}{' '}
           <Link to="/register" className="login__footer-link" id="login-go-register">
-            Register
+            {t('auth.login.register')}
           </Link>
         </p>
 
         <div className="login__legal">
-          <a href="#privacy">Privacy Policy</a>
+          <a href="#privacy">{t('auth.login.privacy')}</a>
           <span className="login__legal-dot">•</span>
-          <a href="#terms">Terms of Service</a>
+          <a href="#terms">{t('auth.login.terms')}</a>
         </div>
       </div>
 
-      {/* Forgot password modal */}
       {showForgotModal && (
         <div className="login__modal-overlay" onClick={() => { setShowForgotModal(false); setForgotSent(false) }}>
           <div className="login__modal" onClick={(e) => e.stopPropagation()} id="forgot-password-modal">
             <button
               className="login__modal-close"
               onClick={() => { setShowForgotModal(false); setForgotSent(false) }}
-              aria-label="Close"
+              aria-label={t('auth.login.modalClose')}
               type="button"
             >
               ✕
             </button>
-            <h2 className="login__modal-title">Forgot Password</h2>
+            <h2 className="login__modal-title">{t('auth.login.modalTitle')}</h2>
             {forgotSent ? (
               <div className="login__modal-success">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-positive)" strokeWidth="1.5">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                   <polyline points="22 4 12 14.01 9 11.01" />
                 </svg>
-                <p>A password reset link has been sent to your email.</p>
+                <p>{t('auth.login.modalSuccess')}</p>
                 <button
                   className="login__submit"
                   onClick={() => { setShowForgotModal(false); setForgotSent(false) }}
                   type="button"
                 >
-                  Back to Sign In
+                  {t('auth.login.modalBackSignIn')}
                 </button>
               </div>
             ) : (
               <form onSubmit={handleForgotSubmit}>
                 <p className="login__modal-desc">
-                  Enter your email address and we'll send you a reset link.
+                  {t('auth.login.modalDesc')}
                 </p>
                 <input
                   className="login__input"
                   type="email"
-                  placeholder="Email Address"
+                  placeholder={t('auth.login.emailPlaceholder')}
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                   id="forgot-email-input"
                   autoComplete="email"
                 />
                 <button className="login__submit" type="submit" style={{ marginTop: '1rem' }}>
-                  Send Reset Link
+                  {t('auth.login.modalSendReset')}
                 </button>
               </form>
             )}

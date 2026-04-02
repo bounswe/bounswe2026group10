@@ -12,6 +12,7 @@ import dietaryTagsRouter from "./routes/dietary-tags.js";
 import parseRouter from "./routes/parse.js";
 import ingredientsRouter from "./routes/ingredients.js";
 import toolsRouter from "./routes/tools.js";
+import unitsRouter from "./routes/units.js";
 
 const app = express();
 const PORT = process.env["PORT"] ?? 3000;
@@ -46,6 +47,7 @@ app.use("/dietary-tags", dietaryTagsRouter);
 app.use("/parse", parseRouter);
 app.use("/ingredients", ingredientsRouter);
 app.use("/tools", toolsRouter);
+app.use("/units", unitsRouter);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {

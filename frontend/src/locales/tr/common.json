@@ -8,6 +8,103 @@
       "expert": "Uzman"
     }
   },
+  "language": {
+    "switcherLabel": "Dil",
+    "short": {
+      "en": "EN",
+      "tr": "TR"
+    }
+  },
+  "welcome": {
+    "heroAlt": "Rustik bir masada Akdeniz malzemeleri",
+    "headlineBefore": "Nesillerin",
+    "headlineAccent": "Lezzetlerini",
+    "headlineAfter": "bir araya getiriyoruz.",
+    "tagline": "Koru. Pişir. Paylaş.",
+    "createAccount": "Hesap oluştur",
+    "signIn": "Giriş yap",
+    "orContinue": "VEYA ŞUNLARLA DEVAM ET",
+    "continueGoogle": "Google ile devam et",
+    "continueApple": "Apple ile devam et",
+    "continueGuest": "MİSAFİR OLARAK DEVAM ET"
+  },
+  "auth": {
+    "login": {
+      "backAria": "Geri dön",
+      "brand": "Roots & Recipes",
+      "title": "Tekrar",
+      "titleEm": "hoş geldiniz",
+      "subtitle": "Nesilleri birleştiren tatları yeniden keşfedin.",
+      "emailPlaceholder": "E-posta adresi",
+      "passwordPlaceholder": "Şifre",
+      "showPassword": "Şifreyi göster",
+      "hidePassword": "Şifreyi gizle",
+      "forgotPassword": "Şifreyi mi unuttunuz?",
+      "rememberMe": "Beni hatırla",
+      "signIn": "Giriş yap",
+      "orContinue": "VEYA ŞUNLARLA DEVAM ET",
+      "continueGoogle": "Google ile devam et",
+      "continueApple": "Apple ile devam et",
+      "footerNoAccount": "Hesabınız yok mu?",
+      "register": "Kayıt ol",
+      "privacy": "Gizlilik politikası",
+      "terms": "Kullanım şartları",
+      "modalClose": "Kapat",
+      "modalTitle": "Şifremi unuttum",
+      "modalSuccess": "E-posta adresinize sıfırlama bağlantısı gönderildi.",
+      "modalBackSignIn": "Girişe dön",
+      "modalDesc": "E-posta adresinizi girin; size sıfırlama bağlantısı gönderelim.",
+      "modalSendReset": "Sıfırlama bağlantısı gönder",
+      "errors": {
+        "emailRequired": "E-posta gereklidir.",
+        "emailInvalid": "Geçerli bir e-posta adresi girin.",
+        "passwordRequired": "Şifre gereklidir."
+      }
+    },
+    "register": {
+      "backAria": "Geri dön",
+      "brand": "Roots & Recipes",
+      "firstName": "Ad",
+      "lastName": "Soyad",
+      "firstNamePlaceholder": "Ad",
+      "lastNamePlaceholder": "Soyad",
+      "email": "E-posta adresi",
+      "emailPlaceholder": "ornek@email.com",
+      "password": "Şifre",
+      "confirmPassword": "Şifre tekrarı",
+      "rolesLegend": "Rolünüzü seçin",
+      "roleLearner": "Öğrenci",
+      "roleLearnerDesc": "Aile geleneklerini ve yeni lezzetleri keşfetmek.",
+      "roleCook": "Aşçı",
+      "roleCookDesc": "Günlük mutfak ritüellerini paylaşmak ve korumak.",
+      "roleExpert": "Uzman",
+      "roleExpertDesc": "Topluluk ve kültürel tarifler — miras ve gelenek.",
+      "region": "Bölge",
+      "profileLanguage": "Tercih edilen dil",
+      "submit": "Miras hesabı oluştur",
+      "orConnect": "VEYA ŞUNLARLA BAĞLAN",
+      "google": "Google",
+      "apple": "Apple",
+      "footerHasAccount": "Zaten hesabınız var mı?",
+      "signIn": "Giriş yap",
+      "pwStrength": {
+        "weak": "Zayıf",
+        "fair": "Orta",
+        "good": "İyi",
+        "strong": "Güçlü"
+      },
+      "errors": {
+        "firstNameRequired": "Ad gereklidir.",
+        "lastNameRequired": "Soyad gereklidir.",
+        "emailRequired": "E-posta gereklidir.",
+        "emailInvalid": "Geçerli bir e-posta adresi girin.",
+        "passwordRequired": "Şifre gereklidir.",
+        "passwordMin": "Şifre en az 8 karakter olmalıdır.",
+        "confirmMismatch": "Şifreler eşleşmiyor.",
+        "roleRequired": "Lütfen bir rol seçin."
+      }
+    }
+  },
   "nav": {
     "ariaLabel": "Ana gezinti",
     "openMenu": "Menüyü aç",
@@ -140,8 +237,12 @@
       "recipeTitlePlaceholder": "Tarif adını girin",
       "description": "Açıklama",
       "descriptionPlaceholder": "Bu tarifin arkasındaki hikayeyi anlatın...",
-      "dishVariety": "Yemek Çeşidi",
+      "genre": "Mutfak türü",
+      "genrePlaceholder": "Bir mutfak türü seçin",
+      "dishVariety": "Yemek çeşidi",
       "dishVarietyPlaceholder": "Bir yemek çeşidi seçin",
+      "dishVarietyNeedGenre": "Önce mutfak türü seçin",
+      "varietiesLoading": "Çeşitler yükleniyor…",
       "servingSize": "Porsiyon",
       "servingSizePlaceholder": "örn. 6",
       "recipeType": "Tarif Türü",
@@ -153,11 +254,20 @@
     },
     "ingredients": {
       "title": "Malzemeler",
-      "namePlaceholder": "Malzeme adı",
-      "amountPlaceholder": "Miktar",
+      "searchPlaceholder": "Malzeme ara…",
+      "searchLoading": "Aranıyor…",
+      "searchEmpty": "Eşleşen malzeme yok.",
+      "searchError": "Malzemeler yüklenemedi.",
+      "quantityPlaceholder": "Miktar",
+      "unitPlaceholder": "Birim",
+      "quantityAria": "Miktar",
+      "unitAria": "Birim",
       "add": "Ekle",
       "removeAria": "Malzemeyi kaldır",
-      "infoNote": "Malzemeler yalnızca referans için gösterilmektedir ve henüz veritabanına kaydedilmemektedir."
+      "infoNote": "Her malzemeyi listeden seçin. Miktar pozitif bir sayı, birim ise g, ml, yk. gibi olmalıdır.",
+      "selectedFromCatalog": "Katalogdan seçildi",
+      "continueHint": "Malzemeyi arama sonuçlarından seçin; miktar ve birimi doldurun. En az bir satır eksiksiz olmalı, eksik veya yazılmış ama seçilmemiş satır olmamalı.",
+      "needAtLeastOne": "En az bir malzeme ekleyin: listeden seçin, ardından miktar ve birimi girin."
     },
     "tools": {
       "title": "Gerekli Araçlar",

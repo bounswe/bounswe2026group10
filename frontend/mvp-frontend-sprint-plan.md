@@ -2,7 +2,7 @@
 > **Project:** Roots & Recipes — Cross-Generational Recipe Platform  
 > **MVP Deadline:** April 7, 2026  
 > **Responsible (Frontend):** Ökkeş Berkay Acer, Yüksel Ege Boyacı, Hikmet Can Köseoğlu, Yunus Yücesoy  
-> **References:** [Implementation Plan (MVP + Final)](https://github.com/bounswe/bounswe2026group10/wiki/Implementation-Plan-%28MVP---Final-Milestone%29) · [Development Guideline](https://github.com/bounswe/bounswe2026group10/wiki/Development-Guideline) · [Open Issues](https://github.com/bounswe/bounswe2026group10/issues)
+> **References:** [Implementation Plan (MVP + Final)](https://github.com/bounswe/bounswe2026group10/wiki/Implementation-Plan-%28MVP---Final-Milestone%29) · [Requirements](https://github.com/bounswe/bounswe2026group10/wiki/Requirements) · [Development Guideline](https://github.com/bounswe/bounswe2026group10/wiki/Development-Guideline) · [Open Issues](https://github.com/bounswe/bounswe2026group10/issues)
 
 This document tracks [Frontend tasks](https://github.com/bounswe/bounswe2026group10/wiki/Implementation-Plan-%28MVP---Final-Milestone%29#frontend) for **Milestone 1 (MVP)** from the Wiki. Status legend: **✅** done, **🟡** partial, **⬜** not started.
 
@@ -15,20 +15,20 @@ This document tracks [Frontend tasks](https://github.com/bounswe/bounswe2026grou
 | Responsive basic UI shell (`MainLayout`, bottom navigation) | ✅ |
 | Registration and login pages | ✅ |
 | Forms wired to backend authentication | ✅ |
-| Recipe listing (`/home`, `/search`, dish variety `/dish-variety/:id`) | ✅ |
-| Recipe detail — ingredients, tools, steps, (optional) video and story | ✅ 🟡 (video link; no comments UI beyond placeholder) |
-| Recipe detail — comments | ⬜ (no comment endpoints in backend) |
-| Recipe detail — rating component (submit) | ✅ (`rating-service`, `RecipeRating`, `POST/GET/DELETE .../ratings`, own-recipe guard via `creatorUsername` vs profile `username`, remove with confirm modal, EN/TR i18n) |
-| Recipe creation form | 🟡 (multi-step + `POST /recipes`; real `ingredientId` / draft–publish flow still incomplete) |
-| Draft save (server-side draft + publish) | 🟡 (`isPublished` in single `POST`; `PATCH` + `publish` not used) |
-| Accessibility — large text, contrast, keyboard | 🟡 (full audit / usability test pending; see **S3-6**) |
+| Recipe listing (`/home`, `/search`, **`/discovery`**, dish variety `/dish-variety/:id`) | ✅ (Ana keşif akışı: alt nav → **`/discovery`**; bölge, alerjen, diyet etiketi, tür; sayfalama + istemci tarafı başlık araması) |
+| Recipe detail — ingredients, tools, steps, (optional) video and story | ✅ 🟡 (video URL + `recipe.media` galerisi; yorumlar için yalnızca placeholder) |
+| Recipe detail — comments | ⬜ (Wiki MVP’de planlı; backend’de yorum REST rotası yok) |
+| Recipe detail — rating component (submit) | ✅ (`rating-service`, `RecipeRating`, `POST/GET/DELETE .../ratings`, own-recipe guard, `ConfirmModal`, EN/TR i18n) |
+| Recipe creation form | 🟡 (`IngredientPicker` + `GET /ingredients`, `POST /recipes`, oluşturma sonrası **`/media/upload`** + `POST /recipes/:id/media`; **`tagIds` oluşturma payload’ında henüz yok**) |
+| Draft save (server-side draft + publish) | 🟡 (`isPublished` tek `POST /recipes` ile; **`PATCH /recipes/:id`** ve **`POST .../publish` kullanılmıyor**) |
+| Accessibility — large text, contrast, keyboard | 🟡 (tam denetim / kullanılabilirlik testi bekliyor; **S3-6**) |
 | Usability testing with representative users | ⬜ |
 
 ---
 
 ## Backend — endpoint inventory vs frontend usage
 
-Source: `backend/src/index.ts` and `backend/src/routes/*.ts` (Express). **Comments:** no REST routes defined yet; MVP “comments” feature is not in the backend.
+Source: `backend/src/index.ts` and `backend/src/routes/*.ts` (Express). **Yorumlar:** REST ile yorum uç noktası yok (şema yorumları `types` içinde geleceğe dönük). **Ek:** `POST /parse` (serbest metin tarifi ayrıştırma) backend’de var; MVP frontend kapsamında değil.
 
 ### Root and meta
 
@@ -53,20 +53,26 @@ Source: `backend/src/index.ts` and `backend/src/routes/*.ts` (Express). **Commen
 |--------|------|-------|-------|
 | `GET` | `/recipes/:id` | Yes | `recipeService.getById` |
 | `POST` | `/recipes` | Yes | `recipeService.create` |
-| `PATCH` | `/recipes/:id` | No | Draft updates |
-| `POST` | `/recipes/:id/publish` | No | Publish with validation |
+| `PATCH` | `/recipes/:id` | No | Taslak güncelleme (UI yok) |
+| `POST` | `/recipes/:id/publish` | No | Sunucu doğrulamalı yayın (UI yok) |
 | `POST` | `/recipes/:id/ratings` | Yes | `ratingService.submitRating` |
 | `GET` | `/recipes/:id/ratings/me` | Yes | `ratingService.getMyRating` |
 | `DELETE` | `/recipes/:id/ratings/me` | Yes | `ratingService.deleteMyRating` |
-| `POST` | `/recipes/:id/media` | No | Attach URL |
-| `GET` | `/recipes/:id/media` | No | Detail payload from `GET /recipes/:id` |
-| `DELETE` | `/recipes/:id/media/:mediaId` | No | |
+| `POST` | `/recipes/:id/media` | Yes | `mediaService.attachRecipeMedia` (`CreateRecipePage` oluşturma sonrası) |
+| `GET` | `/recipes/:id/media` | — | Detay `GET /recipes/:id` içinde `media` |
+| `DELETE` | `/recipes/:id/media/:mediaId` | No | `mediaService.deleteRecipeMedia` tanımlı, UI yok |
 
 ### `/media`
 
 | Method | Path | Used? |
 |--------|------|-------|
-| `POST` | `/media/upload` | No |
+| `POST` | `/media/upload` | Yes | `mediaService.uploadFile` |
+
+### `/ingredients`
+
+| Method | Path | Used? |
+|--------|------|-------|
+| `GET` | `/ingredients` | Yes | `ingredientService.search` → `IngredientPicker` |
 
 ### `/dish-genres`, `/dish-varieties`
 
@@ -75,44 +81,44 @@ Source: `backend/src/index.ts` and `backend/src/routes/*.ts` (Express). **Commen
 | `GET` | `/dish-genres` | Yes | |
 | `GET` | `/dish-varieties` | Yes | Optional `?genreId=`; `?search=` exists on backend, UI limited |
 | `GET` | `/dish-varieties/:id` | Yes | Published recipes for variety included |
-| `GET` | `/dish-varieties/:id/recipes` | No | Community/expert split; overlaps with `GET :id` |
+| `GET` | `/dish-varieties/:id/recipes` | No | `GET /dish-varieties/:id` ile örtüşüyor |
 
 ### `/discovery`
 
 | Method | Path | Used? | Notes |
 |--------|------|-------|-------|
-| `GET` | `/discovery/recipes` | Yes | `excludeAllergens`, `tagIds` on backend; `DiscoveryParams` still limited in UI |
-| `GET` | `/discovery/recipes/by-ingredients` | No | Search by ingredient IDs |
+| `GET` | `/discovery/recipes` | Yes | `DiscoveryPage`: `region`, `excludeAllergens`, `tagIds`, `genreId`, `page`, `limit` |
+| `GET` | `/discovery/recipes/by-ingredients` | No | Malzeme ID’leri ile arama |
 
 ### `/dietary-tags`
 
 | Method | Path | Used? |
 |--------|------|-------|
-| `GET` | `/dietary-tags` | No | Not sent as `tagIds` in create flow yet |
+| `GET` | `/dietary-tags` | Yes | `discoveryService.getDietaryTags` → `DiscoveryPage` filtreleri; **oluşturma formunda `tagIds` gönderimi yok** |
 
-**Summary:** Auth, discovery listing, genre/variety APIs, recipe read/create, and **recipe ratings (submit / my rating / delete)** are wired. Media upload/attach, recipe update/publish flow, dietary tags, ingredient-based discovery, and some `dish-varieties` sub-routes are **not** in the frontend yet (partly Final milestone or later sprint).
+**Özet:** Auth, **`/discovery`**, `GET /dietary-tags`, `GET /ingredients`, tarif okuma/oluşturma, **oluşturma sonrası medya yükleme ve ekleme**, ve **puanlama** tam veya kısmen bağlı. **Kalan:** `PATCH`/`publish` akışı, `DELETE` medya, `by-ingredients` keşfi, **tarif oluştururken `tagIds`**, yorum API’si.
 
 ---
 
-## Current State of the Project (April 1, 2026)
+## Current State of the Project (April 2, 2026)
 
 ### Completed infrastructure
 - ✅ React + Vite + TypeScript
 - ✅ Redux Toolkit: `auth-slice`, `profile-slice` (login, register, logout, profile)
 - ✅ `httpClient` (axios, Bearer, **401 → `POST /auth/refresh`** and retry)
-- ✅ `authService` + `profileService` + `discoveryService` + `recipeService` + **`ratingService`**
+- ✅ `authService` + `profileService` + `discoveryService` + `recipeService` + **`ratingService`** + **`ingredientService`** + **`mediaService`**
 - ✅ `ProtectedRoute` (role: `/create-recipe` for `cook` \| `expert`)
-- ✅ Routes: `/`, `/login`, `/register`, `/home`, `/search`, `/library`, `/profile`, `/recipes/:id`, `/dish-variety/:id`, `/create-recipe`
+- ✅ Routes: `/`, `/login`, `/register`, `/home`, `/search`, **`/discovery`**, `/library`, `/profile`, `/recipes/:id`, `/dish-variety/:id`, `/create-recipe`
 - ✅ i18n (TR / EN), including recipe rating and remove-rating modal strings
 - ✅ `WelcomePage`, `LoginPage`, `RegisterPage`
 - ✅ `MainLayout` + `HeaderUser` + `useLogout` (server logout + redirect `/`)
-- ✅ `BottomNav` (role-based “create recipe”)
-- ✅ `HomePage`, `SearchPage`, `DishVarietyPage`, `RecipeDetailPage` (serving scale, **interactive stars**, average/count, login / own-recipe / rate / remove with **`ConfirmModal`**), `CreateRecipePage` (multi-step; ingredients not fully wired to backend IDs)
+- ✅ `BottomNav` — ikinci sekme **`/discovery`** (Keşif); `/search` hâlâ rotada (çeşit/tür araması), ana navigasyon keşfe bağlı
+- ✅ `HomePage`, `SearchPage`, **`DiscoveryPage`** (`DiscoveryFilters`, sayfalama, istemci tarafı başlık araması), `DishVarietyPage`, `RecipeDetailPage` (porsiyon ölçekleme, **yıldız puanlama**, `ConfirmModal`), **`CreateRecipePage`** (çok adım, **`IngredientPicker`** + katalog `ingredientId`, oluşturma sonrası **`mediaService` ile dosya yükleme ve tarife bağlama**)
 - ✅ `useAuthBootstrap` + `GET /auth/me` for session refresh and profile
 
 ### Backend overlap — short endpoint list
-- **In use:** `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `POST /auth/refresh`, `GET /auth/me`, `GET /meta/regions`, `GET /discovery/recipes`, `GET /dish-genres`, `GET /dish-varieties`, `GET /dish-varieties/:id`, `GET /recipes/:id`, `POST /recipes`, **`POST /recipes/:id/ratings`**, **`GET /recipes/:id/ratings/me`**, **`DELETE /recipes/:id/ratings/me`**
-- **Not connected yet:** e.g. `PATCH /recipes/:id`, `POST /recipes/:id/publish`, `/media/upload`, `GET /dietary-tags`, `GET /discovery/recipes/by-ingredients`
+- **In use:** `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `POST /auth/refresh`, `GET /auth/me`, `GET /meta/regions`, `GET /discovery/recipes`, `GET /dish-genres`, `GET /dish-varieties`, `GET /dish-varieties/:id`, `GET /recipes/:id`, `POST /recipes`, **`GET /ingredients`**, **`GET /dietary-tags`**, **`POST /media/upload`**, **`POST /recipes/:id/media`**, **`POST /recipes/:id/ratings`**, **`GET /recipes/:id/ratings/me`**, **`DELETE /recipes/:id/ratings/me`**
+- **Not connected yet (UI):** `PATCH /recipes/:id`, `POST /recipes/:id/publish`, `DELETE /recipes/:id/media/:mediaId`, `GET /discovery/recipes/by-ingredients`; **tarif oluştururken `tagIds` gövdesi** henüz gönderilmiyor (backend şeması destekliyor)
 
 ### Currently open frontend issues (MVP scope)
 | # | Title |
@@ -132,6 +138,8 @@ Source: `backend/src/index.ts` and `backend/src/routes/*.ts` (Express). **Commen
 | #113 | [TASK] Community/Expert Recipe Listing with Rating-Based Sorting |
 | #112 | [TASK] Recipe Discovery: Region Selector, Allergen Filter, Dish Genre/Variety Navigation |
 | #111 | [TASK] User Registration, Login, and Role-Based Access Control |
+
+> GitHub’daki başlıklar güncellenmemiş olabilir; örn. **#170** (Keşif arama çubuğu) kodda **`DiscoveryPage`** ile karşılanıyor — issue’yu kapatmadan önce ekip içi doğrulama önerilir.
 
 ---
 
@@ -275,16 +283,17 @@ Screens to explore genres/regions and list recipes.
 **Branch:** `frontend/feature_discovery-page`
 
 **Tasks:**
-- [x] `discoveryService`: `GET /discovery/recipes`, `GET /dish-genres`, `GET /dish-varieties`, `GET /meta/regions`, `GET /dish-varieties/:id`
-- [x] Separate `/discovery` route — **not required for MVP**; flow is `/home` + `/search` + `/dish-variety/:id`
-- [x] Discovery under protected shell (`/home`, `/search`)
-- [x] Region: `getRegions()` + filter (Home / Search)
-- [x] Genre cards: `getGenres()` + UI
-- [x] Varieties: `getVarieties({ genreId })` + `/dish-variety/:id`
-- [ ] **Allergen filter:** backend supports `excludeAllergens`; UI may still need full selection / list source
-- [ ] **Dish name search:** [#170] — client filter or backend `search` query TBD
-- [ ] Sync filter state to URL query params
-- [x] Loading / error (partial)
+- [x] `discoveryService`: `GET /discovery/recipes`, `getRecipeResults`, `getDietaryTags`, `GET /dish-genres`, `GET /dish-varieties`, `GET /meta/regions`, `GET /dish-varieties/:id`
+- [x] **`/discovery` rotası** — `DiscoveryPage` + `BottomNav` → Keşif
+- [x] Korumalı shell altında `/home`, `/search`, **`/discovery`**
+- [x] Bölge: `getRegions()` + `DiscoveryFilters` (Keşif)
+- [x] Tür kartları: `getGenres()` + `GenreCard` (Keşif sayfasında ızgara)
+- [x] Çeşitler: `/dish-variety/:id` (Home/Search/Keşif akışlarından)
+- [x] **Alerjen filtresi:** `GET /dietary-tags` ile alerjenler + `excludeAllergens` query
+- [x] **Diyet etiketleri:** `tagIds` (Keşif)
+- [x] **Yemek adı araması:** başlık/bölge/yazar/tür — **istemci tarafı** `visibleRecipes` (`DiscoveryPage`)
+- [ ] Filtrelerin tamamının URL ile senkronu (yalnızca `genreId` gibi kısmi kullanım)
+- [x] Loading / error (kısmen)
 
 ---
 
@@ -298,7 +307,7 @@ Screens to explore genres/regions and list recipes.
 - [x] `RecipeCard` / list rows
 - [x] Title, variety, rating, date, author, type — as applicable
 - [x] Sorting: by rating where backend provides it
-- [ ] Pagination: `GET /discovery/recipes` pagination may not be fully used in the service
+- [x] Pagination: **`DiscoveryPage`** içinde `getRecipeResults` + önceki/sonraki sayfa düğmeleri
 - [x] Empty states (partial)
 - [x] Navigation from discovery to variety
 
@@ -317,10 +326,10 @@ Screens to explore genres/regions and list recipes.
 
 ### Sprint 2 acceptance criteria
 - [x] Discovery: region + genre + variety flow works
-- [ ] Dish name search (strategy TBD)
+- [x] Dish name search (Keşif’te istemci tarafı)
 - [x] Recipes list when variety is selected
 - [x] Rating-based ordering where supported
-- [ ] Full pagination
+- [x] Keşif sayfasında sayfalama (`page` / `limit`)
 - [x] Loading / error (partial)
 
 ---
@@ -385,7 +394,7 @@ Recipe detail (ingredients, steps, video, story, **rating**), creation form, MVP
 - [x] Title, type (cultural for expert), variety, servings, story, video URL
 
 **Step 2 — Ingredients:**
-- [ ] Rows exist; backend needs **`ingredientId`** — no `GET /ingredients` in use; not sent
+- [x] `IngredientPicker` + `ingredientService.search` → `GET /ingredients`; **`ingredientId`** + miktar/birim `POST /recipes` ile gönderiliyor
 
 **Step 3 — Preparation steps:**
 - [x] Numbered steps, add/remove
@@ -393,9 +402,12 @@ Recipe detail (ingredients, steps, video, story, **rating**), creation form, MVP
 **Step 4 — Tools (optional):**
 - [x] Tool list
 
+**Medya (opsiyonel):**
+- [x] Dosya seçimi → `POST /media/upload` → `POST /recipes/:id/media` (oluşturma başarılı olduktan sonra)
+
 **Draft & publish:**
 - [x] Draft / publish via single `POST /recipes` with `isPublished`
-- [ ] Full MVP flow: `PATCH` draft + `POST .../publish` (when ingredients are persisted)
+- [ ] Tam akış: `PATCH` taslak + `POST .../publish` (backend doğrulaması)
 - [x] Validation (title, at least one step)
 - [x] Success + redirect `/home`
 
@@ -407,10 +419,9 @@ Recipe detail (ingredients, steps, video, story, **rating**), creation form, MVP
 **Branch:** `frontend/feature_allergen-dietary-tags`
 
 **Tasks:**
-- [ ] `tagIds` + `GET /dietary-tags`
-- [ ] Allergen list (clarify if no `GET /allergens`)
-- [ ] Multi-select UI
-- [ ] Send in payload
+- [x] `GET /dietary-tags` — Keşif filtrelerinde kullanılıyor (`allergen` / `dietary` ayrımı)
+- [ ] **`tagIds` + çoklu seçim** — `CreateRecipePage` `POST` gövdesine **eklenmedi** (backend `recipeSchema` destekliyor)
+- [ ] Oluşturma formunda çoklu seçim UI + payload
 
 ---
 
@@ -444,12 +455,12 @@ Recipe detail (ingredients, steps, video, story, **rating**), creation form, MVP
 ---
 
 ### Sprint 3 acceptance criteria
-- [ ] Cook/Expert: full draft + server publish (`PATCH` + `publish` + ingredients) — **not done**
+- [ ] Cook/Expert: tam taslak + sunucu `publish` (`PATCH` + `POST .../publish`) — **yapılmadı**
 - [x] Recipe detail content (except real comments)
 - [x] Serving scale recalculates ingredients
 - [x] **Submit / view / remove own rating** (comments still ⬜)
 - [ ] Accessibility standard (S3-6)
-- [ ] End-to-end MVP including comments / ingredient search — **partial** (rating done; comments & some discovery/create gaps remain)
+- [ ] E2E MVP: yorumlar ⬜; **malzeme ve medya** oluşturma tarafında büyük ölçüde tamam; **oluşturma `tagIds`** ve **PATCH/publish** eksik
 
 ---
 
@@ -522,4 +533,18 @@ Sprint 1 (Auth infrastructure)
 
 ---
 
-*Last updated: April 1, 2026 — full English pass; rating integration and endpoint inventory aligned with current frontend.*
+*Last updated: April 2, 2026 — `/discovery`, filtreler, `ingredient` + medya entegrasyonu ve güncel endpoint envanteri; Requirements / Implementation Plan ile hizalı kalan eksikler: yorum API’si, `tagIds` ile tarif oluşturma, `PATCH`/`publish`.*
+
+---
+
+## Requirements (Wiki) ile hızlı kıyas
+
+| Requirements (özet) | Frontend durumu (MVP) |
+|---------------------|------------------------|
+| 1.1 Oturum / kayıt | ✅ |
+| 1.2 Tarif görüntüleme (malzeme, araç, adım, video, hikâye) | ✅ 🟡 (video + medya; teknik notlar Final’de) |
+| 1.3 Tarif oluşturma, taslak, medya | 🟡 (taslak tek POST; medya yüklendi) |
+| 1.4 Arama / filtre (ad, malzeme, bölge, alerjen) | 🟡 (Keşif: bölge, alerjen, etiket, tür; başlık istemci; **malzeme ID ile keşif** yok) |
+| 1.5 Puan / yorum | Puan ✅ · Yorum ⬜ |
+| 2.1 Profil rolleri (Learner/Cook/Expert) | ✅ `ProtectedRoute` + oluşturma |
+| 2.2–2.4 Normalizasyon, ikame, ses/metin ayrıştırma | Final milestone (Wiki Implementation Plan) |

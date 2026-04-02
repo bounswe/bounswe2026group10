@@ -42,6 +42,13 @@
   color: var(--color-main);
 }
 
+.register__lang {
+  position: absolute;
+  right: var(--space-lg);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 /* ── Form ──────────────────────────────────────────────────────────────── */
 
 .register__form {

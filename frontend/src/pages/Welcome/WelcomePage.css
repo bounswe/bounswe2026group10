@@ -10,6 +10,13 @@
   overflow: hidden;
 }
 
+.welcome__lang {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-lg);
+  z-index: 2;
+}
+
 /* ── Hero background ───────────────────────────────────────────────────── */
 
 .welcome__hero {

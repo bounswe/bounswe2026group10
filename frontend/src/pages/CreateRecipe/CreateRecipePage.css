@@ -159,6 +159,11 @@
   flex-shrink: 0;
 }
 
+.cr-input--unit {
+  width: 5.5rem;
+  flex-shrink: 0;
+}
+
 .cr-textarea {
   padding: 0.75rem var(--space-md);
   border: 1px solid rgba(134, 69, 42, 0.2);
@@ -211,6 +216,11 @@
 .cr-select:focus {
   border-color: var(--color-main);
   box-shadow: 0 0 0 3px rgba(134, 69, 42, 0.1);
+}
+
+.cr-select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 /* ── Recipe type selector ───────────────────────────────────────────────── */
@@ -287,6 +297,12 @@
   border-radius: var(--radius-sm);
 }
 
+.cr-info-note--warn {
+  color: var(--text-secondary);
+  border: 1px solid rgba(181, 100, 40, 0.35);
+  background: rgba(181, 100, 40, 0.08);
+}
+
 .cr-list {
   display: flex;
   flex-direction: column;
@@ -316,8 +332,9 @@
 .cr-ingredient-row,
 .cr-row {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-sm);
-  align-items: center;
+  align-items: flex-start;
 }
 
 .cr-trash-btn {
@@ -426,6 +443,7 @@
   color: var(--text-on-main);
 }
 
+.cr-review-card__genre,
 .cr-review-card__variety,
 .cr-review-card__servings {
   font-size: 0.875rem;

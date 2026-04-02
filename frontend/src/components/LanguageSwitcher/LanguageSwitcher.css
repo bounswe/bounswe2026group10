@@ -1,0 +1,50 @@
+.language-switcher {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--color-main, #6b4423);
+  overflow: hidden;
+  background: var(--surface-base, #fff);
+}
+
+.language-switcher--compact .language-switcher__btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  min-width: 2.25rem;
+}
+
+.language-switcher__btn {
+  font-family: var(--font-body, system-ui, sans-serif);
+  margin: 0;
+  padding: 0.35rem 0.65rem;
+  min-width: 2.5rem;
+  border: none;
+  background: transparent;
+  color: var(--color-main, #6b4423);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition:
+    background var(--transition-fast, 0.15s ease),
+    color var(--transition-fast, 0.15s ease);
+}
+
+.language-switcher__btn:hover:not(.language-switcher__btn--active) {
+  background: var(--surface-overlay, rgba(107, 68, 35, 0.08));
+}
+
+.language-switcher__btn--active {
+  background: var(--color-main, #6b4423);
+  color: var(--surface-base, #fff);
+}
+
+.language-switcher__btn:focus-visible {
+  outline: 2px solid var(--color-main, #6b4423);
+  outline-offset: 2px;
+  z-index: 1;
+}
+
+.language-switcher__btn + .language-switcher__btn {
+  border-left: 1px solid var(--color-main, #6b4423);
+}
