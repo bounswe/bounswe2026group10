@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -7,21 +7,21 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors, fonts, fontSizes, spacing } from '../../theme';
-import { IconButton } from '../shared/IconButton';
-import { StepHeader } from '../create-basic/StepHeader';
-import { useRecipeForm } from '../../context/RecipeFormContext';
-import { createRecipe, publishRecipe } from '../../api/recipes';
-import type { RecipeFormState } from '../../context/RecipeFormContext';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { colors, fonts, fontSizes, spacing } from "../../theme";
+import { IconButton } from "../shared/IconButton";
+import { StepHeader } from "../create-basic/StepHeader";
+import { useRecipeForm } from "../../context/RecipeFormContext";
+import { createRecipe, publishRecipe } from "../../api/recipes";
+import type { RecipeFormState } from "../../context/RecipeFormContext";
 
 function buildPayload(draft: RecipeFormState) {
   return {
     title: draft.title,
-    type: draft.type.toLowerCase() as 'community' | 'cultural',
+    type: draft.type.toLowerCase() as "community" | "cultural",
     story: draft.story || undefined,
     dishVarietyId: draft.varietyId ?? undefined,
     servingSize: draft.servingSize,
@@ -53,18 +53,21 @@ export function CreateReviewScreen() {
 
   const goHome = () => {
     resetDraft();
-    navigation.getParent()?.navigate('HomeTab' as never);
+    navigation.getParent()?.navigate("HomeTab" as never);
   };
 
   const handlePublish = async () => {
     try {
       setPublishing(true);
-      const created = await createRecipe({ ...buildPayload(draft), isPublished: false });
-      console.log('[publish] recipe created:', created.id);
+      const created = await createRecipe({
+        ...buildPayload(draft),
+        isPublished: false,
+      });
+      console.log("[publish] recipe created:", created.id);
       const published = await publishRecipe(created.id);
-      console.log('[publish] recipe published:', published);
-      Alert.alert('Published!', 'Your recipe is now live.', [
-        { text: 'OK', onPress: goHome },
+      console.log("[publish] recipe published:", published);
+      Alert.alert("Published!", "Your recipe is now live.", [
+        { text: "OK", onPress: goHome },
       ]);
     } finally {
       setPublishing(false);
@@ -72,17 +75,20 @@ export function CreateReviewScreen() {
   };
 
   const handleSaveDraft = async () => {
-    const result = await createRecipe({ ...buildPayload(draft), isPublished: false });
-    console.log('[draft] recipe saved:', result.id);
-    Alert.alert('Draft Saved', 'Your recipe has been saved to drafts.', [
-      { text: 'OK', onPress: goHome },
+    const result = await createRecipe({
+      ...buildPayload(draft),
+      isPublished: false,
+    });
+    console.log("[draft] recipe saved:", result.id);
+    Alert.alert("Draft Saved", "Your recipe has been saved to drafts.", [
+      { text: "OK", onPress: goHome },
     ]);
   };
 
   const handleClose = () => {
-    Alert.alert('Discard Recipe?', 'Your changes will be lost.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Discard', style: 'destructive' },
+    Alert.alert("Discard Recipe?", "Your changes will be lost.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Discard", style: "destructive" },
     ]);
   };
 
@@ -106,11 +112,13 @@ export function CreateReviewScreen() {
         />
 
         {/* Recipe title */}
-        <Text style={styles.recipeTitle}>{draft.title || 'Untitled Recipe'}</Text>
+        <Text style={styles.recipeTitle}>
+          {draft.title || "Untitled Recipe"}
+        </Text>
 
         {/* Metadata row */}
         {metaParts.length > 0 && (
-          <Text style={styles.metaRow}>{metaParts.join(' · ')}</Text>
+          <Text style={styles.metaRow}>{metaParts.join(" · ")}</Text>
         )}
 
         {/* Story */}
@@ -125,19 +133,24 @@ export function CreateReviewScreen() {
         {tagCount > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>TAGS</Text>
-            <Text style={styles.bodyText}>{tagCount} tag{tagCount !== 1 ? 's' : ''} selected</Text>
+            <Text style={styles.bodyText}>
+              {tagCount} tag{tagCount !== 1 ? "s" : ""} selected
+            </Text>
           </View>
         )}
 
         {/* Ingredients */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>INGREDIENTS</Text>
-          {draft.ingredients.filter((i) => i.name.trim()).map((ing) => (
-            <Text key={ing.id} style={styles.listItem}>
-              {'• '}{ing.name}
-              {ing.quantity ? `  ${ing.quantity} ${ing.unit}` : ''}
-            </Text>
-          ))}
+          {draft.ingredients
+            .filter((i) => i.name.trim())
+            .map((ing) => (
+              <Text key={ing.id} style={styles.listItem}>
+                {"• "}
+                {ing.name}
+                {ing.quantity ? `  ${ing.quantity} ${ing.unit}` : ""}
+              </Text>
+            ))}
           {draft.ingredients.filter((i) => i.name.trim()).length === 0 && (
             <Text style={styles.emptyText}>No ingredients added</Text>
           )}
@@ -148,7 +161,10 @@ export function CreateReviewScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>TOOLS</Text>
             {draft.tools.map((tool) => (
-              <Text key={tool.id} style={styles.listItem}>{'• '}{tool.name}</Text>
+              <Text key={tool.id} style={styles.listItem}>
+                {"• "}
+                {tool.name}
+              </Text>
             ))}
           </View>
         )}
@@ -158,8 +174,14 @@ export function CreateReviewScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>RECIPE VIDEO</Text>
             <View style={styles.videoRow}>
-              <MaterialCommunityIcons name="check-circle" size={16} color={colors.positive} />
-              <Text style={styles.videoAttachedText}>{draft.videoFileName}</Text>
+              <MaterialCommunityIcons
+                name="check-circle"
+                size={16}
+                color={colors.positive}
+              />
+              <Text style={styles.videoAttachedText}>
+                {draft.videoFileName}
+              </Text>
             </View>
           </View>
         )}
@@ -195,13 +217,20 @@ export function CreateReviewScreen() {
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
           >
-            <MaterialCommunityIcons name="arrow-left" size={20} color={colors.onSurface} />
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={20}
+              color={colors.onSurface}
+            />
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity
-          style={[styles.publishButton, publishing && styles.publishButtonDisabled]}
+          style={[
+            styles.publishButton,
+            publishing && styles.publishButtonDisabled,
+          ]}
           onPress={handlePublish}
           activeOpacity={0.8}
           disabled={publishing}
@@ -211,12 +240,20 @@ export function CreateReviewScreen() {
           ) : (
             <>
               <Text style={styles.publishButtonText}>Publish Recipe</Text>
-              <MaterialCommunityIcons name="check-circle-outline" size={20} color={colors.white} />
+              <MaterialCommunityIcons
+                name="check-circle-outline"
+                size={20}
+                color={colors.white}
+              />
             </>
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.saveDraftButton} onPress={handleSaveDraft} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.saveDraftButton}
+          onPress={handleSaveDraft}
+          activeOpacity={0.7}
+        >
           <Text style={styles.saveDraftText}>Save as Draft</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -230,8 +267,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
   },
@@ -240,28 +277,28 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifBold,
     fontSize: fontSizes.xl,
     color: colors.primary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   topBarSpacer: {
     width: 40,
   },
   content: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing['4xl'],
+    paddingBottom: spacing["4xl"],
   },
   recipeTitle: {
     fontFamily: fonts.serifBold,
-    fontSize: fontSizes['3xl'],
+    fontSize: fontSizes["3xl"],
     color: colors.onSurface,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: spacing.sm,
   },
   metaRow: {
     fontFamily: fonts.serif,
     fontSize: fontSizes.md,
     color: colors.onSurfaceVariant,
-    textAlign: 'center',
-    marginBottom: spacing['2xl'],
+    textAlign: "center",
+    marginBottom: spacing["2xl"],
   },
   section: {
     marginTop: spacing.xl,
@@ -280,8 +317,8 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   tagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.sm,
   },
   tagChip: {
@@ -313,8 +350,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   stepCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
     marginBottom: spacing.xs,
   },
@@ -323,8 +360,8 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   stepCircleText: {
     fontFamily: fonts.sansBold,
@@ -345,8 +382,8 @@ const styles = StyleSheet.create({
     marginLeft: 28 + spacing.sm,
   },
   videoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
   },
   videoAttachedText: {
@@ -359,16 +396,16 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansMedium,
     fontSize: fontSizes.sm,
     color: colors.primary,
-    marginLeft: 'auto',
+    marginLeft: "auto",
   },
   navigationRow: {
-    marginTop: spacing['3xl'],
+    marginTop: spacing["3xl"],
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   backButtonText: {
     fontFamily: fonts.sansMedium,
@@ -376,9 +413,9 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
   },
   publishButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: colors.primary,
     borderRadius: 24,
     paddingVertical: spacing.lg,
@@ -394,7 +431,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   saveDraftButton: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: spacing.lg,
     marginTop: spacing.sm,
   },

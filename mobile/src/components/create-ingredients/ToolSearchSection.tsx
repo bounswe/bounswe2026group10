@@ -10,15 +10,20 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { Tool } from '../../types/ingredient';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
-import { SAMPLE_TOOLS, QUICK_ADD_TOOLS } from '../../constants/ingredientsAndTools';
+import type { ToolItem } from '../../api/tools';
+
+// Number of tools to show in the quick-add chips row
+const QUICK_ADD_COUNT = 7;
 
 interface ToolSearchSectionProps {
+  allTools: ToolItem[]; // full list fetched once by the parent screen
   selectedTools: Tool[];
   onAddTool: (tool: Tool) => void;
   onRemoveTool: (toolId: string) => void;
 }
 
 export function ToolSearchSection({
+  allTools,
   selectedTools,
   onAddTool,
   onRemoveTool,
@@ -26,28 +31,31 @@ export function ToolSearchSection({
   const [search, setSearch] = useState('');
   const [showResults, setShowResults] = useState(false);
 
-  const filtered = search.length > 0
-    ? SAMPLE_TOOLS.filter((t) =>
-        t.label.toLowerCase().includes(search.toLowerCase()) &&
-        !selectedTools.some((s) => s.id === t.value),
-      ).slice(0, 5)
+  const query = search.trim().toLowerCase();
+  const filtered = query.length > 0
+    ? allTools
+        .filter((t) =>
+          t.name.toLowerCase().startsWith(query) &&
+          !selectedTools.some((s) => s.id === t.name),
+        )
+        .slice(0, 5)
     : [];
 
-  const handleSelectTool = (item: { label: string; value: string }) => {
-    onAddTool({ id: item.value, name: item.label });
+  // First QUICK_ADD_COUNT tools from the backend list as quick-add chips
+  const quickAddTools = allTools.slice(0, QUICK_ADD_COUNT);
+
+  const handleSelectTool = (item: ToolItem) => {
+    onAddTool({ id: item.name, name: item.name });
     setSearch('');
     setShowResults(false);
   };
 
-  const handleToggleQuickAdd = (value: string) => {
-    const existing = selectedTools.find((t) => t.id === value);
+  const handleToggleQuickAdd = (name: string) => {
+    const existing = selectedTools.find((t) => t.id === name);
     if (existing) {
-      onRemoveTool(value);
+      onRemoveTool(name);
     } else {
-      const tool = SAMPLE_TOOLS.find((t) => t.value === value);
-      if (tool) {
-        onAddTool({ id: tool.value, name: tool.label });
-      }
+      onAddTool({ id: name, name });
     }
   };
 
@@ -77,42 +85,44 @@ export function ToolSearchSection({
         <ScrollView style={styles.results} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
           {filtered.map((item) => (
             <TouchableOpacity
-              key={item.value}
+              key={item.name}
               style={styles.resultItem}
               onPress={() => handleSelectTool(item)}
             >
-              <Text style={styles.resultText}>{item.label}</Text>
+              <Text style={styles.resultText}>{item.name}</Text>
               <MaterialCommunityIcons name="plus" size={18} color={colors.primary} />
             </TouchableOpacity>
           ))}
         </ScrollView>
       )}
 
-      <Text style={styles.quickAddLabel}>QUICK ADD TOOLS</Text>
-      <View style={styles.chips}>
-        {QUICK_ADD_TOOLS.map((value) => {
-          const tool = SAMPLE_TOOLS.find((t) => t.value === value);
-          if (!tool) return null;
-          const isSelected = selectedTools.some((t) => t.id === value);
-          return (
-            <TouchableOpacity
-              key={value}
-              style={[styles.chip, isSelected && styles.chipSelected]}
-              onPress={() => handleToggleQuickAdd(value)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                {tool.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {quickAddTools.length > 0 && (
+        <>
+          <Text style={styles.quickAddLabel}>QUICK ADD TOOLS</Text>
+          <View style={styles.chips}>
+            {quickAddTools.map((tool) => {
+              const isSelected = selectedTools.some((t) => t.id === tool.name);
+              return (
+                <TouchableOpacity
+                  key={tool.name}
+                  style={[styles.chip, isSelected && styles.chipSelected]}
+                  onPress={() => handleToggleQuickAdd(tool.name)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                    {tool.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </>
+      )}
 
       {selectedTools.length > 0 && (
         <View style={styles.selectedList}>
           {selectedTools
-            .filter((t) => !QUICK_ADD_TOOLS.includes(t.id))
+            .filter((t) => !quickAddTools.some((q) => q.name === t.id))
             .map((tool) => (
               <View key={tool.id} style={styles.selectedRow}>
                 <MaterialCommunityIcons

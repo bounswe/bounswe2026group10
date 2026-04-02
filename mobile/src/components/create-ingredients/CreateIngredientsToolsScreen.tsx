@@ -16,6 +16,8 @@ import { ToolSearchSection } from './ToolSearchSection';
 import { useRecipeForm } from '../../context/RecipeFormContext';
 import { searchIngredients } from '../../api/ingredients';
 import type { IngredientItem } from '../../api/ingredients';
+import { getTools } from '../../api/tools';
+import type { ToolItem } from '../../api/tools';
 
 let nextId = 1;
 function generateId(): string {
@@ -35,6 +37,7 @@ export function CreateIngredientsToolsScreen() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [errors, setErrors] = useState<Record<string, { name?: string; quantity?: string }>>({});
   const [allIngredients, setAllIngredients] = useState<IngredientItem[]>([]);
+  const [allTools, setAllTools] = useState<ToolItem[]>([]);
 
   useEffect(() => {
     searchIngredients('')
@@ -43,6 +46,12 @@ export function CreateIngredientsToolsScreen() {
         setAllIngredients(data);
       })
       .catch((err) => console.error('[Ingredients] failed to load:', err));
+    getTools()
+      .then((data) => {
+        console.log('[Tools] loaded', data.length, 'tools from backend');
+        setAllTools(data);
+      })
+      .catch((err) => console.error('[Tools] failed to load:', err));
   }, []);
 
   const handleAddIngredient = () => {
@@ -166,6 +175,7 @@ export function CreateIngredientsToolsScreen() {
 
         <SectionHeader title="Tools & Equipment">
           <ToolSearchSection
+            allTools={allTools}
             selectedTools={tools}
             onAddTool={handleAddTool}
             onRemoveTool={handleRemoveTool}
