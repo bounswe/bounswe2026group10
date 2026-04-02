@@ -8,6 +8,103 @@
       "expert": "Expert"
     }
   },
+  "language": {
+    "switcherLabel": "Language",
+    "short": {
+      "en": "EN",
+      "tr": "TR"
+    }
+  },
+  "welcome": {
+    "heroAlt": "Mediterranean ingredients on a rustic table",
+    "headlineBefore": "Gathering the",
+    "headlineAccent": "Flavors",
+    "headlineAfter": "of Generations.",
+    "tagline": "Preserve. Cook. Share.",
+    "createAccount": "Create Account",
+    "signIn": "Sign In",
+    "orContinue": "OR CONTINUE WITH",
+    "continueGoogle": "Continue with Google",
+    "continueApple": "Continue with Apple",
+    "continueGuest": "CONTINUE AS GUEST"
+  },
+  "auth": {
+    "login": {
+      "backAria": "Go back",
+      "brand": "Roots & Recipes",
+      "title": "Welcome",
+      "titleEm": "back",
+      "subtitle": "Rediscover the tastes that connect generations.",
+      "emailPlaceholder": "Email Address",
+      "passwordPlaceholder": "Password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "forgotPassword": "Forgot Password?",
+      "rememberMe": "Remember me",
+      "signIn": "Sign In",
+      "orContinue": "OR CONTINUE WITH",
+      "continueGoogle": "Continue with Google",
+      "continueApple": "Continue with Apple",
+      "footerNoAccount": "Don't have an account?",
+      "register": "Register",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "modalClose": "Close",
+      "modalTitle": "Forgot Password",
+      "modalSuccess": "A password reset link has been sent to your email.",
+      "modalBackSignIn": "Back to Sign In",
+      "modalDesc": "Enter your email address and we'll send you a reset link.",
+      "modalSendReset": "Send Reset Link",
+      "errors": {
+        "emailRequired": "Email is required.",
+        "emailInvalid": "Please enter a valid email address.",
+        "passwordRequired": "Password is required."
+      }
+    },
+    "register": {
+      "backAria": "Go back",
+      "brand": "Roots & Recipes",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "firstNamePlaceholder": "First name",
+      "lastNamePlaceholder": "Last name",
+      "email": "Email Address",
+      "emailPlaceholder": "your@email.com",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "rolesLegend": "Choose Your Role",
+      "roleLearner": "Learner",
+      "roleLearnerDesc": "Exploring family traditions and new flavors.",
+      "roleCook": "Cook",
+      "roleCookDesc": "Sharing and preserving daily kitchen rituals.",
+      "roleExpert": "Expert",
+      "roleExpertDesc": "Community and cultural recipes — heritage and tradition.",
+      "region": "Region",
+      "profileLanguage": "Preferred language",
+      "submit": "Create Heirloom Account",
+      "orConnect": "OR CONNECT WITH",
+      "google": "Google",
+      "apple": "Apple",
+      "footerHasAccount": "Already have an account?",
+      "signIn": "Sign In",
+      "pwStrength": {
+        "weak": "Weak",
+        "fair": "Fair",
+        "good": "Good",
+        "strong": "Strong"
+      },
+      "errors": {
+        "firstNameRequired": "First name is required.",
+        "lastNameRequired": "Last name is required.",
+        "emailRequired": "Email is required.",
+        "emailInvalid": "Please enter a valid email address.",
+        "passwordRequired": "Password is required.",
+        "passwordMin": "Password must be at least 8 characters.",
+        "confirmMismatch": "Passwords do not match.",
+        "roleRequired": "Please select a role."
+      }
+    }
+  },
   "nav": {
     "ariaLabel": "Main navigation",
     "openMenu": "Open menu",

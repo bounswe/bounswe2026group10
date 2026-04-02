@@ -52,6 +52,13 @@
   background: url('../../assets/logo-app.png') center/contain no-repeat;
 }
 
+.login__lang {
+  position: absolute;
+  right: var(--space-lg);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 /* ── Body & Typography ─────────────────────────────────────────────────── */
 
 .login__body {

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import googleLogo from '@/assets/logo-google.svg'
 import appleLogo from '@/assets/logo-apple.svg'
 import { session } from '@/auth/session'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { registerAsync, clearError, logoutAsync } from '@/store/slices/auth-slice'
 import { fetchProfileAsync } from '@/store/slices/profile-slice'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import './RegisterPage.css'
 
 type UserRole = 'learner' | 'cook' | 'expert'
@@ -34,21 +37,39 @@ interface FieldErrors {
 const REGIONS = ['Turkey', 'Greece', 'Italy', 'Mexico', 'India', 'Japan']
 const LANGUAGES = ['English', 'Türkçe']
 
-function getPasswordStrength(pw: string): { level: number; label: string } {
-  if (pw.length === 0) return { level: 0, label: '' }
+const PW_STRENGTH_KEYS = ['weak', 'fair', 'good', 'strong'] as const
+
+function getPasswordStrengthLevel(pw: string): number {
+  if (pw.length === 0) return 0
   let score = 0
   if (pw.length >= 8) score++
   if (/[A-Z]/.test(pw)) score++
   if (/[0-9]/.test(pw)) score++
   if (/[^A-Za-z0-9]/.test(pw)) score++
-  const labels = ['Weak', 'Fair', 'Good', 'Strong']
-  return { level: score, label: labels[score - 1] || 'Weak' }
+  return score
+}
+
+function validateRegister(t: TFunction<'common'>, form: FormState): FieldErrors {
+  const e: FieldErrors = {}
+  if (!form.firstName.trim()) e.firstName = t('auth.register.errors.firstNameRequired')
+  if (!form.lastName.trim()) e.lastName = t('auth.register.errors.lastNameRequired')
+  if (!form.email.trim()) e.email = t('auth.register.errors.emailRequired')
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+    e.email = t('auth.register.errors.emailInvalid')
+  if (!form.password) e.password = t('auth.register.errors.passwordRequired')
+  else if (form.password.length < 8)
+    e.password = t('auth.register.errors.passwordMin')
+  if (form.password !== form.confirmPassword)
+    e.confirmPassword = t('auth.register.errors.confirmMismatch')
+  if (!form.role) e.role = t('auth.register.errors.roleRequired')
+  return e
 }
 
 export function RegisterPage() {
+  const { t } = useTranslation('common')
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
-  
+
   const { loading, error: serverError } = useAppSelector((state) => state.auth)
 
   const [form, setForm] = useState<FormState>({
@@ -63,19 +84,16 @@ export function RegisterPage() {
   })
   const [errors, setErrors] = useState<FieldErrors>({})
 
-  const pwStrength = getPasswordStrength(form.password)
+  const pwLevel = getPasswordStrengthLevel(form.password)
+  const pwLabelKey =
+    pwLevel > 0 ? PW_STRENGTH_KEYS[Math.min(Math.max(pwLevel, 1), 4) - 1] : PW_STRENGTH_KEYS[0]
 
-  // Clear any existing session so a logged-in user can register a new account.
   useEffect(() => {
     if (session.getTokens().accessToken) {
       void dispatch(logoutAsync())
     }
     dispatch(clearError())
   }, [dispatch])
-
-  // Do NOT redirect with useEffect(isAuthenticated): on first mount the closure still
-  // sees isAuthenticated === true before logout re-renders, so it would wrongly
-  // navigate to /home. Navigate only after successful register in handleSubmit (unwrap).
 
   useEffect(() => {
     return () => {
@@ -92,18 +110,7 @@ export function RegisterPage() {
   }
 
   function validate(): boolean {
-    const e: FieldErrors = {}
-    if (!form.firstName.trim()) e.firstName = 'First name is required.'
-    if (!form.lastName.trim()) e.lastName = 'Last name is required.'
-    if (!form.email.trim()) e.email = 'Email is required.'
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      e.email = 'Please enter a valid email address.'
-    if (!form.password) e.password = 'Password is required.'
-    else if (form.password.length < 8)
-      e.password = 'Password must be at least 8 characters.'
-    if (form.password !== form.confirmPassword)
-      e.confirmPassword = 'Passwords do not match.'
-    if (!form.role) e.role = 'Please select a role.'
+    const e = validateRegister(t, form)
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -131,17 +138,18 @@ export function RegisterPage() {
 
   return (
     <div className="register" id="register-page">
-      {/* Header */}
       <header className="register__header">
-        <Link to="/" className="register__back" aria-label="Go back">
+        <Link to="/" className="register__back" aria-label={t('auth.register.backAria')}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
         </Link>
-        <span className="register__header-title">Roots &amp; Recipes</span>
+        <span className="register__header-title">{t('auth.register.brand')}</span>
+        <div className="register__lang">
+          <LanguageSwitcher variant="compact" />
+        </div>
       </header>
 
-      {/* Form */}
       <form className="register__form" onSubmit={handleSubmit} noValidate>
         {serverError && (
           <div className="register__alert" role="alert" id="register-server-error">
@@ -149,16 +157,15 @@ export function RegisterPage() {
           </div>
         )}
 
-        {/* Name fields */}
         <div className="register__field">
           <label className="register__label" htmlFor="reg-first-name">
-            First Name
+            {t('auth.register.firstName')}
           </label>
           <input
             className={`register__input ${errors.firstName ? 'register__input--error' : ''}`}
             id="reg-first-name"
             type="text"
-            placeholder="First name"
+            placeholder={t('auth.register.firstNamePlaceholder')}
             value={form.firstName}
             onChange={(e) => handleChange('firstName', e.target.value)}
             autoComplete="given-name"
@@ -168,13 +175,13 @@ export function RegisterPage() {
 
         <div className="register__field">
           <label className="register__label" htmlFor="reg-last-name">
-            Last Name
+            {t('auth.register.lastName')}
           </label>
           <input
             className={`register__input ${errors.lastName ? 'register__input--error' : ''}`}
             id="reg-last-name"
             type="text"
-            placeholder="Last name"
+            placeholder={t('auth.register.lastNamePlaceholder')}
             value={form.lastName}
             onChange={(e) => handleChange('lastName', e.target.value)}
             autoComplete="family-name"
@@ -182,16 +189,15 @@ export function RegisterPage() {
           {errors.lastName && <span className="register__error">{errors.lastName}</span>}
         </div>
 
-        {/* Email */}
         <div className="register__field">
           <label className="register__label" htmlFor="reg-email">
-            Email Address
+            {t('auth.register.email')}
           </label>
           <input
             className={`register__input ${errors.email ? 'register__input--error' : ''}`}
             id="reg-email"
             type="email"
-            placeholder="your@email.com"
+            placeholder={t('auth.register.emailPlaceholder')}
             value={form.email}
             onChange={(e) => handleChange('email', e.target.value)}
             autoComplete="email"
@@ -199,10 +205,9 @@ export function RegisterPage() {
           {errors.email && <span className="register__error">{errors.email}</span>}
         </div>
 
-        {/* Password */}
         <div className="register__field">
           <label className="register__label" htmlFor="reg-password">
-            Password
+            {t('auth.register.password')}
           </label>
           <input
             className={`register__input ${errors.password ? 'register__input--error' : ''}`}
@@ -217,22 +222,21 @@ export function RegisterPage() {
             <div className="register__pw-strength">
               <div className="register__pw-bar">
                 <div
-                  className={`register__pw-fill register__pw-fill--${pwStrength.level}`}
-                  style={{ width: `${(pwStrength.level / 4) * 100}%` }}
+                  className={`register__pw-fill register__pw-fill--${pwLevel}`}
+                  style={{ width: `${(pwLevel / 4) * 100}%` }}
                 />
               </div>
-              <span className={`register__pw-label register__pw-label--${pwStrength.level}`}>
-                {pwStrength.label}
+              <span className={`register__pw-label register__pw-label--${pwLevel}`}>
+                {t(`auth.register.pwStrength.${pwLabelKey}`)}
               </span>
             </div>
           )}
           {errors.password && <span className="register__error">{errors.password}</span>}
         </div>
 
-        {/* Confirm Password */}
         <div className="register__field">
           <label className="register__label" htmlFor="reg-confirm-password">
-            Confirm Password
+            {t('auth.register.confirmPassword')}
           </label>
           <input
             className={`register__input ${errors.confirmPassword ? 'register__input--error' : ''}`}
@@ -248,9 +252,8 @@ export function RegisterPage() {
           )}
         </div>
 
-        {/* Role selection */}
         <fieldset className="register__roles" id="reg-role-selection">
-          <legend className="register__roles-legend">Choose Your Role</legend>
+          <legend className="register__roles-legend">{t('auth.register.rolesLegend')}</legend>
           {errors.role && <span className="register__error">{errors.role}</span>}
 
           <label
@@ -268,10 +271,8 @@ export function RegisterPage() {
             />
             <span className="register__role-icon">📖</span>
             <div className="register__role-info">
-              <span className="register__role-name">Learner</span>
-              <span className="register__role-desc">
-                Exploring family traditions and new flavors.
-              </span>
+              <span className="register__role-name">{t('auth.register.roleLearner')}</span>
+              <span className="register__role-desc">{t('auth.register.roleLearnerDesc')}</span>
             </div>
           </label>
 
@@ -290,10 +291,8 @@ export function RegisterPage() {
             />
             <span className="register__role-icon">🍳</span>
             <div className="register__role-info">
-              <span className="register__role-name">Cook</span>
-              <span className="register__role-desc">
-                Sharing and preserving daily kitchen rituals.
-              </span>
+              <span className="register__role-name">{t('auth.register.roleCook')}</span>
+              <span className="register__role-desc">{t('auth.register.roleCookDesc')}</span>
             </div>
           </label>
 
@@ -312,18 +311,15 @@ export function RegisterPage() {
             />
             <span className="register__role-icon">🌿</span>
             <div className="register__role-info">
-              <span className="register__role-name">Expert</span>
-              <span className="register__role-desc">
-                Community and cultural recipes — heritage and tradition.
-              </span>
+              <span className="register__role-name">{t('auth.register.roleExpert')}</span>
+              <span className="register__role-desc">{t('auth.register.roleExpertDesc')}</span>
             </div>
           </label>
         </fieldset>
 
-        {/* Region */}
         <div className="register__field">
           <label className="register__label" htmlFor="reg-region">
-            Region
+            {t('auth.register.region')}
           </label>
           <div className="register__select-wrap">
             <select
@@ -344,10 +340,9 @@ export function RegisterPage() {
           </div>
         </div>
 
-        {/* Language */}
         <div className="register__field">
           <label className="register__label" htmlFor="reg-language">
-            Language
+            {t('auth.register.profileLanguage')}
           </label>
           <div className="register__select-wrap">
             <select
@@ -368,7 +363,6 @@ export function RegisterPage() {
           </div>
         </div>
 
-        {/* Submit */}
         <button
           type="submit"
           className="register__submit"
@@ -378,32 +372,29 @@ export function RegisterPage() {
           {loading ? (
             <span className="register__spinner" />
           ) : (
-            'Create Heirloom Account'
+            t('auth.register.submit')
           )}
         </button>
 
-        {/* Social divider */}
         <div className="register__or-divider">
-          <span>OR CONNECT WITH</span>
+          <span>{t('auth.register.orConnect')}</span>
         </div>
 
-        {/* Social auth */}
         <div className="register__social">
           <button className="register__social-btn" id="reg-google-auth" type="button">
             <img src={googleLogo} alt="" width="18" height="18" />
-            <span>Google</span>
+            <span>{t('auth.register.google')}</span>
           </button>
           <button className="register__social-btn register__social-btn--apple" id="reg-apple-auth" type="button">
             <img src={appleLogo} alt="" width="18" height="18" />
-            <span>Apple</span>
+            <span>{t('auth.register.apple')}</span>
           </button>
         </div>
 
-        {/* Footer */}
         <p className="register__footer">
-          Already have an account?{' '}
+          {t('auth.register.footerHasAccount')}{' '}
           <Link to="/login" className="register__footer-link" id="reg-go-login">
-            Sign In
+            {t('auth.register.signIn')}
           </Link>
         </p>
       </form>
