@@ -58,7 +58,8 @@ backend/
 │   │   ├── dietary-tags.ts      # Dietary/allergen tag listing
 │   │   ├── dish-genres.ts       # Cuisine genre listing
 │   │   ├── dish-varieties.ts    # Dish variety listing, search, recipes
-│   │   └── parse.ts             # Free-text recipe parser endpoint
+│   │   ├── parse.ts             # Free-text recipe parser endpoint
+│   │   └── ingredients.ts       # Ingredient search/autocomplete
 │   ├── types/
 │   │   └── index.ts             # TypeScript interfaces (roles, auth, response)
 │   ├── utils/
@@ -71,6 +72,7 @@ backend/
 │       ├── dietary-tags.test.ts
 │       ├── media.test.ts
 │       ├── parse.test.ts
+│       ├── ingredients.test.ts
 │       └── health.test.ts
 ├── Dockerfile
 ├── jest.config.js
@@ -153,6 +155,11 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - `POST /media/upload` — Upload file (cook/expert only, multipart/form-data)
   - Images: JPEG/PNG/WebP, max 10 MB
   - Videos: MP4, max 100 MB
+
+### Ingredients (`/ingredients`)
+- `GET /ingredients` — List/search ingredients by partial name (case-insensitive)
+  - Query params: `search` (optional — filters by partial name match when provided)
+  - Without `search`, returns all ingredients; supports autocomplete use case
 
 ### Parse (`/parse`)
 - `POST /parse/recipe-text` — Parse free-text recipe into structured components (cook/expert only)
