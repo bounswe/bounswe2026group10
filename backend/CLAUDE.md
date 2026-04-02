@@ -60,6 +60,7 @@ backend/
 │   │   ├── dish-varieties.ts    # Dish variety listing, search, recipes
 │   │   ├── parse.ts             # Free-text recipe parser endpoint
 │   │   ├── ingredients.ts       # Ingredient search/autocomplete
+│   │   └── tools.ts             # Tool search/autocomplete
 │   │   └── units.ts             # Unit search/autocomplete
 │   ├── types/
 │   │   └── index.ts             # TypeScript interfaces (roles, auth, response)
@@ -74,6 +75,7 @@ backend/
 │       ├── media.test.ts
 │       ├── parse.test.ts
 │       ├── ingredients.test.ts
+│       ├── tools.test.ts
 │       ├── units.test.ts
 │       └── health.test.ts
 ├── Dockerfile
@@ -163,6 +165,10 @@ Database is managed via Supabase (no migration files in repo). Key tables:
   - Query params: `search` (optional — filters by partial name match when provided)
   - Without `search`, returns all ingredients; supports autocomplete use case
 
+### Tools (`/tools`)
+- `GET /tools` — List/search tools by partial name (case-insensitive)
+  - Query params: `search` (optional — filters by partial name match when provided)
+  - Returns distinct tool names from `recipe_tools`; without `search`, returns all known tools; supports autocomplete use case
 ### Units (`/units`)
 - `GET /units` — List/search units by partial name (case-insensitive)
   - Query params: `search` (optional — filters by partial name match when provided)
