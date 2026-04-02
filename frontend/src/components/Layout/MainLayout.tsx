@@ -5,6 +5,7 @@ import { useLogout } from '@/hooks/useLogout'
 import { selectProfile } from '@/store/slices/profile-slice'
 import { HeaderUser } from '@/components/Layout/HeaderUser'
 import { BottomNav } from '@/components/Layout/BottomNav'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import './MainLayout.css'
 
 export function MainLayout() {
@@ -32,6 +33,7 @@ export function MainLayout() {
 
           {isAuthenticated && (
             <div className="app-header__trailing">
+              <LanguageSwitcher variant="compact" />
               <HeaderUser
                 username={profile.username}
                 role={profile.role}
