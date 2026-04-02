@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -12,7 +12,6 @@ import type { MeasurementUnit } from '../../types/common';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 import { UNIT_OPTIONS } from '../../constants/ingredientsAndTools';
 import { FormDropdown } from '../shared/FormDropdown';
-import { searchIngredients } from '../../api/ingredients';
 import type { IngredientItem } from '../../api/ingredients';
 
 export interface IngredientFormItem {
@@ -25,6 +24,7 @@ export interface IngredientFormItem {
 
 interface IngredientRowEditorProps {
   ingredient: IngredientFormItem;
+  allIngredients: IngredientItem[]; // full list fetched once by the parent screen
   onUpdate: (updated: IngredientFormItem) => void;
   onRemove: () => void;
   error?: { name?: string; quantity?: string };
@@ -32,35 +32,19 @@ interface IngredientRowEditorProps {
 
 export function IngredientRowEditor({
   ingredient,
+  allIngredients,
   onUpdate,
   onRemove,
   error,
 }: IngredientRowEditorProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [suggestions, setSuggestions] = useState<IngredientItem[]>([]);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    const query = ingredient.name.trim();
-    if (query.length === 0) {
-      setSuggestions([]);
-      return;
-    }
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const results = await searchIngredients(query);
-        console.log(`[Ingredients] search "${query}" →`, results.length, 'results');
-        setSuggestions(results.slice(0, 5));
-      } catch (err) {
-        console.error(`[Ingredients] search "${query}" error:`, err);
-        setSuggestions([]);
-      }
-    }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [ingredient.name]);
+  const query = ingredient.name.trim().toLowerCase();
+  const suggestions = query.length > 0
+    ? allIngredients
+        .filter((i) => i.name.toLowerCase().startsWith(query))
+        .slice(0, 5)
+    : [];
 
   const handleNameChange = (text: string) => {
     onUpdate({ ...ingredient, name: text, ingredientId: null });

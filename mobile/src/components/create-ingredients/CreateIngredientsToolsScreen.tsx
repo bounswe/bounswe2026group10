@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -14,6 +14,8 @@ import { IngredientRowEditor } from './IngredientRowEditor';
 import type { IngredientFormItem } from './IngredientRowEditor';
 import { ToolSearchSection } from './ToolSearchSection';
 import { useRecipeForm } from '../../context/RecipeFormContext';
+import { searchIngredients } from '../../api/ingredients';
+import type { IngredientItem } from '../../api/ingredients';
 
 let nextId = 1;
 function generateId(): string {
@@ -32,6 +34,16 @@ export function CreateIngredientsToolsScreen() {
   ]);
   const [tools, setTools] = useState<Tool[]>([]);
   const [errors, setErrors] = useState<Record<string, { name?: string; quantity?: string }>>({});
+  const [allIngredients, setAllIngredients] = useState<IngredientItem[]>([]);
+
+  useEffect(() => {
+    searchIngredients('')
+      .then((data) => {
+        console.log('[Ingredients] loaded', data.length, 'ingredients from backend');
+        setAllIngredients(data);
+      })
+      .catch((err) => console.error('[Ingredients] failed to load:', err));
+  }, []);
 
   const handleAddIngredient = () => {
     setIngredients((prev) => [...prev, createEmptyIngredient()]);
@@ -144,6 +156,7 @@ export function CreateIngredientsToolsScreen() {
             <IngredientRowEditor
               key={ingredient.id}
               ingredient={ingredient}
+              allIngredients={allIngredients}
               onUpdate={(updated) => handleUpdateIngredient(ingredient.id, updated)}
               onRemove={() => handleRemoveIngredient(ingredient.id)}
               error={errors[ingredient.id]}
