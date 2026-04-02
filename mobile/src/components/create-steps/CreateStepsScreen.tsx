@@ -13,6 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 import { IconButton } from '../shared/IconButton';
 import { StepHeader } from '../create-basic/StepHeader';
@@ -20,7 +22,6 @@ import { StepEditor } from './StepEditor';
 import type { StepFormItem, StepFormItemErrors } from './StepEditor';
 import { uploadVideo } from '../../api/video';
 import { useRecipeForm } from '../../context/RecipeFormContext';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { CreateStackParamList } from '../../navigation/types';
 
 if (Platform.OS === 'android') {
@@ -37,8 +38,7 @@ function createEmptyStep(): StepFormItem {
     id: generateId(),
     title: '',
     description: '',
-    videoUri: null,
-    videoFileName: null,
+    timestamp: '',
     isExpanded: true,
   };
 }
@@ -46,8 +46,36 @@ function createEmptyStep(): StepFormItem {
 export function CreateStepsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const { updateDraft } = useRecipeForm();
+
+  // Single recipe video
+  const [videoUri, setVideoUri] = useState<string | null>(null);
+  const [videoFileName, setVideoFileName] = useState<string | null>(null);
+  const [videoError, setVideoError] = useState<string | undefined>();
+
+  // Steps
   const [steps, setSteps] = useState<StepFormItem[]>([createEmptyStep()]);
   const [stepErrors, setStepErrors] = useState<Record<string, StepFormItemErrors>>({});
+
+  const handlePickVideo = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['videos'] as ImagePicker.MediaType[],
+      allowsEditing: false,
+      quality: 1,
+    });
+    if (!result.canceled && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const fileName = asset.fileName ?? asset.uri.split('/').pop() ?? 'video.mp4';
+      console.log('[video] local URI selected:', asset.uri);
+      setVideoUri(asset.uri);
+      setVideoFileName(fileName);
+      setVideoError(undefined);
+    }
+  };
+
+  const handleRemoveVideo = () => {
+    setVideoUri(null);
+    setVideoFileName(null);
+  };
 
   const handleUpdateStep = (id: string, updated: StepFormItem) => {
     setSteps((prev) => prev.map((s) => (s.id === id ? updated : s)));
@@ -77,18 +105,17 @@ export function CreateStepsScreen() {
   };
 
   const validate = (): boolean => {
-    const newErrors: Record<string, StepFormItemErrors> = {};
+    let valid = true;
 
+    if (!videoUri) {
+      setVideoError('A recipe video is required');
+      valid = false;
+    }
+
+    const newErrors: Record<string, StepFormItemErrors> = {};
     for (const step of steps) {
-      const errs: StepFormItemErrors = {};
       if (!step.title.trim()) {
-        errs.title = 'Title is required';
-      }
-      if (!step.videoUri) {
-        errs.video = 'A video is required for each step';
-      }
-      if (Object.keys(errs).length > 0) {
-        newErrors[step.id] = errs;
+        newErrors[step.id] = { title: 'Title is required' };
       }
     }
 
@@ -97,32 +124,26 @@ export function CreateStepsScreen() {
         prev.map((s) => (newErrors[s.id] ? { ...s, isExpanded: true } : s))
       );
       setStepErrors(newErrors);
-      return false;
+      valid = false;
     }
 
-    setStepErrors({});
-    return true;
+    return valid;
   };
 
   const handleNext = async () => {
     if (!validate()) return;
 
-    console.log('[submit] all steps valid — uploading videos...');
-    const uploadedUrls = await Promise.all(
-      steps.map(async (step, index) => {
-        console.log(`[video] uploading step ${index + 1}:`, step.videoUri);
-        const { url } = await uploadVideo(step.videoUri!);
-        console.log(`[video] step ${index + 1} upload complete:`, url);
-        return url;
-      })
-    );
-    console.log('[submit] all uploads complete:', uploadedUrls);
+    console.log('[video] uploading recipe video:', videoUri);
+    const { url } = await uploadVideo(videoUri!);
+    console.log('[video] upload complete:', url);
 
     updateDraft({
-      steps: steps.map((s, i) => ({
+      videoUrl: url,
+      videoFileName,
+      steps: steps.map((s) => ({
         title: s.title,
         description: s.description,
-        videoUrl: uploadedUrls[i],
+        timestamp: s.timestamp,
       })),
     });
     navigation.navigate('CreateReview');
@@ -159,6 +180,52 @@ export function CreateStepsScreen() {
           subtitle="Break down the preparation into steps, just as they were taught to you."
         />
 
+        {/* Single recipe video upload */}
+        <View style={styles.videoSection}>
+          <View style={styles.videoLabelRow}>
+            <Text style={styles.videoLabel}>RECIPE VIDEO</Text>
+            <Text style={styles.requiredStar}> *</Text>
+          </View>
+
+          {videoUri ? (
+            <View style={[styles.videoBox, styles.videoBoxFilled]}>
+              <View style={styles.videoFilenameRow}>
+                <MaterialCommunityIcons name="check-circle" size={20} color={colors.positive} />
+                <Text style={styles.videoFilenameText} numberOfLines={1}>
+                  {videoFileName ?? 'video.mp4'}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleRemoveVideo}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <MaterialCommunityIcons
+                    name="close-circle-outline"
+                    size={20}
+                    color={colors.onSurfaceVariant}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <>
+              <View style={[styles.videoBox, styles.videoBoxEmpty, videoError ? styles.videoBoxError : null]}>
+                <MaterialCommunityIcons
+                  name="video-outline"
+                  size={32}
+                  color={videoError ? colors.negative : colors.primary}
+                />
+                <TouchableOpacity onPress={handlePickVideo} style={styles.videoSelectButton} activeOpacity={0.7}>
+                  <Text style={[styles.videoSelectButtonText, videoError ? styles.videoSelectButtonTextError : null]}>
+                    Select Video
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {videoError && <Text style={styles.videoErrorText}>{videoError}</Text>}
+            </>
+          )}
+        </View>
+
+        {/* Steps */}
         {steps.map((step, index) => (
           <StepEditor
             key={step.id}
@@ -224,6 +291,77 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing['4xl'],
+  },
+  videoSection: {
+    marginBottom: spacing['2xl'],
+  },
+  videoLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  videoLabel: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSizes.xs,
+    color: colors.onSurfaceVariant,
+    letterSpacing: 0.5,
+  },
+  requiredStar: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSizes.xs,
+    color: colors.negative,
+  },
+  videoBox: {
+    borderRadius: 12,
+    borderWidth: 1.5,
+    backgroundColor: colors.surfaceContainer,
+    padding: spacing.lg,
+  },
+  videoBoxEmpty: {
+    borderStyle: 'dashed',
+    borderColor: colors.outline,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  videoBoxFilled: {
+    borderStyle: 'solid',
+    borderColor: colors.positive,
+  },
+  videoBoxError: {
+    borderColor: colors.negative,
+  },
+  videoSelectButton: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 20,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  videoSelectButtonText: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSizes.md,
+    color: colors.primary,
+  },
+  videoSelectButtonTextError: {
+    color: colors.negative,
+  },
+  videoFilenameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  videoFilenameText: {
+    flex: 1,
+    fontFamily: fonts.sans,
+    fontSize: fontSizes.md,
+    color: colors.onSurface,
+  },
+  videoErrorText: {
+    fontFamily: fonts.sans,
+    fontSize: fontSizes.sm,
+    color: colors.negative,
+    marginTop: spacing.xs,
   },
   addStepButton: {
     flexDirection: 'row',

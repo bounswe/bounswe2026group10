@@ -6,7 +6,7 @@ import type { IngredientFormItem } from '../components/create-ingredients/Ingred
 export interface ReviewStep {
   title: string;
   description: string;
-  videoUrl: string;
+  timestamp: string; // MM:SS format
 }
 
 export interface RecipeFormState {
@@ -24,7 +24,9 @@ export interface RecipeFormState {
   // Screen 13 — Ingredients & Tools
   ingredients: IngredientFormItem[];
   tools: Tool[];
-  // Screen 14 — Steps (with CDN video URLs post-upload)
+  // Screen 14 — single recipe video (CDN URL post-upload) + steps with timestamps
+  videoUrl: string | null;
+  videoFileName: string | null;
   steps: ReviewStep[];
 }
 
@@ -41,6 +43,8 @@ const EMPTY_DRAFT: RecipeFormState = {
   story: '',
   ingredients: [],
   tools: [],
+  videoUrl: null,
+  videoFileName: null,
   steps: [],
 };
 

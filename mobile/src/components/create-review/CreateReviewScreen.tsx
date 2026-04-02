@@ -148,6 +148,17 @@ export function CreateReviewScreen() {
           </View>
         )}
 
+        {/* Video */}
+        {!!draft.videoFileName && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>RECIPE VIDEO</Text>
+            <View style={styles.videoRow}>
+              <MaterialCommunityIcons name="check-circle" size={16} color={colors.positive} />
+              <Text style={styles.videoAttachedText}>{draft.videoFileName}</Text>
+            </View>
+          </View>
+        )}
+
         {/* Steps */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>STEPS</Text>
@@ -158,14 +169,13 @@ export function CreateReviewScreen() {
                   <Text style={styles.stepCircleText}>{index + 1}</Text>
                 </View>
                 <Text style={styles.stepTitle}>{step.title}</Text>
+                {!!step.timestamp && (
+                  <Text style={styles.stepTimestamp}>{step.timestamp}</Text>
+                )}
               </View>
               {!!step.description && (
                 <Text style={styles.stepDescription}>{step.description}</Text>
               )}
-              <View style={styles.videoRow}>
-                <MaterialCommunityIcons name="video-outline" size={16} color={colors.positive} />
-                <Text style={styles.videoAttachedText}>Video attached</Text>
-              </View>
             </View>
           ))}
           {draft.steps.length === 0 && (
@@ -333,12 +343,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    marginLeft: 28 + spacing.sm,
   },
   videoAttachedText: {
     fontFamily: fonts.sansMedium,
     fontSize: fontSizes.sm,
     color: colors.positive,
+    flex: 1,
+  },
+  stepTimestamp: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSizes.sm,
+    color: colors.primary,
+    marginLeft: 'auto',
   },
   navigationRow: {
     marginTop: spacing['3xl'],
