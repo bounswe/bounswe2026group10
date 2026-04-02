@@ -39,7 +39,7 @@ function buildPayload(draft: RecipeFormState) {
 
 export function CreateReviewScreen() {
   const navigation = useNavigation();
-  const { draft } = useRecipeForm();
+  const { draft, resetDraft } = useRecipeForm();
   const [publishing, setPublishing] = useState(false);
 
   const genreLabel = GENRE_OPTIONS.find((g) => g.value === draft.genreId)?.label ?? '';
@@ -52,20 +52,32 @@ export function CreateReviewScreen() {
 
   const metaParts = [genreLabel, varietyLabel, draft.originCountry].filter(Boolean);
 
+  const goHome = () => {
+    resetDraft();
+    navigation.getParent()?.navigate('HomeTab' as never);
+  };
+
   const handlePublish = async () => {
-    setPublishing(true);
-    const created = await createRecipe({ ...buildPayload(draft), isPublished: false });
-    console.log('[publish] recipe created:', created.id);
-    const published = await publishRecipe(created.id);
-    console.log('[publish] recipe published:', published);
-    setPublishing(false);
-    Alert.alert('Published!', 'Your recipe is now live.');
+    try {
+      setPublishing(true);
+      const created = await createRecipe({ ...buildPayload(draft), isPublished: false });
+      console.log('[publish] recipe created:', created.id);
+      const published = await publishRecipe(created.id);
+      console.log('[publish] recipe published:', published);
+      Alert.alert('Published!', 'Your recipe is now live.', [
+        { text: 'OK', onPress: goHome },
+      ]);
+    } finally {
+      setPublishing(false);
+    }
   };
 
   const handleSaveDraft = async () => {
     const result = await createRecipe({ ...buildPayload(draft), isPublished: false });
     console.log('[draft] recipe saved:', result.id);
-    Alert.alert('Draft Saved', 'Your recipe has been saved to drafts.');
+    Alert.alert('Draft Saved', 'Your recipe has been saved to drafts.', [
+      { text: 'OK', onPress: goHome },
+    ]);
   };
 
   const handleClose = () => {
