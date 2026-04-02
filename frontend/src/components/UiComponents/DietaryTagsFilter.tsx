@@ -45,7 +45,7 @@ export function DietaryTagsFilter({ tags, selectedIds, onChange }: DietaryTagsFi
           type="button"
           className="filter-control__clear"
           onClick={() => onChange([])}
-          aria-label="Clear dietary tag selection"
+          aria-label={t('discovery.clearFilters')}
         >
           {t('discovery.clearFilters')}
         </button>

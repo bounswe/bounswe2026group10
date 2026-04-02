@@ -33,7 +33,7 @@ export function AllergenFilter({ allergens, selectedIds, onChange }: AllergenFil
               type="checkbox"
               checked={selectedIds.includes(allergen.id)}
               onChange={() => toggleAllergen(allergen.id)}
-              aria-label={`Avoid ${allergen.name}`}
+              aria-label={t('discovery.avoidAllergen', { name: allergen.name })}
             />
             <span className="filter-checkbox__text">{allergen.name}</span>
           </label>
@@ -44,7 +44,7 @@ export function AllergenFilter({ allergens, selectedIds, onChange }: AllergenFil
           type="button"
           className="filter-control__clear"
           onClick={() => onChange([])}
-          aria-label="Clear allergen selection"
+          aria-label={t('discovery.clearFilters')}
         >
           {t('discovery.clearFilters')}
         </button>

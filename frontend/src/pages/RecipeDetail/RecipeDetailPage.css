@@ -25,6 +25,7 @@
   position: relative;
   height: 20rem;
   overflow: hidden;
+  border-radius: var(--radius-lg);
 }
 
 .recipe-detail__hero-img,

@@ -110,7 +110,7 @@ export function HomePage() {
               <GenreCard
                 key={g.id}
                 genre={g}
-                onClick={() => navigate(`/search?genreId=${g.id}&genre=${encodeURIComponent(g.name)}`)}
+                onClick={() => navigate(`/discovery?genreId=${g.id}`)}
               />
             ))}
           </div>

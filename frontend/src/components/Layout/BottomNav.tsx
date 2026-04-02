@@ -70,7 +70,7 @@ export function BottomNav() {
       </NavLink>
 
       <NavLink
-        to="/search"
+        to="/discovery"
         className={({ isActive }) =>
           `bottom-nav__item${isActive || pathname.startsWith('/dish-variety/') ? ' bottom-nav__item--active' : ''}`
         }
@@ -78,7 +78,7 @@ export function BottomNav() {
         {() => (
           <>
             <span className="bottom-nav__icon"><SearchIcon /></span>
-            <span className="bottom-nav__label">{t('nav.search')}</span>
+            <span className="bottom-nav__label">{t('nav.discovery')}</span>
           </>
         )}
       </NavLink>
