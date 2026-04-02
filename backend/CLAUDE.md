@@ -183,6 +183,11 @@ Database is managed via Supabase (no migration files in repo). Key tables:
   - Body: `{ text: string }` (10–5000 chars)
   - Returns structured `{ title, ingredients[], steps[], tools[] }` without storing anything
   - Uses Gemini 2.5 Flash AI for text parsing
+- `POST /parse/standardize-units` — Convert informal/colloquial ingredient units and step descriptions to standard forms (cook/expert only)
+  - Body: `{ ingredients: [{ name, quantity, unit }], steps?: [{ stepOrder, description }], region?: string }`
+  - Returns `{ ingredients: [{ name, originalQuantity, originalUnit, standardQuantity, standardUnit }], steps: [{ stepOrder, originalDescription, standardDescription }] }`
+  - Region-aware: uses region hint (e.g. "Turkey") to resolve locale-specific units (çay bardağı → 100 ml) and expressions (kulak memesi kıvamı → clear description)
+  - Uses Gemini 2.5 Flash AI for conversion
 
 ## User Roles & Permissions
 
@@ -219,6 +224,7 @@ Use `successResponse(data)` and `errorResponse(code, message)` from `src/utils/r
 - `CONFLICT` (409) — Duplicate username/email, already published
 - `INCOMPLETE_RECIPE` (400) — Missing fields for publish
 - `PARSE_FAILED` (500) — AI parsing of recipe text failed
+- `STANDARDIZATION_FAILED` (500) — AI unit standardization failed
 
 ### Validation
 - Zod schemas defined inline in route files
