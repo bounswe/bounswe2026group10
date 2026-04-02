@@ -50,8 +50,10 @@ export function IngredientRowEditor({
     debounceRef.current = setTimeout(async () => {
       try {
         const results = await searchIngredients(query);
+        console.log(`[Ingredients] search "${query}" →`, results.length, 'results');
         setSuggestions(results.slice(0, 5));
-      } catch {
+      } catch (err) {
+        console.error(`[Ingredients] search "${query}" error:`, err);
         setSuggestions([]);
       }
     }, 300);

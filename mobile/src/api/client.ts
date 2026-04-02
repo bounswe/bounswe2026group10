@@ -59,16 +59,25 @@ export async function fetchApi<T>(
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  const method = options.method ?? 'GET';
+  const url = `${BASE_URL}${path}`;
+  console.log(`[API] → ${method} ${url}`);
+
+  let response: Response;
+  try {
+    response = await fetch(url, { ...options, headers });
+  } catch (networkErr) {
+    console.error(`[API] ✗ NETWORK ERROR ${method} ${url}`, networkErr);
+    throw networkErr;
+  }
 
   const json: ApiResponse<T> = await response.json();
+  console.log(`[API] ← ${method} ${url} ${response.status}`, JSON.stringify(json).slice(0, 300));
 
   if (!json.success || json.data === null) {
     const code = json.error?.code ?? 'UNKNOWN_ERROR';
     const message = json.error?.message ?? 'An unexpected error occurred';
+    console.error(`[API] ✗ ${method} ${url} → ${code}: ${message}`);
     throw new ApiError(code, message);
   }
 

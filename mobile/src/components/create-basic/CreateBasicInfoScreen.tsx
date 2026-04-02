@@ -55,8 +55,18 @@ export function CreateBasicInfoScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    getDishGenres().then(setGenres).catch(() => {});
-    getDietaryTags().then(setAllTags).catch(() => {});
+    getDishGenres()
+      .then((data) => {
+        console.log('[BasicInfo] dish-genres loaded:', JSON.stringify(data).slice(0, 200));
+        setGenres(data);
+      })
+      .catch((err) => console.error('[BasicInfo] dish-genres error:', err));
+    getDietaryTags()
+      .then((data) => {
+        console.log('[BasicInfo] dietary-tags loaded:', JSON.stringify(data).slice(0, 200));
+        setAllTags(data);
+      })
+      .catch((err) => console.error('[BasicInfo] dietary-tags error:', err));
   }, []);
 
   const handleGenreChange = (id: string) => {
