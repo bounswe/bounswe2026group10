@@ -59,7 +59,8 @@ backend/
 │   │   ├── dish-genres.ts       # Cuisine genre listing
 │   │   ├── dish-varieties.ts    # Dish variety listing, search, recipes
 │   │   ├── parse.ts             # Free-text recipe parser endpoint
-│   │   └── ingredients.ts       # Ingredient search/autocomplete
+│   │   ├── ingredients.ts       # Ingredient search/autocomplete
+│   │   └── tools.ts             # Tool search/autocomplete
 │   ├── types/
 │   │   └── index.ts             # TypeScript interfaces (roles, auth, response)
 │   ├── utils/
@@ -73,6 +74,7 @@ backend/
 │       ├── media.test.ts
 │       ├── parse.test.ts
 │       ├── ingredients.test.ts
+│       ├── tools.test.ts
 │       └── health.test.ts
 ├── Dockerfile
 ├── jest.config.js
@@ -160,6 +162,11 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - `GET /ingredients` — List/search ingredients by partial name (case-insensitive)
   - Query params: `search` (optional — filters by partial name match when provided)
   - Without `search`, returns all ingredients; supports autocomplete use case
+
+### Tools (`/tools`)
+- `GET /tools` — List/search tools by partial name (case-insensitive)
+  - Query params: `search` (optional — filters by partial name match when provided)
+  - Returns distinct tool names from `recipe_tools`; without `search`, returns all known tools; supports autocomplete use case
 
 ### Parse (`/parse`)
 - `POST /parse/recipe-text` — Parse free-text recipe into structured components (cook/expert only)
