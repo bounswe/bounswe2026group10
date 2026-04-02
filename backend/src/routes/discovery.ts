@@ -171,7 +171,8 @@ router.get("/recipes", async (req, res) => {
            id, name, region,
            dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name)
          ),
-         profile:profiles!recipes_creator_id_fkey(id, username)`,
+         profile:profiles!recipes_creator_id_fkey(id, username),
+         recipe_media(id, url, type)`,
         { count: "exact" }
       )
       .eq("is_published", true);
@@ -209,7 +210,11 @@ router.get("/recipes", async (req, res) => {
 
     return res.status(200).json(
       successResponse({
-        recipes,
+        recipes: (recipes ?? []).map((r: any) => {
+          const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
+          const { recipe_media, ...rest } = r;
+          return { ...rest, image_url: firstImage?.url ?? null };
+        }),
         pagination: {
           page,
           limit,
@@ -313,7 +318,8 @@ router.get("/recipes/by-ingredients", async (req, res) => {
            id, name, region,
            dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name)
          ),
-         profile:profiles!recipes_creator_id_fkey(id, username)`,
+         profile:profiles!recipes_creator_id_fkey(id, username),
+         recipe_media(id, url, type)`,
         { count: "exact" }
       )
       .eq("is_published", true)
@@ -334,7 +340,11 @@ router.get("/recipes/by-ingredients", async (req, res) => {
 
     return res.status(200).json(
       successResponse({
-        recipes,
+        recipes: (recipes ?? []).map((r: any) => {
+          const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
+          const { recipe_media, ...rest } = r;
+          return { ...rest, image_url: firstImage?.url ?? null };
+        }),
         pagination: {
           page,
           limit,
