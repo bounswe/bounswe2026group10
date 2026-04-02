@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { isAxiosError } from 'axios'
-import { discoveryService, type DishVariety } from '@/services/discovery-service'
-import { recipeService } from '@/services/recipe-service'
+import { discoveryService, type DishVariety, type Genre } from '@/services/discovery-service'
+import { recipeService, type CreateRecipeIngredient } from '@/services/recipe-service'
+import { IngredientPicker } from '@/components/CreateRecipe/IngredientPicker'
 import { mediaService } from '@/services/media-service'
 import { useUserRole } from '@/hooks/useUserRole'
 import './CreateRecipePage.css'
@@ -33,16 +34,76 @@ function validateMediaFile(file: File): string | null {
 // ── Local types ────────────────────────────────────────────────────────────────
 
 type RecipeType = 'community' | 'cultural'
-interface Ingredient { name: string; amount: string }
+
+/** One row: catalog ingredient + quantity/unit for POST /recipes */
+interface IngredientRow {
+  ingredientId: number | null
+  name: string
+  /** Keystrokes in search field (for validation: must pick from API, not free text) */
+  searchQuery: string
+  quantity: string
+  unit: string
+}
+
 interface StepItem { text: string }
+
+function parseQuantityValue(quantity: string): number | null {
+  const q = parseFloat(String(quantity).replace(',', '.'))
+  return Number.isFinite(q) && q > 0 ? q : null
+}
+
+function parseRecipeIngredients(rows: IngredientRow[]): CreateRecipeIngredient[] {
+  const out: CreateRecipeIngredient[] = []
+  for (const row of rows) {
+    if (row.ingredientId === null) continue
+    const q = parseQuantityValue(row.quantity)
+    const unit = row.unit.trim()
+    if (q === null || !unit) continue
+    out.push({ ingredientId: row.ingredientId, quantity: q, unit })
+  }
+  return out
+}
+
+function ingredientRowIsEmpty(row: IngredientRow): boolean {
+  return (
+    row.ingredientId === null &&
+    !row.searchQuery.trim() &&
+    !row.quantity.trim() &&
+    !row.unit.trim()
+  )
+}
+
+function ingredientRowIsComplete(row: IngredientRow): boolean {
+  if (row.ingredientId === null) return false
+  return parseQuantityValue(row.quantity) !== null && row.unit.trim().length > 0
+}
+
+/** Row blocks “Continue” if user started filling without a catalog pick or left qty/unit incomplete */
+function ingredientRowIsInvalid(row: IngredientRow): boolean {
+  if (ingredientRowIsEmpty(row)) return false
+  if (row.ingredientId === null) {
+    if (row.searchQuery.trim()) return true
+    if (row.quantity.trim() || row.unit.trim()) return true
+    return false
+  }
+  return !ingredientRowIsComplete(row)
+}
+
+function ingredientsStepValid(rows: IngredientRow[]): boolean {
+  const hasOneComplete = rows.some(ingredientRowIsComplete)
+  const anyInvalid = rows.some(ingredientRowIsInvalid)
+  return hasOneComplete && !anyInvalid
+}
 
 interface RecipeDraft {
   title: string
   story: string
   type: RecipeType
+  /** Selected dish genre (mutfak türü); drives variety list via GET /dish-varieties?genreId= */
+  genreId: string
   dishVarietyId: string
   servingSize: string
-  ingredients: Ingredient[]
+  ingredients: IngredientRow[]
   tools: string[]
   steps: StepItem[]
 }
@@ -51,9 +112,10 @@ const INITIAL_DRAFT: RecipeDraft = {
   title: '',
   story: '',
   type: 'community',
+  genreId: '',
   dishVarietyId: '',
   servingSize: '',
-  ingredients: [{ name: '', amount: '' }],
+  ingredients: [{ ingredientId: null, name: '', searchQuery: '', quantity: '', unit: '' }],
   tools: [''],
   steps: [{ text: '' }],
 }
@@ -121,7 +183,9 @@ export function CreateRecipePage() {
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
   const [draft, setDraft] = useState<RecipeDraft>(INITIAL_DRAFT)
+  const [genres, setGenres] = useState<Genre[]>([])
   const [varieties, setVarieties] = useState<DishVariety[]>([])
+  const [loadingVarieties, setLoadingVarieties] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -133,8 +197,34 @@ export function CreateRecipePage() {
   const canCreateCultural = role === 'expert'
 
   useEffect(() => {
-    discoveryService.getVarieties().then(setVarieties).catch(() => {/* non-fatal */})
+    discoveryService.getGenres().then(setGenres).catch(() => {
+      setGenres([])
+    })
   }, [])
+
+  useEffect(() => {
+    if (!draft.genreId) {
+      setVarieties([])
+      setLoadingVarieties(false)
+      return
+    }
+    let cancelled = false
+    setLoadingVarieties(true)
+    discoveryService
+      .getVarieties({ genreId: draft.genreId })
+      .then((data) => {
+        if (!cancelled) setVarieties(data)
+      })
+      .catch(() => {
+        if (!cancelled) setVarieties([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingVarieties(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [draft.genreId])
 
   // ── Draft helpers ────────────────────────────────────────────────────────────
 
@@ -142,14 +232,20 @@ export function CreateRecipePage() {
     setDraft((d) => ({ ...d, [key]: value }))
 
   // ingredients
-  const updateIngredient = (idx: number, field: keyof Ingredient, value: string) =>
+  const updateIngredient = (idx: number, patch: Partial<IngredientRow>) =>
     setDraft((d) => {
       const list = [...d.ingredients]
-      list[idx] = { ...list[idx], [field]: value }
+      list[idx] = { ...list[idx], ...patch }
       return { ...d, ingredients: list }
     })
   const addIngredient = () =>
-    setDraft((d) => ({ ...d, ingredients: [...d.ingredients, { name: '', amount: '' }] }))
+    setDraft((d) => ({
+      ...d,
+      ingredients: [
+        ...d.ingredients,
+        { ingredientId: null, name: '', searchQuery: '', quantity: '', unit: '' },
+      ],
+    }))
   const removeIngredient = (idx: number) =>
     setDraft((d) => ({ ...d, ingredients: d.ingredients.filter((_, i) => i !== idx) }))
 
@@ -213,20 +309,20 @@ export function CreateRecipePage() {
     setSubmitting(true)
     let recipeCreated = false
     try {
+      const ingredientsPayload = parseRecipeIngredients(draft.ingredients)
       const created = await recipeService.create({
         title: draft.title.trim(),
         story: draft.story.trim() || undefined,
         type: draft.type,
         dishVarietyId: draft.dishVarietyId ? Number(draft.dishVarietyId) : undefined,
         servingSize: draft.servingSize ? Number(draft.servingSize) : undefined,
+        ingredients: ingredientsPayload,
         steps: draft.steps
           .filter((s) => s.text.trim())
           .map((s, i) => ({ stepOrder: i + 1, description: s.text.trim() })),
         tools: draft.tools
           .filter((t) => t.trim())
           .map((t) => ({ name: t.trim() })),
-        // Ingredients: backend requires ingredientId (DB FK) — no ingredient lookup
-        // API available yet, so they are not submitted. Future work: add GET /ingredients.
         isPublished: publish,
       })
       recipeCreated = true
@@ -267,9 +363,11 @@ export function CreateRecipePage() {
   // ── Navigation guards ────────────────────────────────────────────────────────
 
   const canContinueStep1 = draft.title.trim().length >= 3
+  const canContinueStep2 = ingredientsStepValid(draft.ingredients)
   const canContinueStep3 = draft.steps.some((s) => s.text.trim().length > 0)
 
   const goNext = () => {
+    if (step === 2 && !ingredientsStepValid(draft.ingredients)) return
     if (step < 4) setStep((s) => (s + 1) as typeof step)
   }
   const goBack = () => {
@@ -361,7 +459,28 @@ export function CreateRecipePage() {
               />
             </div>
 
-            {/* Dish Variety */}
+            {/* Genre → Variety (two-step; varieties loaded per genre) */}
+            <div className="cr-field">
+              <label className="cr-label" htmlFor="cr-genre">
+                {t('create.fields.genre')}
+              </label>
+              <select
+                id="cr-genre"
+                className="cr-select"
+                value={draft.genreId}
+                onChange={(e) =>
+                  setDraft((d) => ({ ...d, genreId: e.target.value, dishVarietyId: '' }))
+                }
+              >
+                <option value="">{t('create.fields.genrePlaceholder')}</option>
+                {genres.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="cr-field">
               <label className="cr-label" htmlFor="cr-variety">
                 {t('create.fields.dishVariety')}
@@ -371,11 +490,19 @@ export function CreateRecipePage() {
                 className="cr-select"
                 value={draft.dishVarietyId}
                 onChange={(e) => set('dishVarietyId', e.target.value)}
+                disabled={!draft.genreId || loadingVarieties}
+                aria-busy={loadingVarieties}
               >
-                <option value="">{t('create.fields.dishVarietyPlaceholder')}</option>
+                <option value="">
+                  {!draft.genreId
+                    ? t('create.fields.dishVarietyNeedGenre')
+                    : loadingVarieties
+                      ? t('create.fields.varietiesLoading')
+                      : t('create.fields.dishVarietyPlaceholder')}
+                </option>
                 {varieties.map((v) => (
                   <option key={v.id} value={v.id}>
-                    {v.genre ? `${v.genre.name}: ${v.name}` : v.name}
+                    {v.name}
                   </option>
                 ))}
               </select>
@@ -482,22 +609,47 @@ export function CreateRecipePage() {
                 </button>
               </div>
               <p className="cr-info-note">{t('create.ingredients.infoNote')}</p>
+              {!canContinueStep2 && (
+                <p className="cr-info-note cr-info-note--warn" role="status">
+                  {draft.ingredients.some(ingredientRowIsInvalid)
+                    ? t('create.ingredients.continueHint')
+                    : t('create.ingredients.needAtLeastOne')}
+                </p>
+              )}
               <div className="cr-list">
                 {draft.ingredients.map((ing, idx) => (
                   <div key={idx} className="cr-ingredient-row">
-                    <input
-                      type="text"
-                      className="cr-input cr-input--flex"
-                      value={ing.name}
-                      onChange={(e) => updateIngredient(idx, 'name', e.target.value)}
-                      placeholder={t('create.ingredients.namePlaceholder')}
+                    <IngredientPicker
+                      ingredientId={ing.ingredientId}
+                      name={ing.name}
+                      onChange={(ingredientId, name) =>
+                        updateIngredient(idx, {
+                          ingredientId,
+                          name,
+                          ...(ingredientId !== null ? { searchQuery: '' } : {}),
+                        })
+                      }
+                      onSearchInputChange={(text) => updateIngredient(idx, { searchQuery: text })}
+                      disabled={submitting}
                     />
                     <input
                       type="text"
+                      inputMode="decimal"
                       className="cr-input cr-input--amount"
-                      value={ing.amount}
-                      onChange={(e) => updateIngredient(idx, 'amount', e.target.value)}
-                      placeholder={t('create.ingredients.amountPlaceholder')}
+                      value={ing.quantity}
+                      onChange={(e) => updateIngredient(idx, { quantity: e.target.value })}
+                      placeholder={t('create.ingredients.quantityPlaceholder')}
+                      disabled={submitting}
+                      aria-label={t('create.ingredients.quantityAria')}
+                    />
+                    <input
+                      type="text"
+                      className="cr-input cr-input--unit"
+                      value={ing.unit}
+                      onChange={(e) => updateIngredient(idx, { unit: e.target.value })}
+                      placeholder={t('create.ingredients.unitPlaceholder')}
+                      disabled={submitting}
+                      aria-label={t('create.ingredients.unitAria')}
                     />
                     {draft.ingredients.length > 1 && (
                       <button
@@ -605,6 +757,9 @@ export function CreateRecipePage() {
                 <span className={`cr-badge cr-badge--${draft.type}`}>
                   {draft.type.toUpperCase()}
                 </span>
+                {genres.find((g) => g.id === draft.genreId) && (
+                  <span className="cr-review-card__genre">{genres.find((g) => g.id === draft.genreId)?.name}</span>
+                )}
                 {varieties.find((v) => v.id === draft.dishVarietyId) && (
                   <span className="cr-review-card__variety">
                     {varieties.find((v) => v.id === draft.dishVarietyId)?.name}
@@ -635,7 +790,7 @@ export function CreateRecipePage() {
                 <div className="cr-review-count">
                   <span className="cr-review-count__label">{t('create.review.ingredients')}</span>
                   <span className="cr-review-count__val">
-                    {draft.ingredients.filter((i) => i.name.trim()).length} {t('create.review.items')}
+                    {parseRecipeIngredients(draft.ingredients).length} {t('create.review.items')}
                   </span>
                 </div>
                 <div className="cr-review-count">
@@ -676,7 +831,11 @@ export function CreateRecipePage() {
             type="button"
             className="cr-btn cr-btn--primary"
             onClick={goNext}
-            disabled={step === 1 && !canContinueStep1}
+            disabled={
+              (step === 1 && !canContinueStep1) ||
+              (step === 2 && !canContinueStep2) ||
+              (step === 3 && !canContinueStep3)
+            }
           >
             {t('create.continue')}
           </button>

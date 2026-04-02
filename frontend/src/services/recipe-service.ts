@@ -51,12 +51,20 @@ export interface RecipeDetail {
   updatedAt: string
 }
 
+export interface CreateRecipeIngredient {
+  ingredientId: number
+  quantity: number
+  unit: string
+}
+
 export interface CreateRecipePayload {
   title: string
   story?: string
   type: 'community' | 'cultural'
   dishVarietyId?: number
   servingSize?: number
+  /** Backend: recipe_ingredients rows with FK to ingredients.id */
+  ingredients?: CreateRecipeIngredient[]
   /** Backend requires {stepOrder, description}[]; sent directly. */
   steps: { stepOrder: number; description: string }[]
   /** Backend requires {name}[]. */
@@ -65,8 +73,7 @@ export interface CreateRecipePayload {
    * Pass true to publish immediately on creation.
    * Note: the separate POST /recipes/:id/publish endpoint enforces completeness
    * (dishVarietyId, servingSize, ≥1 ingredient, ≥1 step). Using isPublished:true
-   * here bypasses that check — suitable for MVP where ingredient IDs are not yet
-   * collected (no GET /ingredients lookup endpoint exists).
+   * here bypasses that check when needed for draft flows.
    */
   isPublished: boolean
 }

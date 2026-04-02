@@ -1,0 +1,73 @@
+.cr-ingredient-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex: 1;
+  min-width: 0;
+}
+
+.cr-ingredient-picker__list {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  margin: 0;
+  padding: var(--space-xs) 0;
+  list-style: none;
+  max-height: 12rem;
+  overflow-y: auto;
+  background: var(--surface-card);
+  border: 1px solid rgba(134, 69, 42, 0.25);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.cr-ingredient-picker__option {
+  display: block;
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.cr-ingredient-picker__option:hover,
+.cr-ingredient-picker__option:focus-visible {
+  background: rgba(134, 69, 42, 0.08);
+  outline: none;
+}
+
+.cr-ingredient-picker__hint {
+  padding: var(--space-sm) var(--space-md);
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.cr-ingredient-picker__error {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-negative);
+}
+
+.cr-ingredient-picker__badge {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: rgba(34, 120, 80, 0.15);
+  color: rgb(22, 100, 65);
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
