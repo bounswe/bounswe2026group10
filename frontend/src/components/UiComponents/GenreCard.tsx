@@ -4,12 +4,19 @@ import './GenreCard.css'
 interface GenreCardProps {
   genre: Genre
   count?: number
+  isActive?: boolean
   onClick?: () => void
 }
 
-export function GenreCard({ genre, count, onClick }: GenreCardProps) {
+export function GenreCard({ genre, count, isActive, onClick }: GenreCardProps) {
   return (
-    <button type="button" className="genre-card" onClick={onClick} aria-label={genre.name}>
+    <button
+      type="button"
+      className={`genre-card${isActive ? ' genre-card--active' : ''}`}
+      onClick={onClick}
+      aria-label={genre.name}
+      aria-pressed={isActive ?? false}
+    >
       <div className="genre-card__img">
         {genre.imageUrl ? (
           <img src={genre.imageUrl} alt={genre.name} loading="lazy" />
