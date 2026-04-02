@@ -164,6 +164,10 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - `GET /ingredients` — List/search ingredients by partial name (case-insensitive)
   - Query params: `search` (optional — filters by partial name match when provided)
   - Without `search`, returns all ingredients; supports autocomplete use case
+- `POST /ingredients` — Create a new ingredient (cook/expert only)
+  - Body: `{ name: string }`
+  - Returns 409 if ingredient with same name already exists (case-insensitive)
+  - Stores name lowercased
 
 ### Tools (`/tools`)
 - `GET /tools` — List/search tools by partial name (case-insensitive)
