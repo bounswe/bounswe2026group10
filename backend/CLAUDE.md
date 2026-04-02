@@ -58,10 +58,10 @@ backend/
 │   │   ├── dietary-tags.ts      # Dietary/allergen tag listing
 │   │   ├── dish-genres.ts       # Cuisine genre listing
 │   │   ├── dish-varieties.ts    # Dish variety listing, search, recipes
-│   │   ├── parse.ts             # Free-text recipe parser endpoint
 │   │   ├── ingredients.ts       # Ingredient search/autocomplete
-│   │   └── tools.ts             # Tool search/autocomplete
-│   │   └── units.ts             # Unit search/autocomplete
+│   │   ├── tools.ts             # Tool search/autocomplete
+│   │   ├── units.ts             # Unit search/autocomplete
+│   │   └── parse.ts             # Free-text recipe parser endpoint
 │   ├── types/
 │   │   └── index.ts             # TypeScript interfaces (roles, auth, response)
 │   ├── utils/
@@ -144,6 +144,9 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - `GET /dish-varieties` — List varieties (optional: genreId, search filters)
 - `GET /dish-varieties/:id` — Single variety with published recipes
 - `GET /dish-varieties/:id/recipes` — Variety recipes split into expertRecipe + communityRecipes
+
+### Ingredients (`/ingredients`)
+- `GET /ingredients` — List all ingredients with allergens (optional: `?search=<string>`)
 
 ### Dietary Tags (`/dietary-tags`)
 - `GET /dietary-tags` — List all supported dietary and allergen tags

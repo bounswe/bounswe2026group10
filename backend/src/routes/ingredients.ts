@@ -11,8 +11,7 @@ const router = Router();
 // ─── GET /ingredients ───────────────────────────────────────────────────────
 // Search ingredients by partial name match (case-insensitive).
 // Query params:
-//   search — partial ingredient name (required, min 1 char)
-//   limit  — max results (default 10, max 50)
+//   search — partial ingredient name (optional)
 
 router.get("/", async (req, res) => {
   const search = (req.query["search"] as string | undefined)?.trim();
@@ -53,7 +52,6 @@ router.post(
     const { name } = req.body as z.infer<typeof createIngredientSchema>;
     const userClient = createUserClient(user.accessToken);
 
-    // Check for duplicate (case-insensitive)
     const { data: existing } = await supabase
       .from("ingredients")
       .select("id")
