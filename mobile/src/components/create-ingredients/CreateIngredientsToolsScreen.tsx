@@ -21,7 +21,7 @@ function generateId(): string {
 }
 
 function createEmptyIngredient(): IngredientFormItem {
-  return { id: generateId(), name: '', quantity: '', unit: 'g' };
+  return { id: generateId(), ingredientId: null, name: '', quantity: '', unit: 'g' };
 }
 
 export function CreateIngredientsToolsScreen() {

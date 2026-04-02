@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import type { DietaryTag, AllergenTag, RecipeType } from '../types/common';
+import type { RecipeType } from '../types/common';
 import type { Tool } from '../types/ingredient';
 import type { IngredientFormItem } from '../components/create-ingredients/IngredientRowEditor';
 
@@ -16,11 +16,12 @@ export interface RecipeFormState {
   originCountry: string;
   originCity: string;
   originDistrict: string;
-  genreId: string;
-  varietyId: string;
-  dietaryTags: DietaryTag[];
-  allergenTags: AllergenTag[];
+  genreId: number | null;     // numeric DB id from GET /dish-genres
+  varietyId: number | null;   // numeric DB id (= dishVarietyId) from GET /dish-genres
+  dietaryTagIds: number[];    // numeric DB ids from GET /dietary-tags, category=dietary
+  allergenTagIds: number[];   // numeric DB ids from GET /dietary-tags, category=allergen
   story: string;
+  servingSize: number | undefined;
   // Screen 13 — Ingredients & Tools
   ingredients: IngredientFormItem[];
   tools: Tool[];
@@ -36,11 +37,12 @@ const EMPTY_DRAFT: RecipeFormState = {
   originCountry: '',
   originCity: '',
   originDistrict: '',
-  genreId: '',
-  varietyId: '',
-  dietaryTags: [],
-  allergenTags: [],
+  genreId: null,
+  varietyId: null,
+  dietaryTagIds: [],
+  allergenTagIds: [],
   story: '',
+  servingSize: undefined,
   ingredients: [],
   tools: [],
   videoUrl: null,

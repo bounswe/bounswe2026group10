@@ -16,19 +16,24 @@ import { IconButton } from '../shared/IconButton';
 import { StepHeader } from '../create-basic/StepHeader';
 import { useRecipeForm } from '../../context/RecipeFormContext';
 import { createRecipe, publishRecipe } from '../../api/recipes';
-import { GENRE_OPTIONS, VARIETY_OPTIONS } from '../../constants/recipeForm';
 import type { RecipeFormState } from '../../context/RecipeFormContext';
 
 function buildPayload(draft: RecipeFormState) {
   return {
     title: draft.title,
-    type: draft.type,
+    type: draft.type.toLowerCase() as 'community' | 'cultural',
     story: draft.story || undefined,
-    ingredients: draft.ingredients.map((ing, i) => ({
-      ingredientId: i + 1,
-      quantity: parseFloat(ing.quantity),
-      unit: ing.unit,
-    })),
+    dishVarietyId: draft.varietyId ?? undefined,
+    servingSize: draft.servingSize,
+    videoUrl: draft.videoUrl ?? undefined,
+    tagIds: [...draft.dietaryTagIds, ...draft.allergenTagIds],
+    ingredients: draft.ingredients
+      .filter((ing) => ing.name.trim() && ing.ingredientId !== null)
+      .map((ing) => ({
+        ingredientId: ing.ingredientId as number,
+        quantity: parseFloat(ing.quantity),
+        unit: ing.unit,
+      })),
     steps: draft.steps.map((s, i) => ({
       stepOrder: i + 1,
       description: s.description || s.title,
@@ -42,15 +47,9 @@ export function CreateReviewScreen() {
   const { draft, resetDraft } = useRecipeForm();
   const [publishing, setPublishing] = useState(false);
 
-  const genreLabel = GENRE_OPTIONS.find((g) => g.value === draft.genreId)?.label ?? '';
-  const varietyLabel =
-    draft.genreId && draft.varietyId
-      ? (VARIETY_OPTIONS[draft.genreId] ?? []).find((v) => v.value === draft.varietyId)?.label ?? ''
-      : '';
+  const tagCount = draft.dietaryTagIds.length + draft.allergenTagIds.length;
 
-  const allTags = [...draft.dietaryTags, ...draft.allergenTags];
-
-  const metaParts = [genreLabel, varietyLabel, draft.originCountry].filter(Boolean);
+  const metaParts = [draft.originCountry].filter(Boolean);
 
   const goHome = () => {
     resetDraft();
@@ -123,16 +122,10 @@ export function CreateReviewScreen() {
         )}
 
         {/* Tags */}
-        {allTags.length > 0 && (
+        {tagCount > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>TAGS</Text>
-            <View style={styles.tagRow}>
-              {allTags.map((tag) => (
-                <View key={tag} style={styles.tagChip}>
-                  <Text style={styles.tagChipText}>{tag.replace(/_/g, ' ')}</Text>
-                </View>
-              ))}
-            </View>
+            <Text style={styles.bodyText}>{tagCount} tag{tagCount !== 1 ? 's' : ''} selected</Text>
           </View>
         )}
 

@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { CreateStackParamList } from '../../navigation/types';
-import type { DietaryTag, AllergenTag } from '../../types/common';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
-import { GENRE_OPTIONS, VARIETY_OPTIONS, DIETARY_TAG_OPTIONS, ALLERGEN_TAG_OPTIONS } from '../../constants/recipeForm';
 import { IconButton } from '../shared/IconButton';
 import { FormTextInput } from '../shared/FormTextInput';
 import { FormDropdown } from '../shared/FormDropdown';
@@ -16,6 +14,10 @@ import { StepHeader } from './StepHeader';
 import { ImportCards } from './ImportCards';
 import { OriginSection } from './OriginSection';
 import { useRecipeForm } from '../../context/RecipeFormContext';
+import { getDishGenres } from '../../api/dish-genres';
+import { getDietaryTags } from '../../api/dietary-tags';
+import type { DishGenre } from '../../api/dish-genres';
+import type { DietaryTagItem } from '../../api/dietary-tags';
 
 export function CreateBasicInfoScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
@@ -24,21 +26,45 @@ export function CreateBasicInfoScreen() {
   const [country, setCountry] = useState('');
   const [city, setCity] = useState('');
   const [district, setDistrict] = useState('');
-  const [genreId, setGenreId] = useState('');
-  const [varietyId, setVarietyId] = useState('');
+  const [genreId, setGenreId] = useState<number | null>(null);
+  const [varietyId, setVarietyId] = useState<number | null>(null);
+  const [servingSize, setServingSize] = useState('');
 
-  const varietyOptions = genreId ? (VARIETY_OPTIONS[genreId] ?? []) : [];
+  // API data
+  const [genres, setGenres] = useState<DishGenre[]>([]);
+  const [allTags, setAllTags] = useState<DietaryTagItem[]>([]);
 
-  const handleGenreChange = (id: string) => {
-    setGenreId(id);
-    setVarietyId('');
-  };
-  const [dietaryTags, setDietaryTags] = useState<DietaryTag[]>([]);
-  const [allergenTags, setAllergenTags] = useState<AllergenTag[]>([]);
+  // Build dropdown options from API data
+  const genreOptions = genres.map((g) => ({ label: g.name, value: String(g.id) }));
+  const selectedGenre = genres.find((g) => g.id === genreId);
+  const varietyOptions = selectedGenre
+    ? selectedGenre.varieties.map((v) => ({ label: v.name, value: String(v.id) }))
+    : [];
+
+  // Build chip options from API data — values are string IDs
+  const dietaryChipOptions = allTags
+    .filter((t) => t.category === 'dietary')
+    .map((t) => ({ label: t.name, value: String(t.id) }));
+  const allergenChipOptions = allTags
+    .filter((t) => t.category === 'allergen')
+    .map((t) => ({ label: t.name, value: String(t.id) }));
+
+  const [selectedDietaryIds, setSelectedDietaryIds] = useState<string[]>([]);
+  const [selectedAllergenIds, setSelectedAllergenIds] = useState<string[]>([]);
   const [story, setStory] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const toggleTag = <T extends string>(arr: T[], item: T): T[] =>
+  useEffect(() => {
+    getDishGenres().then(setGenres).catch(() => {});
+    getDietaryTags().then(setAllTags).catch(() => {});
+  }, []);
+
+  const handleGenreChange = (id: string) => {
+    setGenreId(Number(id));
+    setVarietyId(null);
+  };
+
+  const toggleString = (arr: string[], item: string): string[] =>
     arr.includes(item) ? arr.filter((i) => i !== item) : [...arr, item];
 
   const validate = (): boolean => {
@@ -60,9 +86,10 @@ export function CreateBasicInfoScreen() {
         originDistrict: district,
         genreId,
         varietyId,
-        dietaryTags,
-        allergenTags,
+        dietaryTagIds: selectedDietaryIds.map(Number),
+        allergenTagIds: selectedAllergenIds.map(Number),
         story,
+        servingSize: servingSize ? parseInt(servingSize, 10) : undefined,
       });
       navigation.navigate('CreateIngredientsTools');
     }
@@ -125,8 +152,8 @@ export function CreateBasicInfoScreen() {
 
         <FormDropdown
           label="Genre"
-          value={genreId}
-          options={GENRE_OPTIONS}
+          value={genreId !== null ? String(genreId) : ''}
+          options={genreOptions}
           onSelect={handleGenreChange}
           placeholder="Select genre"
           searchable
@@ -134,25 +161,37 @@ export function CreateBasicInfoScreen() {
 
         <FormDropdown
           label="Variety"
-          value={varietyId}
+          value={varietyId !== null ? String(varietyId) : ''}
           options={varietyOptions}
-          onSelect={setVarietyId}
-          placeholder={genreId ? 'Select variety' : 'Select a genre first'}
+          onSelect={(id) => setVarietyId(Number(id))}
+          placeholder={genreId !== null ? 'Select variety' : 'Select a genre first'}
           searchable
         />
 
+        <View style={styles.servingSizeRow}>
+          <Text style={styles.servingSizeLabel}>Serving Size</Text>
+          <TextInput
+            style={styles.servingSizeInput}
+            value={servingSize}
+            onChangeText={setServingSize}
+            placeholder="e.g. 4"
+            placeholderTextColor={colors.outline}
+            keyboardType="number-pad"
+          />
+        </View>
+
         <ChipSelector
           label="Dietary Tags"
-          options={DIETARY_TAG_OPTIONS}
-          selected={dietaryTags}
-          onToggle={(tag) => setDietaryTags(toggleTag(dietaryTags, tag))}
+          options={dietaryChipOptions}
+          selected={selectedDietaryIds}
+          onToggle={(id) => setSelectedDietaryIds(toggleString(selectedDietaryIds, id))}
         />
 
         <ChipSelector
           label="Allergen Tags"
-          options={ALLERGEN_TAG_OPTIONS}
-          selected={allergenTags}
-          onToggle={(tag) => setAllergenTags(toggleTag(allergenTags, tag))}
+          options={allergenChipOptions}
+          selected={selectedAllergenIds}
+          onToggle={(id) => setSelectedAllergenIds(toggleString(selectedAllergenIds, id))}
         />
 
         <FormTextInput
@@ -227,5 +266,24 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansMedium,
     fontSize: fontSizes.lg,
     color: colors.onSurfaceVariant,
+  },
+  servingSizeRow: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.xs,
+  },
+  servingSizeLabel: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSizes.sm,
+    color: colors.onSurfaceVariant,
+    marginBottom: spacing.xs,
+  },
+  servingSizeInput: {
+    fontFamily: fonts.sans,
+    fontSize: fontSizes.lg,
+    color: colors.onSurface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.outline,
+    paddingVertical: spacing.xs,
+    width: 80,
   },
 });

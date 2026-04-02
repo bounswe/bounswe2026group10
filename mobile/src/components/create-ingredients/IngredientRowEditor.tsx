@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -10,11 +10,14 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { MeasurementUnit } from '../../types/common';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
-import { SAMPLE_INGREDIENTS, UNIT_OPTIONS } from '../../constants/ingredientsAndTools';
+import { UNIT_OPTIONS } from '../../constants/ingredientsAndTools';
 import { FormDropdown } from '../shared/FormDropdown';
+import { searchIngredients } from '../../api/ingredients';
+import type { IngredientItem } from '../../api/ingredients';
 
 export interface IngredientFormItem {
   id: string;
+  ingredientId: number | null; // numeric DB id; null until selected from suggestions
   name: string;
   quantity: string;
   unit: MeasurementUnit;
@@ -34,20 +37,36 @@ export function IngredientRowEditor({
   error,
 }: IngredientRowEditorProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState<IngredientItem[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const filtered = ingredient.name.length > 0
-    ? SAMPLE_INGREDIENTS.filter((i) =>
-        i.label.toLowerCase().includes(ingredient.name.toLowerCase()),
-      ).slice(0, 5)
-    : [];
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const query = ingredient.name.trim();
+    if (query.length === 0) {
+      setSuggestions([]);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const results = await searchIngredients(query);
+        setSuggestions(results.slice(0, 5));
+      } catch {
+        setSuggestions([]);
+      }
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [ingredient.name]);
 
   const handleNameChange = (text: string) => {
-    onUpdate({ ...ingredient, name: text });
+    onUpdate({ ...ingredient, name: text, ingredientId: null });
     setShowSuggestions(text.length > 0);
   };
 
-  const handleSelectSuggestion = (label: string) => {
-    onUpdate({ ...ingredient, name: label });
+  const handleSelectSuggestion = (item: IngredientItem) => {
+    onUpdate({ ...ingredient, name: item.name, ingredientId: item.id });
     setShowSuggestions(false);
   };
 
@@ -69,15 +88,15 @@ export function IngredientRowEditor({
               setTimeout(() => setShowSuggestions(false), 200);
             }}
           />
-          {showSuggestions && filtered.length > 0 && (
+          {showSuggestions && suggestions.length > 0 && (
             <ScrollView style={styles.suggestions} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
-              {filtered.map((item) => (
+              {suggestions.map((item) => (
                 <TouchableOpacity
-                  key={item.value}
+                  key={item.id}
                   style={styles.suggestionItem}
-                  onPress={() => handleSelectSuggestion(item.label)}
+                  onPress={() => handleSelectSuggestion(item)}
                 >
-                  <Text style={styles.suggestionText}>{item.label}</Text>
+                  <Text style={styles.suggestionText}>{item.name}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
