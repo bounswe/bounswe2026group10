@@ -1,0 +1,240 @@
+/* ── Discovery Filters Sidebar ─────────────────────────────────────── */
+
+.discovery-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: var(--color-bg-secondary, #f9f9f9);
+  border-radius: 0.5rem;
+}
+
+.discovery-filters__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.discovery-filters__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.discovery-filters__reset {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: opacity 0.2s;
+}
+
+.discovery-filters__reset:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.discovery-filters__reset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.discovery-filters__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.discovery-filters__apply {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  background: var(--color-primary);
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.discovery-filters__apply:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.discovery-filters__apply:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Filter Control (base for all filter types) ──────────────────────── */
+
+.filter-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.filter-control__label {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.filter-control__hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.filter-control__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-control__checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-control__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.filter-control__clear {
+  align-self: flex-start;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-control__clear:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: white;
+}
+
+.filter-control__clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Filter Option (radio button) ──────────────────────────────────── */
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-option input[type='radio'] {
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.filter-option__text {
+  font-size: 0.9375rem;
+  color: var(--color-text-primary);
+}
+
+.filter-option:hover .filter-option__text {
+  color: var(--color-primary);
+}
+
+/* ── Filter Checkbox ───────────────────────────────────────────────── */
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-checkbox input[type='checkbox'] {
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.filter-checkbox__text {
+  font-size: 0.9375rem;
+  color: var(--color-text-primary);
+}
+
+.filter-checkbox:hover .filter-checkbox__text {
+  color: var(--color-primary);
+}
+
+/* ── Filter Tag (checkbox as tag/pill) ──────────────────────────────── */
+
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-tag input[type='checkbox'] {
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.filter-tag:has(input:checked) {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.filter-tag:hover {
+  border-color: var(--color-primary);
+}
+
+.filter-tag__text {
+  white-space: nowrap;
+}
+
+/* ── Responsive: Stacked on mobile, sidebar on desktop ────────────── */
+
+@media (max-width: 767px) {
+  .discovery-filters {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .discovery-filters__form {
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .discovery-filters {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+}

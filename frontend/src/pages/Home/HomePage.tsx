@@ -21,7 +21,7 @@ export function HomePage() {
     setError(null)
 
     Promise.all([
-      discoveryService.getRecipes({ limit: 7 }),
+      discoveryService.getRecipes({ limit: 10 }),
       discoveryService.getGenres(),
     ])
       .then(([r, g]) => {
@@ -40,7 +40,7 @@ export function HomePage() {
   }, [t])
 
   const featured = recipes[0] ?? null
-  const picks = recipes.slice(1, 7)
+  const picks = recipes.slice(1, 10)
 
   if (loading) {
     return (
@@ -110,7 +110,7 @@ export function HomePage() {
               <GenreCard
                 key={g.id}
                 genre={g}
-                onClick={() => navigate(`/search?genreId=${g.id}&genre=${encodeURIComponent(g.name)}`)}
+                onClick={() => navigate(`/discovery?genreId=${g.id}`)}
               />
             ))}
           </div>

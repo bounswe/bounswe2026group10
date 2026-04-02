@@ -3,6 +3,7 @@ import { MainLayout } from '@/components/Layout/MainLayout'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
 import { HomePage } from '@/pages/Home/HomePage'
 import { SearchPage } from '@/pages/Search/SearchPage'
+import { DiscoveryPage } from '@/pages/Discovery/DiscoveryPage'
 import { CreateRecipePage } from '@/pages/CreateRecipe/CreateRecipePage'
 import { RecipeDetailPage } from '@/pages/RecipeDetail/RecipeDetailPage'
 import { DishVarietyPage } from '@/pages/DishVariety/DishVarietyPage'
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
     children: [
       { path: '/home', element: <HomePage /> },
       { path: '/search', element: <SearchPage /> },
+      { path: '/discovery', element: <DiscoveryPage /> },
       { path: '/library', element: <LibraryPage /> },
       { path: '/profile', element: <ProfilePage /> },
       { path: '/recipes/:id', element: <RecipeDetailPage /> },

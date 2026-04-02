@@ -54,10 +54,28 @@ export interface RecipeSummary {
 export interface DiscoveryParams {
   region?: string
   excludeAllergens?: string
+  tagIds?: string
   genreId?: number
   varietyId?: number
   page?: number
   limit?: number
+}
+
+export interface DietaryTag {
+  id: string
+  name: string
+  category: 'dietary' | 'allergen'
+}
+
+export interface DiscoveryPagination {
+  page: number
+  limit: number
+  total: number
+}
+
+export interface DiscoveryRecipeResults {
+  recipes: RecipeSummary[]
+  pagination: DiscoveryPagination
 }
 
 // ── Normalizers: map backend snake_case → our camelCase types ────────────────
@@ -110,6 +128,15 @@ function normalizeVariety(v: any): DishVariety {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeTag(tag: any): DietaryTag {
+  return {
+    id: String(tag.id),
+    name: tag.name ?? '',
+    category: tag.category === 'allergen' ? 'allergen' : 'dietary',
+  }
+}
+
 // ── Service ──────────────────────────────────────────────────────────────────
 
 export const discoveryService = {
@@ -128,6 +155,32 @@ export const discoveryService = {
     const res = await httpClient.get('/dish-genres')
     const raw: unknown[] = Array.isArray(res.data?.data) ? res.data.data : []
     return raw.map(normalizeGenre)
+  },
+
+  getDietaryTags: async (): Promise<DietaryTag[]> => {
+    const res = await httpClient.get('/dietary-tags')
+    const raw: unknown[] = Array.isArray(res.data?.data) ? res.data.data : []
+    return raw.map(normalizeTag)
+  },
+
+  getRecipeResults: async (params?: DiscoveryParams): Promise<DiscoveryRecipeResults> => {
+    const res = await httpClient.get('/discovery/recipes', { params })
+    const payload = res.data?.data
+    const rawRecipes: unknown[] = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.recipes)
+        ? payload.recipes
+        : []
+    const pagination = payload?.pagination ?? {}
+
+    return {
+      recipes: rawRecipes.map(normalizeRecipe),
+      pagination: {
+        page: Number(pagination.page ?? params?.page ?? 1),
+        limit: Number(pagination.limit ?? params?.limit ?? 20),
+        total: Number(pagination.total ?? rawRecipes.length),
+      },
+    }
   },
 
   /** Backend supports ?genreId=<number> only. Text search is done client-side. */
