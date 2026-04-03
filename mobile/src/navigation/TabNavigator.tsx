@@ -1,8 +1,9 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { RootTabParamList } from './types';
+import { useAuth } from '../context/AuthContext';
 import { HomeStack } from './HomeStack';
 import { SearchStack } from './SearchStack';
 import { CreateStack } from './CreateStack';
@@ -13,6 +14,12 @@ import { colors, fonts, fontSizes } from '../theme';
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
 export function TabNavigator() {
+  const { authState } = useAuth();
+
+  const role =
+    authState.status === 'authenticated' ? (authState.user.role ?? '').toUpperCase() : '';
+  const canCreate = role === 'COOK' || role === 'EXPERT';
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -71,6 +78,17 @@ export function TabNavigator() {
               />
             </View>
           ),
+        }}
+        listeners={{
+          tabPress: (e) => {
+            if (!canCreate) {
+              e.preventDefault();
+              Alert.alert(
+                'Permission Required',
+                'You should be a Cook or Expert to create a Recipe.'
+              );
+            }
+          },
         }}
       />
       <Tab.Screen

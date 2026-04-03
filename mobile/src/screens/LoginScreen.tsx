@@ -104,6 +104,7 @@ export function LoginScreen({ navigation }: Props) {
               value={password}
               onChangeText={setPassword}
               placeholder="••••••••"
+              secureTextEntry={!showPassword}
             />
             <TouchableOpacity
               style={styles.eyeButton}

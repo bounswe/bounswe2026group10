@@ -13,6 +13,7 @@ interface FormTextInputProps {
   error?: string;
   inputFont?: 'sans' | 'serif';
   inputFontSize?: number;
+  secureTextEntry?: boolean;
 }
 
 export function FormTextInput({
@@ -26,6 +27,7 @@ export function FormTextInput({
   error,
   inputFont = 'sans',
   inputFontSize = fontSizes.lg,
+  secureTextEntry = false,
 }: FormTextInputProps) {
   const inputFontFamily = inputFont === 'serif' ? fonts.serif : fonts.sans;
 
@@ -48,6 +50,7 @@ export function FormTextInput({
         placeholderTextColor={colors.outline}
         multiline={multiline}
         numberOfLines={multiline ? numberOfLines : undefined}
+        secureTextEntry={secureTextEntry}
       />
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
