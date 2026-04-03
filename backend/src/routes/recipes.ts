@@ -5,6 +5,7 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import type { AuthenticatedRequest } from "../types/index.js";
 import { errorResponse, successResponse } from "../utils/response.js";
+import { translateRecipe } from "../services/translationService.js";
 
 const router = Router();
 
@@ -67,9 +68,13 @@ const updateRecipeSchema = recipeSchema.partial();
 /**
  * Get full recipe detail including ingredients, tools, steps, media, and story.
  * Published recipes are public. Unpublished recipes are only visible to their creator.
+ * Optional ?lang=en or ?lang=tr returns translated fields if a translation exists.
  */
 router.get("/:id", async (req: Request, res: Response): Promise<void> => {
-  const recipeId = req.params["id"] ?? "";
+  const recipeId = (req.params["id"] ?? "") as string;
+  const langParam = typeof req.query["lang"] === "string"
+    ? req.query["lang"].toUpperCase()
+    : null;
 
   const { data, error } = await supabase
     .from("recipes")
@@ -98,6 +103,50 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     (a: any, b: any) => a.step_order - b.step_order
   );
 
+  // Resolve translated fields if ?lang= was requested
+  let resolvedTitle: string = data.title;
+  let resolvedStory: string | null = (data as any).story ?? null;
+  let stepTranslationMap: Record<number, string> = {};
+  let ingredientUnitMap: Record<number, string> = {};
+
+  if (langParam) {
+    const ingredientIds = (data.recipe_ingredients ?? []).map((ri: any) => ri.id);
+
+    const [recipeTransResult, stepTransResult, ingTransResult] = await Promise.all([
+      supabase
+        .from("recipe_translations")
+        .select("title, story")
+        .eq("recipe_id", recipeId)
+        .eq("language_code", langParam)
+        .maybeSingle(),
+      supabase
+        .from("recipe_step_translations")
+        .select("step_id, description")
+        .in("step_id", steps.map((s: any) => s.id))
+        .eq("language_code", langParam),
+      ingredientIds.length > 0
+        ? supabase
+            .from("recipe_ingredient_translations")
+            .select("recipe_ingredient_id, unit")
+            .in("recipe_ingredient_id", ingredientIds)
+            .eq("language_code", langParam)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    if (recipeTransResult.data) {
+      resolvedTitle = recipeTransResult.data.title;
+      resolvedStory = (recipeTransResult.data as any).story ?? resolvedStory;
+    }
+
+    for (const row of stepTransResult.data ?? []) {
+      stepTranslationMap[(row as any).step_id] = (row as any).description;
+    }
+
+    for (const row of ingTransResult.data ?? []) {
+      ingredientUnitMap[(row as any).recipe_ingredient_id] = (row as any).unit;
+    }
+  }
+
   res.status(200).json(
     successResponse({
       id: data.id,
@@ -106,8 +155,8 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       dishVarietyId: (data.dish_variety as any)?.id ?? null,
       dishVarietyName: (data.dish_variety as any)?.name ?? null,
       genreName: (data.dish_variety as any)?.dish_genre?.name ?? null,
-      title: data.title,
-      story: (data as any).story ?? null,
+      title: resolvedTitle,
+      story: resolvedStory,
       videoUrl: (data as any).video_url ?? null,
       servingSize: (data as any).serving_size ?? null,
       type: data.type,
@@ -119,7 +168,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
         ingredientId: ri.ingredient?.id ?? null,
         ingredientName: ri.ingredient?.name ?? null,
         quantity: ri.quantity,
-        unit: ri.unit,
+        unit: ingredientUnitMap[ri.id] ?? ri.unit,
         allergens: (ri.ingredient?.ingredient_allergens ?? [])
           .map((ia: any) => ia.allergen?.name)
           .filter(Boolean),
@@ -127,7 +176,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       steps: steps.map((s: any) => ({
         id: s.id,
         stepOrder: s.step_order,
-        description: s.description,
+        description: stepTranslationMap[s.id] ?? s.description,
       })),
       tools: (data.recipe_tools ?? []).map((t: any) => ({
         id: t.id,
@@ -140,6 +189,69 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       })),
       createdAt: data.created_at,
       updatedAt: data.updated_at,
+    })
+  );
+});
+
+// ─── GET /recipes ────────────────────────────────────────────────────────────
+
+const listRecipesQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+/**
+ * List published recipes with pagination.
+ * Public — no auth required.
+ */
+router.get("/", async (req: Request, res: Response): Promise<void> => {
+  const parsed = listRecipesQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message ?? "Invalid query parameters.";
+    res.status(400).json(errorResponse("VALIDATION_ERROR", message));
+    return;
+  }
+
+  const { page, limit } = parsed.data;
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  const { data, error, count } = await supabase
+    .from("recipes")
+    .select(
+      `id, title, type, average_rating, rating_count, created_at, updated_at,
+       creator:profiles!recipes_creator_id_fkey(id, username),
+       dish_variety:dish_varieties(id, name, dish_genre:dish_genres(id, name))`,
+      { count: "exact" }
+    )
+    .eq("is_published", true)
+    .order("average_rating", { ascending: false })
+    .range(from, to);
+
+  if (error) {
+    res.status(500).json(errorResponse("DB_ERROR", error.message));
+    return;
+  }
+
+  const recipes = (data ?? []).map((r: any) => ({
+    id: r.id,
+    title: r.title,
+    type: r.type,
+    averageRating: r.average_rating ?? null,
+    ratingCount: r.rating_count ?? 0,
+    creatorId: r.creator?.id ?? null,
+    creatorUsername: r.creator?.username ?? null,
+    dishVarietyId: r.dish_variety?.id ?? null,
+    dishVarietyName: r.dish_variety?.name ?? null,
+    genreName: r.dish_variety?.dish_genre?.name ?? null,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+  }));
+
+  res.status(200).json(
+    successResponse({
+      recipes,
+      pagination: { page, limit, total: count ?? 0 },
     })
   );
 });
@@ -398,7 +510,7 @@ router.patch(
  */
 router.post("/:id/publish", requireAuth, async (req, res): Promise<void> => {
   const user = (req as AuthenticatedRequest).user;
-  const recipeId = req.params["id"];
+  const recipeId = (req.params["id"] ?? "") as string;
   const userClient = createUserClient(user.accessToken);
 
   // Fetch recipe ownership, current publish status, ingredients count, and steps count
@@ -469,6 +581,11 @@ router.post("/:id/publish", requireAuth, async (req, res): Promise<void> => {
     res.status(500).json(errorResponse("PUBLISH_FAILED", "Failed to publish recipe."));
     return;
   }
+
+  // Trigger translation non-blocking — publish succeeds even if this fails
+  translateRecipe(recipeId).catch((err) =>
+    console.error("[publish] Translation trigger error:", err)
+  );
 
   res.status(200).json(
     successResponse({
