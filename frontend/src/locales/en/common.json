@@ -266,6 +266,17 @@
       "culturalDesc": "Traditional recipe with historical significance",
       "expertOnly": "Expert role required"
     },
+    "parse": {
+      "label": "Free-text recipe input",
+      "placeholder": "Paste or type your recipe narrative here, then parse it into ingredients, tools, and steps.",
+      "hint": "At least 10 characters required.",
+      "parseButton": "Parse Recipe Text",
+      "parsing": "Parsing…",
+      "error": "Could not parse recipe text. Please try again.",
+      "previewTitle": "Parsed output is ready",
+      "previewSummary": "{{ingredients}} ingredients, {{tools}} tools, {{steps}} steps extracted and applied where possible.",
+      "unmatchedIngredients": "{{count}} ingredient(s) need manual selection from catalog: {{names}}"
+    },
     "ingredients": {
       "title": "Ingredients",
       "searchPlaceholder": "Search ingredients…",

@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { isAxiosError } from 'axios'
 import { discoveryService, type DishVariety, type Genre } from '@/services/discovery-service'
 import { recipeService, type CreateRecipeIngredient } from '@/services/recipe-service'
+import { ingredientService, type IngredientOption } from '@/services/ingredient-service'
+import { parseService, type ParsedRecipeOutput } from '@/services/parse-service'
 import { IngredientPicker } from '@/components/CreateRecipe/IngredientPicker'
 import { mediaService } from '@/services/media-service'
 import { useUserRole } from '@/hooks/useUserRole'
@@ -93,6 +95,14 @@ function ingredientsStepValid(rows: IngredientRow[]): boolean {
   const hasOneComplete = rows.some(ingredientRowIsComplete)
   const anyInvalid = rows.some(ingredientRowIsInvalid)
   return hasOneComplete && !anyInvalid
+}
+
+function normalizeName(value: string): string {
+  return value.trim().toLowerCase()
+}
+
+function uniqueNonEmpty(values: string[]): string[] {
+  return [...new Set(values.map((v) => v.trim()).filter(Boolean))]
 }
 
 interface RecipeDraft {
@@ -192,6 +202,11 @@ export function CreateRecipePage() {
   const [pendingMediaFiles, setPendingMediaFiles] = useState<File[]>([])
   const [mediaPickError, setMediaPickError] = useState<string | null>(null)
   const [uploadingMedia, setUploadingMedia] = useState(false)
+  const [parseText, setParseText] = useState('')
+  const [parsing, setParsing] = useState(false)
+  const [parseError, setParseError] = useState<string | null>(null)
+  const [parsedOutput, setParsedOutput] = useState<ParsedRecipeOutput | null>(null)
+  const [unmatchedParsedIngredients, setUnmatchedParsedIngredients] = useState<string[]>([])
 
   // Cook can only create community; expert can create both
   const canCreateCultural = role === 'expert'
@@ -360,6 +375,75 @@ export function CreateRecipePage() {
     }
   }
 
+  const findBestIngredientMatch = async (name: string): Promise<IngredientOption | null> => {
+    const candidates = await ingredientService.search(name)
+    if (candidates.length === 0) return null
+    const normalized = normalizeName(name)
+    const exact = candidates.find((opt) => normalizeName(opt.name) === normalized)
+    return exact ?? candidates[0] ?? null
+  }
+
+  const handleParseNarrative = async () => {
+    if (parseText.trim().length < 10 || parsing) return
+    setParsing(true)
+    setParseError(null)
+    setUnmatchedParsedIngredients([])
+
+    try {
+      const parsed = await parseService.parseRecipeText(parseText.trim())
+      setParsedOutput(parsed)
+
+      const ingredientMatches = await Promise.all(
+        parsed.ingredients.map(async (ing) => {
+          try {
+            const match = await findBestIngredientMatch(ing.name)
+            return { ing, match }
+          } catch {
+            return { ing, match: null }
+          }
+        }),
+      )
+
+      const matchedRows: IngredientRow[] = ingredientMatches
+        .filter((item) => item.match !== null)
+        .map((item) => ({
+          ingredientId: item.match?.id ?? null,
+          name: item.match?.name ?? '',
+          searchQuery: '',
+          quantity: item.ing.quantity !== null ? String(item.ing.quantity) : '',
+          unit: item.ing.unit,
+        }))
+
+      const unmatched = uniqueNonEmpty(
+        ingredientMatches
+          .filter((item) => item.match === null)
+          .map((item) => item.ing.name),
+      )
+      setUnmatchedParsedIngredients(unmatched)
+
+      setDraft((current) => ({
+        ...current,
+        title: current.title.trim() ? current.title : parsed.title,
+        tools: parsed.tools.length > 0 ? parsed.tools : current.tools,
+        steps:
+          parsed.steps.length > 0
+            ? parsed.steps.map((step) => ({ text: step.description }))
+            : current.steps,
+        ingredients: matchedRows.length > 0 ? matchedRows : current.ingredients,
+      }))
+    } catch (err: unknown) {
+      if (isAxiosError(err)) {
+        const msg = (err.response?.data as { error?: { message?: string } } | undefined)?.error?.message
+        setParseError(msg || t('create.parse.error'))
+      } else {
+        setParseError(t('create.parse.error'))
+      }
+      setParsedOutput(null)
+    } finally {
+      setParsing(false)
+    }
+  }
+
   // ── Navigation guards ────────────────────────────────────────────────────────
 
   const canContinueStep1 = draft.title.trim().length >= 3
@@ -427,6 +511,54 @@ export function CreateRecipePage() {
         {/* ── STEP 1: Basic Info ──────────────────────────────────────────── */}
         {step === 1 && (
           <div className="cr-section">
+            <div className="cr-field cr-parse">
+              <label className="cr-label" htmlFor="cr-parse-text">
+                {t('create.parse.label')}
+              </label>
+              <textarea
+                id="cr-parse-text"
+                className="cr-textarea"
+                value={parseText}
+                onChange={(e) => setParseText(e.target.value)}
+                placeholder={t('create.parse.placeholder')}
+                rows={6}
+                maxLength={5000}
+              />
+              <div className="cr-parse__actions">
+                <button
+                  type="button"
+                  className="cr-add-btn"
+                  disabled={parsing || parseText.trim().length < 10}
+                  onClick={handleParseNarrative}
+                >
+                  {parsing ? t('create.parse.parsing') : t('create.parse.parseButton')}
+                </button>
+                <span className="cr-parse__hint">{t('create.parse.hint')}</span>
+              </div>
+              {parseError && <p className="cr-error cr-error--inline">{parseError}</p>}
+
+              {parsedOutput && (
+                <div className="cr-parse-preview" role="status" aria-live="polite">
+                  <p className="cr-parse-preview__title">{t('create.parse.previewTitle')}</p>
+                  <p className="cr-parse-preview__line">
+                    {t('create.parse.previewSummary', {
+                      ingredients: parsedOutput.ingredients.length,
+                      tools: parsedOutput.tools.length,
+                      steps: parsedOutput.steps.length,
+                    })}
+                  </p>
+                  {unmatchedParsedIngredients.length > 0 && (
+                    <p className="cr-parse-preview__line cr-parse-preview__line--warn">
+                      {t('create.parse.unmatchedIngredients', {
+                        count: unmatchedParsedIngredients.length,
+                        names: unmatchedParsedIngredients.join(', '),
+                      })}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Title */}
             <div className="cr-field">
               <label className="cr-label" htmlFor="cr-title">

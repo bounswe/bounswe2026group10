@@ -156,6 +156,7 @@ export async function parseRecipeText(freeText: string): Promise<ParsedRecipe> {
     generationConfig: {
       temperature: 0.1,
       maxOutputTokens: 4096,
+      responseMimeType: "application/json",
     },
   });
 
@@ -186,10 +187,30 @@ export async function parseRecipeText(freeText: string): Promise<ParsedRecipe> {
     unit: String(i.unit ?? "piece"),
   }));
 
-  const steps: ParsedStep[] = (parsed.steps ?? []).map((s: any, idx: number) => ({
-    stepOrder: Number(s.stepOrder) || idx + 1,
-    description: String(s.description ?? ""),
-  }));
+  const steps: ParsedStep[] = (parsed.steps ?? [])
+    .map((s: any, idx: number) => {
+      // Gemini may return alternate keys like text/instruction/step.
+      if (typeof s === "string") {
+        const plain = s.trim();
+        if (!plain) return null;
+        return {
+          stepOrder: idx + 1,
+          description: plain,
+        };
+      }
+
+      const description = String(
+        s?.description ?? s?.text ?? s?.instruction ?? s?.step ?? ""
+      ).trim();
+
+      if (!description) return null;
+
+      return {
+        stepOrder: Number(s?.stepOrder) || idx + 1,
+        description,
+      };
+    })
+    .filter((s: ParsedStep | null): s is ParsedStep => s !== null);
 
   const tools: ParsedTool[] = (parsed.tools ?? []).map((t: any) => ({
     name: String(t.name ?? "").toLowerCase(),
