@@ -91,3 +91,50 @@ Hans explores Turkish cuisine while filtering for his mushroom allergy, adjusts 
 ## Requirements Coverage
 
 See full mapping in `docs/design/mobile/instructions/00-overview.md`.
+
+---
+
+## Development Conventions
+
+Full guide: [Development Guideline wiki](https://github.com/bounswe/bounswe2026group10/wiki/Development-Guideline)
+
+### Branch Naming
+```
+<area>/<type>_<short-description>
+```
+- **Areas:** `mobile`, `frontend`, `backend`, `docs`
+- **Types:** `feature`, `fix`, `refactor`
+- Always branch from `main`. Delete after merging.
+- Example: `mobile/feature_login-screen`
+
+### Commit Messages
+```
+<type>(<scope>): <short message> (#<issue-number>)
+```
+- **Types:** `feat`, `fix`, `refactor`, `test`, `docs`, `style`
+- Imperative mood, under 72 chars, no period at end.
+- Example: `feat(auth): add login screen (#42)`
+
+### Issue Titles
+```
+[AREA/TYPE] Short description
+```
+- Example: `[MOBILE/FEATURE] Add login screen`
+
+### PR Titles
+```
+[Area/Type] Short description
+```
+- Example: `[Mobile/Feature] Add login screen`
+
+### PR Description Template
+```markdown
+## What does this PR do?
+<!-- One or two sentences summarizing the change -->
+
+## How to test
+<!-- Steps to verify the change works correctly -->
+
+## Related issue
+Closes #<issue-number>
+```
