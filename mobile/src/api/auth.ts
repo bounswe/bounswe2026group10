@@ -4,8 +4,11 @@ import { fetchApi, setToken } from './client';
 export interface RegisterParams {
   email: string;
   password: string;
-  username: string;
-  role: 'learner' | 'cook' | 'expert';
+  firstName: string;
+  lastName: string;
+  role: 'learner' | 'cook';
+  region: string;
+  preferredLanguage: string;
 }
 
 export interface AuthTokens {
