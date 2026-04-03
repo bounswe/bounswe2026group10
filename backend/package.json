@@ -19,6 +19,7 @@
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.100.1",
     "cors": "^2.8.6",
+    "deepl-node": "^1.25.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "helmet": "^8.1.0",
