@@ -136,6 +136,10 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - `POST /recipes/:id/media` — Attach media to recipe (creator only)
 - `GET /recipes/:id/media` — List recipe media
 - `DELETE /recipes/:id/media/:mediaId` — Remove media (creator only)
+- `GET /recipes/:id/scale` — Scale ingredient quantities to a desired serving size (#163)
+  - Query params: `servings` (required, integer 1–1000)
+  - Returns `{ recipeId, baseServings, requestedServings, ingredients[] }` with proportionally scaled quantities
+  - Returns 400 if `servings` param is invalid or recipe has no base serving size set
 
 ### Dish Genres (`/dish-genres`)
 - `GET /dish-genres` — All genres with nested varieties

@@ -8,6 +8,7 @@ module.exports = {
   collectCoverage: false,
   moduleNameMapper: {
     "^(\\.{1,2}/.*)\\.js$": "$1",
+    "^deepl-node$": "<rootDir>/src/__mocks__/deepl-node.ts",
   },
   transform: {
     "^.+\\.tsx?$": [

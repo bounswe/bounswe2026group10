@@ -67,6 +67,75 @@ const recipeSchema = z.object({
 
 const updateRecipeSchema = recipeSchema.partial();
 
+// ─── GET /recipes/:id/scale ──────────────────────────────────────────────────
+
+/**
+ * Scale recipe ingredient quantities to a desired serving size.
+ * Query params:
+ *   servings — desired number of servings (integer, 1–1000, required)
+ * Returns scaled ingredient quantities proportional to the recipe's base serving size.
+ * Formula: scaledQuantity = round((baseQuantity * desiredServings / baseServings) * 100) / 100
+ */
+router.get("/:id/scale", async (req: Request, res: Response): Promise<void> => {
+  const recipeId = (req.params["id"] ?? "") as string;
+
+  const servingsRaw = req.query["servings"];
+  const servings = Number(servingsRaw);
+
+  if (!servingsRaw || !Number.isInteger(servings) || servings < 1 || servings > 1000) {
+    res.status(400).json(errorResponse("VALIDATION_ERROR", "Query param 'servings' must be an integer between 1 and 1000."));
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("recipes")
+    .select(
+      `id, serving_size,
+       recipe_ingredients(id, quantity, unit, ingredient:ingredients(id, name, ingredient_allergens(allergen:allergens(name))))`
+    )
+    .eq("id", recipeId)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      res.status(404).json(errorResponse("NOT_FOUND", "Recipe not found."));
+      return;
+    }
+    res.status(500).json(errorResponse("DB_ERROR", error.message));
+    return;
+  }
+
+  const baseServings: number = (data as any).serving_size;
+
+  if (!baseServings || baseServings <= 0) {
+    res.status(400).json(errorResponse("NO_SERVING_SIZE", "Recipe does not have a base serving size set."));
+    return;
+  }
+
+  const scaledIngredients = ((data as any).recipe_ingredients ?? []).map((ri: any) => {
+    const scaled = Math.round((ri.quantity * servings / baseServings) * 100) / 100;
+    return {
+      id: ri.id,
+      ingredientId: ri.ingredient?.id ?? null,
+      ingredientName: ri.ingredient?.name ?? null,
+      quantity: scaled,
+      unit: ri.unit,
+      allergens: (ri.ingredient?.ingredient_allergens ?? [])
+        .map((ia: any) => ia.allergen?.name)
+        .filter(Boolean),
+    };
+  });
+
+  res.status(200).json(
+    successResponse({
+      recipeId: data.id,
+      baseServings,
+      requestedServings: servings,
+      ingredients: scaledIngredients,
+    })
+  );
+});
+
 // ─── GET /recipes/:id ────────────────────────────────────────────────────────
 
 /**
