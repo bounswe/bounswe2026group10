@@ -55,7 +55,7 @@ export interface DiscoveryParams {
   region?: string
   excludeAllergens?: string
   tagIds?: string
-  genreId?: number
+  genreId?: string
   varietyId?: number
   page?: number
   limit?: number
@@ -183,10 +183,13 @@ export const discoveryService = {
     }
   },
 
-  /** Backend supports ?genreId=<number> only. Text search is done client-side. */
-  getVarieties: async (params?: { genreId?: string }): Promise<DishVariety[]> => {
-    const query = params?.genreId ? { genreId: params.genreId } : undefined
-    const res = await httpClient.get('/dish-varieties', { params: query })
+  getVarieties: async (params?: { genreId?: string; search?: string }): Promise<DishVariety[]> => {
+    const query: Record<string, string> = {}
+    if (params?.genreId) query.genreId = params.genreId
+    if (params?.search?.trim()) query.search = params.search.trim()
+    const res = await httpClient.get('/dish-varieties', {
+      params: Object.keys(query).length ? query : undefined,
+    })
     const raw: unknown[] = Array.isArray(res.data?.data) ? res.data.data : []
     return raw.map(normalizeVariety)
   },

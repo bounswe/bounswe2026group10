@@ -1,20 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import {
-  discoveryService,
-  type Genre,
-  type RecipeSummary,
-  type DiscoveryPagination,
-} from '@/services/discovery-service'
-import { RecipeCard } from '@/components/UiComponents/RecipeCard'
 import { GenreCard } from '@/components/UiComponents/GenreCard'
-import { DiscoveryFilters } from '@/components/Discovery/DiscoveryFilters'
-import type { Allergen } from '@/components/UiComponents/AllergenFilter'
-import type { DietaryTag } from '@/components/UiComponents/DietaryTagsFilter'
+import { PaginationControl } from '@/components/UiComponents/PaginationControl'
+import { discoveryService, type DishVariety, type Genre } from '@/services/discovery-service'
 import './DiscoveryPage.css'
 
-const PAGE_LIMIT = 8
+const SEARCH_DEBOUNCE_MS = 300
+const GENRES_PER_PAGE = 8
 
 export function DiscoveryPage() {
   const { t } = useTranslation('common')
@@ -24,117 +17,99 @@ export function DiscoveryPage() {
   const initialGenreId = searchParams.get('genreId') ?? null
 
   const [genres, setGenres] = useState<Genre[]>([])
-  const [regions, setRegions] = useState<string[]>([])
-  const [allergens, setAllergens] = useState<Allergen[]>([])
-  const [dietaryTags, setDietaryTags] = useState<DietaryTag[]>([])
+  const [allVarieties, setAllVarieties] = useState<DishVariety[]>([])
   const [selectedGenreId, setSelectedGenreId] = useState<string | null>(initialGenreId)
+  const [searchInput, setSearchInput] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [genrePage, setGenrePage] = useState(1)
 
-  const [draftRegion, setDraftRegion] = useState<string | null>(null)
-  const [draftAllergenIds, setDraftAllergenIds] = useState<string[]>([])
-  const [draftDietaryTagIds, setDraftDietaryTagIds] = useState<string[]>([])
-
-  const [appliedRegion, setAppliedRegion] = useState<string | null>(null)
-  const [appliedAllergenIds, setAppliedAllergenIds] = useState<string[]>([])
-  const [appliedDietaryTagIds, setAppliedDietaryTagIds] = useState<string[]>([])
-
-  const [recipes, setRecipes] = useState<RecipeSummary[]>([])
-  const [pagination, setPagination] = useState<DiscoveryPagination>({ page: 1, limit: PAGE_LIMIT, total: 0 })
-  const [page, setPage] = useState(1)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [loadingMetadata, setLoadingMetadata] = useState(true)
-  const [loadingResults, setLoadingResults] = useState(true)
+  const [loadingGenres, setLoadingGenres] = useState(true)
+  const [loadingVarieties, setLoadingVarieties] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    let cancelled = false
-    setLoadingMetadata(true)
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearch(searchInput)
+    }, SEARCH_DEBOUNCE_MS)
 
-    Promise.all([
-      discoveryService.getGenres().catch(() => []),
-      discoveryService.getRegions().catch(() => []),
-      discoveryService.getDietaryTags().catch(() => []),
-    ]).then(([genreData, regionData, tagData]) => {
-      if (cancelled) return
-
-      setGenres(genreData)
-      setRegions(regionData)
-      setAllergens(tagData.filter((tag) => tag.category === 'allergen'))
-      setDietaryTags(tagData.filter((tag) => tag.category === 'dietary'))
-    }).finally(() => {
-      if (!cancelled) setLoadingMetadata(false)
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
+    return () => window.clearTimeout(timeout)
+  }, [searchInput])
 
   useEffect(() => {
     let cancelled = false
-    setLoadingResults(true)
-    setError(null)
-
-    discoveryService.getRecipeResults({
-      region: appliedRegion ?? undefined,
-      excludeAllergens: appliedAllergenIds.length > 0 ? appliedAllergenIds.join(',') : undefined,
-      tagIds: appliedDietaryTagIds.length > 0 ? appliedDietaryTagIds.join(',') : undefined,
-      genreId: selectedGenreId ? Number(selectedGenreId) : undefined,
-      page,
-      limit: PAGE_LIMIT,
-    }).then((result) => {
-      if (cancelled) return
-
-      setRecipes(result.recipes)
-      setPagination(result.pagination)
-    }).catch(() => {
-      if (!cancelled) setError(t('common.errorRetry'))
-    }).finally(() => {
-      if (!cancelled) setLoadingResults(false)
+    void Promise.resolve().then(() => {
+      if (!cancelled) setError(null)
     })
+
+    Promise.all([discoveryService.getGenres(), discoveryService.getVarieties()])
+      .then(([genreData, varietyData]) => {
+        if (!cancelled) {
+          setGenres(genreData)
+          setAllVarieties(varietyData)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setError(t('common.errorRetry'))
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoadingGenres(false)
+          setLoadingVarieties(false)
+        }
+      })
 
     return () => {
       cancelled = true
     }
-  }, [appliedAllergenIds, appliedDietaryTagIds, appliedRegion, page, selectedGenreId, t])
+  }, [t])
 
-  const visibleRecipes = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
-    if (!query) return recipes
+  const selectedGenre = useMemo(
+    () => (selectedGenreId ? genres.find((genre) => genre.id === selectedGenreId) ?? null : null),
+    [genres, selectedGenreId],
+  )
 
-    return recipes.filter((recipe) => {
-      const searchable = [
-        recipe.title,
-        recipe.region ?? '',
-        recipe.author.username,
-        recipe.variety?.name ?? '',
-        recipe.genre?.name ?? '',
-      ].join(' ').toLowerCase()
+  const normalizedSearch = debouncedSearch.trim().toLowerCase()
 
-      return searchable.includes(query)
-    })
-  }, [recipes, searchQuery])
+  const filteredGenres = useMemo(() => {
+    if (!normalizedSearch) return genres
+    return genres.filter((genre) => genre.name.toLowerCase().includes(normalizedSearch))
+  }, [genres, normalizedSearch])
 
-  const totalPages = Math.max(1, Math.ceil(pagination.total / PAGE_LIMIT))
-  const selectedGenre = selectedGenreId ? genres.find((genre) => genre.id === selectedGenreId) ?? null : null
+  const totalGenrePages = Math.max(1, Math.ceil(filteredGenres.length / GENRES_PER_PAGE))
+  const currentGenrePage = Math.min(genrePage, totalGenrePages)
 
-  const handleApplyFilters = () => {
-    setAppliedRegion(draftRegion)
-    setAppliedAllergenIds(draftAllergenIds)
-    setAppliedDietaryTagIds(draftDietaryTagIds)
-    setPage(1)
-  }
+  const paginatedGenres = useMemo(() => {
+    const startIndex = (currentGenrePage - 1) * GENRES_PER_PAGE
+    const endIndex = startIndex + GENRES_PER_PAGE
+    return filteredGenres.slice(startIndex, endIndex)
+  }, [currentGenrePage, filteredGenres])
 
-  const resetAll = () => {
-    setDraftRegion(null)
-    setDraftAllergenIds([])
-    setDraftDietaryTagIds([])
-    setAppliedRegion(null)
-    setAppliedAllergenIds([])
-    setAppliedDietaryTagIds([])
-    setSelectedGenreId(null)
-    setSearchQuery('')
-    setPage(1)
-  }
+  const filteredVarieties = useMemo(() => {
+    let result = allVarieties
+
+    if (selectedGenreId) {
+      result = result.filter((variety) => variety.genreId === selectedGenreId)
+    }
+
+    if (normalizedSearch) {
+      result = result.filter((variety) => {
+        const varietyName = variety.name.toLowerCase()
+        const genreName = variety.genre?.name.toLowerCase() ?? ''
+        const regionName = variety.region?.toLowerCase() ?? ''
+
+        return (
+          varietyName.includes(normalizedSearch) ||
+          genreName.includes(normalizedSearch) ||
+          regionName.includes(normalizedSearch)
+        )
+      })
+    }
+
+    return result
+  }, [allVarieties, normalizedSearch, selectedGenreId])
+
+  const showSearchResults = normalizedSearch.length > 0
+  const hasAnySearchMatches = filteredGenres.length > 0 || filteredVarieties.length > 0
 
   return (
     <div className="discovery-page">
@@ -144,114 +119,185 @@ export function DiscoveryPage() {
         <p className="discovery-page__subtitle">{t('discovery.subtitle')}</p>
       </section>
 
+      <section className="discovery-page__section discovery-page__search">
+        <label className="discovery-page__searchbar" htmlFor="discovery-search-input">
+          <span className="discovery-page__searchbar-label">{t('discovery.searchLabel')}</span>
+          <span className="discovery-page__searchbar-input-wrap">
+            <input
+              id="discovery-search-input"
+              type="search"
+              value={searchInput}
+              onChange={(event) => {
+                setSearchInput(event.target.value)
+                setGenrePage(1)
+              }}
+              placeholder={t('discovery.searchPlaceholder')}
+            />
+            {searchInput && (
+              <button
+                type="button"
+                className="discovery-page__search-clear"
+                aria-label={t('discovery.clearSearch')}
+                onClick={() => {
+                  setSearchInput('')
+                  setDebouncedSearch('')
+                  setGenrePage(1)
+                }}
+              >
+                ×
+              </button>
+            )}
+          </span>
+        </label>
+      </section>
+
       <section className="discovery-page__section">
         <div className="discovery-page__section-header">
           <div>
-            <h2 className="discovery-page__section-title">{t('home.browseByGenre')}</h2>
+            <h2 className="discovery-page__section-title">
+              {showSearchResults ? t('discovery.searchGenresTitle') : t('home.browseByGenre')}
+            </h2>
             <p className="discovery-page__section-copy">
-              {selectedGenre ? selectedGenre.name : t('discovery.noRegionSelected')}
+              {showSearchResults
+                ? t('discovery.searchGenresHint', { query: searchInput.trim() })
+                : selectedGenre
+                  ? selectedGenre.name
+                  : t('discovery.selectGenrePrompt')}
             </p>
           </div>
-          <button type="button" className="discovery-page__clear-genre" onClick={resetAll}>
-            {t('discovery.clearFilters')}
-          </button>
+          {selectedGenreId && (
+            <button
+              type="button"
+              className="discovery-page__clear-genre"
+              onClick={() => {
+                setSelectedGenreId(null)
+                setSearchInput('')
+                setDebouncedSearch('')
+                setGenrePage(1)
+              }}
+            >
+              {t('discovery.clearFilters')}
+            </button>
+          )}
         </div>
 
-        <div className="discovery-page__genre-grid">
-          {genres.map((genre) => (
-            <GenreCard
-              key={genre.id}
-              genre={genre}
-              isActive={selectedGenreId === genre.id}
-              onClick={() => {
-                setSelectedGenreId((current) => (current === genre.id ? null : genre.id))
-                setPage(1)
-              }}
+        {loadingGenres ? (
+          <div className="discovery-page__genre-grid">
+            {[1, 2, 3, 4].map((item) => (
+              <div key={item} className="discovery-page__skeleton-card skeleton-pulse" />
+            ))}
+          </div>
+        ) : showSearchResults && filteredGenres.length === 0 ? (
+          <div className="discovery-page__empty">
+            <p>{t('discovery.noSearchMatches')}</p>
+          </div>
+        ) : (
+          <div className="discovery-page__genre-grid">
+            {paginatedGenres.map((genre) => (
+              <GenreCard
+                key={genre.id}
+                genre={genre}
+                isActive={selectedGenreId === genre.id}
+                onClick={() => {
+                  setSelectedGenreId(genre.id)
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {!loadingGenres && filteredGenres.length > 0 && totalGenrePages > 1 && (
+          <div className="discovery-page__genre-pagination">
+            <PaginationControl
+              currentPage={currentGenrePage}
+              totalPages={totalGenrePages}
+              onPreviousClick={() => setGenrePage((prev) => Math.max(1, prev - 1))}
+              onNextClick={() => setGenrePage((prev) => Math.min(totalGenrePages, prev + 1))}
             />
-          ))}
-        </div>
+          </div>
+        )}
       </section>
 
-      <div className="discovery-page__layout">
-        <DiscoveryFilters
-          regions={regions}
-          allergens={allergens}
-          dietaryTags={dietaryTags}
-          selectedRegion={draftRegion}
-          selectedAllergens={draftAllergenIds}
-          selectedDietaryTags={draftDietaryTagIds}
-          onRegionChange={setDraftRegion}
-          onAllergensChange={setDraftAllergenIds}
-          onDietaryTagsChange={setDraftDietaryTagIds}
-          onApplyFilters={handleApplyFilters}
-          isLoading={loadingMetadata}
-        />
-
-        <section className="discovery-page__results">
-          <label className="discovery-page__searchbar" htmlFor="discovery-search">
-            <span className="discovery-page__searchbar-label">{t('search.placeholder')}</span>
-            <input
-              id="discovery-search"
-              type="search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder={t('search.placeholder')}
-            />
-          </label>
-
-          {error && <p className="discovery-page__error">{error}</p>}
-
-          <div className="discovery-page__results-meta">
-            <p className="discovery-page__results-count">
-              {t('discovery.resultsCount', { count: visibleRecipes.length })}
+      <section className="discovery-page__section discovery-page__varieties">
+        <div className="discovery-page__section-header">
+          <div>
+            <h2 className="discovery-page__section-title">
+              {showSearchResults ? t('discovery.searchVarietiesTitle') : t('discovery.varietiesTitle')}
+            </h2>
+            <p className="discovery-page__section-copy">
+              {showSearchResults
+                ? t('discovery.searchVarietiesHint', { query: searchInput.trim() })
+                : selectedGenre
+                  ? t('discovery.varietiesHint', { genre: selectedGenre.name })
+                  : t('discovery.selectGenrePrompt')}
             </p>
           </div>
+        </div>
 
-          {loadingResults && recipes.length === 0 ? (
-            <div className="discovery-page__skeleton-grid">
+        {error && <p className="discovery-page__error">{error}</p>}
+
+        {showSearchResults ? (
+          loadingVarieties ? (
+            <div className="discovery-page__variety-list">
               {[1, 2, 3, 4].map((item) => (
-                <div key={item} className="discovery-page__skeleton-card skeleton-pulse" />
+                <div key={item} className="discovery-page__variety-item skeleton-pulse" />
               ))}
             </div>
-          ) : visibleRecipes.length === 0 ? (
-            <div className="discovery-page__empty">
-              <p>{t('discovery.noResults')}</p>
-              <button type="button" className="discovery-page__retry" onClick={resetAll}>
-                {t('common.retry')}
-              </button>
+          ) : hasAnySearchMatches ? (
+            <div className="discovery-page__variety-list">
+              {filteredVarieties.map((variety) => (
+                <button
+                  key={variety.id}
+                  type="button"
+                  className="discovery-page__variety-item"
+                  onClick={() => navigate(`/dish-variety/${variety.id}`)}
+                >
+                  <span className="discovery-page__variety-name">{variety.name}</span>
+                  <span className="discovery-page__variety-count">
+                    {variety.genre?.name ?? t('discovery.noGenreLabel')}
+                  </span>
+                </button>
+              ))}
             </div>
           ) : (
-            <div className="discovery-page__results-grid">
-              {visibleRecipes.map((recipe) => (
-                <RecipeCard
-                  key={recipe.id}
-                  recipe={recipe}
-                  variant="horizontal"
-                  onClick={() => navigate(`/recipes/${recipe.id}`)}
-                />
-              ))}
+            <div className="discovery-page__empty">
+              <p>{t('discovery.noSearchMatches')}</p>
             </div>
-          )}
-
-          <div className="discovery-page__pagination" role="navigation" aria-label={t('discovery.paginationLabel')}>
-            <button
-              type="button"
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              disabled={page <= 1 || loadingResults}
-            >
-              {t('discovery.previousPage')}
-            </button>
-            <span>{t('discovery.pagination', { page, total: totalPages })}</span>
-            <button
-              type="button"
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-              disabled={page >= totalPages || loadingResults}
-            >
-              {t('discovery.nextPage')}
-            </button>
+          )
+        ) : !selectedGenreId ? (
+          <div className="discovery-page__empty">
+            <p>{t('discovery.selectGenrePrompt')}</p>
           </div>
-        </section>
-      </div>
+        ) : loadingVarieties ? (
+          <div className="discovery-page__variety-list">
+            {[1, 2, 3, 4].map((item) => (
+              <div key={item} className="discovery-page__variety-item skeleton-pulse" />
+            ))}
+          </div>
+        ) : filteredVarieties.length === 0 ? (
+          <div className="discovery-page__empty">
+            <p>{t('search.noResults')}</p>
+          </div>
+        ) : (
+          <div className="discovery-page__variety-list">
+            {filteredVarieties.map((variety) => (
+              <button
+                key={variety.id}
+                type="button"
+                className="discovery-page__variety-item"
+                onClick={() => navigate(`/dish-variety/${variety.id}`)}
+              >
+                <span className="discovery-page__variety-name">{variety.name}</span>
+                {typeof variety.recipeCount === 'number' && (
+                  <span className="discovery-page__variety-count">
+                    {t('dishVariety.recipes', { count: variety.recipeCount })}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   )
 }
