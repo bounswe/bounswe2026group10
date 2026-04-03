@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -15,39 +15,15 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation/types';
 import { FormTextInput } from '../components/shared/FormTextInput';
 import { FormDropdown } from '../components/shared/FormDropdown';
+import { getRegions } from '../api/meta';
 import { useAuth } from '../context/AuthContext';
 import { colors, fonts, fontSizes, spacing } from '../theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
-const REGION_OPTIONS = [
-  { label: 'Mediterranean', value: 'mediterranean' },
-  { label: 'Middle East', value: 'middle_east' },
-  { label: 'East Asia', value: 'east_asia' },
-  { label: 'South Asia', value: 'south_asia' },
-  { label: 'Southeast Asia', value: 'southeast_asia' },
-  { label: 'Sub-Saharan Africa', value: 'sub_saharan_africa' },
-  { label: 'North Africa', value: 'north_africa' },
-  { label: 'Eastern Europe', value: 'eastern_europe' },
-  { label: 'Western Europe', value: 'western_europe' },
-  { label: 'Latin America', value: 'latin_america' },
-  { label: 'North America', value: 'north_america' },
-  { label: 'Oceania', value: 'oceania' },
-];
-
 const LANGUAGE_OPTIONS = [
-  { label: 'English', value: 'en' },
   { label: 'Turkish', value: 'tr' },
-  { label: 'Arabic', value: 'ar' },
-  { label: 'German', value: 'de' },
-  { label: 'French', value: 'fr' },
-  { label: 'Spanish', value: 'es' },
-  { label: 'Italian', value: 'it' },
-  { label: 'Portuguese', value: 'pt' },
-  { label: 'Russian', value: 'ru' },
-  { label: 'Chinese', value: 'zh' },
-  { label: 'Japanese', value: 'ja' },
-  { label: 'Korean', value: 'ko' },
+  { label: 'English', value: 'en' },
 ];
 
 export function RegisterScreen({ navigation }: Props) {
@@ -64,6 +40,13 @@ export function RegisterScreen({ navigation }: Props) {
   const [language, setLanguage] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [regionOptions, setRegionOptions] = useState<{ label: string; value: string }[]>([]);
+
+  useEffect(() => {
+    getRegions()
+      .then((regions) => setRegionOptions(regions.map((r) => ({ label: r, value: r }))))
+      .catch(() => {});
+  }, []);
 
   function validate(): boolean {
     const next: Record<string, string> = {};
@@ -201,7 +184,7 @@ export function RegisterScreen({ navigation }: Props) {
           <FormDropdown
             label="Region"
             value={region}
-            options={REGION_OPTIONS}
+            options={regionOptions}
             onSelect={setRegion}
             placeholder="Select region…"
             error={errors.region}
@@ -225,7 +208,7 @@ export function RegisterScreen({ navigation }: Props) {
             {loading ? (
               <ActivityIndicator color={colors.white} />
             ) : (
-              <Text style={styles.submitButtonText}>Create Heirloom Account</Text>
+              <Text style={styles.submitButtonText}>Create Account</Text>
             )}
           </TouchableOpacity>
 
