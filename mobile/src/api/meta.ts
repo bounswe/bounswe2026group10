@@ -1,6 +1,5 @@
-import { mockDelay } from './client';
+import { fetchApi } from './client';
 
 export async function getRegions(): Promise<string[]> {
-  await mockDelay(200);
-  return ['Turkey', 'Greece', 'Italy', 'Mexico', 'India', 'Japan'];
+  return fetchApi<string[]>('/meta/regions');
 }

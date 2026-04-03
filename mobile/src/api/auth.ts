@@ -5,7 +5,11 @@ export interface RegisterParams {
   email: string;
   password: string;
   username: string;
+  firstName: string;
+  lastName: string;
   role: 'learner' | 'cook' | 'expert';
+  region: string;
+  preferredLanguage: string;
 }
 
 export interface AuthTokens {

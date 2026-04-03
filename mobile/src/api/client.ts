@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import * as SecureStore from 'expo-secure-store';
 
 // In development, derive the backend host from Expo's dev server URL so the
 // app reaches the correct machine whether running on simulator, emulator, or
@@ -30,10 +31,26 @@ export function mockDelay(ms = 400): Promise<void> {
 }
 
 // ─── Token store ─────────────────────────────────────────────────────────────
-// Simple in-memory store. Populated on login/register, cleared on logout.
-// Will be upgraded to expo-secure-store when auth screens land.
+// In-memory cache for sync access by fetchApi. AuthContext handles the async
+// SecureStore read on startup and calls setToken() to populate the cache.
 
+const TOKEN_KEY = 'access_token';
 let _token: string | null = null;
+
+export async function persistToken(token: string | null): Promise<void> {
+  _token = token;
+  if (token) {
+    await SecureStore.setItemAsync(TOKEN_KEY, token);
+  } else {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+  }
+}
+
+export async function loadPersistedToken(): Promise<string | null> {
+  const stored = await SecureStore.getItemAsync(TOKEN_KEY);
+  _token = stored;
+  return stored;
+}
 
 export function setToken(token: string | null): void {
   _token = token;

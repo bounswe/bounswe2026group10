@@ -1,5 +1,11 @@
 import type { Recipe, RecipeCard } from '../types/recipe';
 
+export type AuthStackParamList = {
+  Welcome: undefined;
+  Login: undefined;
+  Register: undefined;
+};
+
 export type RootTabParamList = {
   HomeTab: undefined;
   SearchTab: undefined;
