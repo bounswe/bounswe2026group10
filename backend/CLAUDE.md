@@ -59,6 +59,7 @@ backend/
 │   │   ├── dish-genres.ts       # Cuisine genre listing
 │   │   ├── dish-varieties.ts    # Dish variety listing, search, recipes
 │   │   ├── ingredients.ts       # Ingredient search/autocomplete
+│   │   ├── substitutions.ts     # Ingredient substitution suggestions
 │   │   ├── tools.ts             # Tool search/autocomplete
 │   │   ├── units.ts             # Unit search/autocomplete
 │   │   └── parse.ts             # Free-text recipe parser endpoint
@@ -75,6 +76,7 @@ backend/
 │       ├── media.test.ts
 │       ├── parse.test.ts
 │       ├── ingredients.test.ts
+│       ├── substitutions.test.ts
 │       ├── tools.test.ts
 │       ├── units.test.ts
 │       └── health.test.ts
@@ -104,6 +106,7 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - **ingredients** — `id`, `name`
 - **allergens** — `id`, `name`
 - **ingredient_allergens** — `ingredient_id` (FK), `allergen_id` (FK)
+- **ingredient_substitutions** — `id`, `ingredient_id` (FK ingredients), `substitute_id` (FK ingredients), `source_amount` NUMERIC(10,3), `source_unit` TEXT, `sub_amount` NUMERIC(10,3), `sub_unit` TEXT, `confidence` NUMERIC(3,2), `description` TEXT — unique on (ingredient_id, substitute_id), no self-substitution
 - **dietary_tags** — `id`, `name` (unique), `category` (dietary|allergen)
 - **dish_genres** — `id`, `name`, `description`
 - **dish_varieties** — `id`, `name`, `description`, `genre_id` (FK dish_genres), `region`
@@ -151,6 +154,13 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 
 ### Ingredients (`/ingredients`)
 - `GET /ingredients` — List all ingredients with allergens (optional: `?search=<string>`)
+- `GET /ingredients/:id/substitutions` — Get substitute suggestions for an ingredient (#274)
+  - Query params: `amount` (optional, positive number), `unit` (optional, string — e.g. `gr`)
+  - Without params: returns all substitutions with base amounts
+  - With `amount` + `unit`: calculates and returns the proportional substitute amount
+  - Formula: `sub_amount = round((amount / source_amount) × base_sub_amount, 3)`
+  - Example: 1 gr salt → 2 ml lemon; request `?amount=4&unit=gr` → returns 8 ml lemon
+  - Returns 404 if ingredient not found, 400 if params are invalid
 
 ### Dietary Tags (`/dietary-tags`)
 - `GET /dietary-tags` — List all supported dietary and allergen tags

@@ -13,6 +13,7 @@ import parseRouter from "./routes/parse.js";
 import ingredientsRouter from "./routes/ingredients.js";
 import toolsRouter from "./routes/tools.js";
 import unitsRouter from "./routes/units.js";
+import substitutionsRouter from "./routes/substitutions.js";
 
 const app = express();
 const PORT = process.env["PORT"] ?? 3000;
@@ -48,6 +49,7 @@ app.use("/parse", parseRouter);
 app.use("/ingredients", ingredientsRouter);
 app.use("/tools", toolsRouter);
 app.use("/units", unitsRouter);
+app.use("/ingredients", substitutionsRouter);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {
