@@ -23,6 +23,7 @@ import { StepEditor } from './StepEditor';
 import type { StepFormItem, StepFormItemErrors } from './StepEditor';
 import { uploadVideo } from '../../api/video';
 import { useRecipeForm } from '../../context/RecipeFormContext';
+import { validateSteps } from '../../utils/recipeValidation';
 import type { CreateStackParamList } from '../../navigation/types';
 
 if (Platform.OS === 'android') {
@@ -126,39 +127,20 @@ export function CreateStepsScreen() {
   };
 
   const validate = (): boolean => {
-    let valid = true;
+    const result = validateSteps(uploading, uploadedUrl, steps);
 
-    if (uploading) {
-      setVideoError('Please wait for the video to finish uploading');
-      valid = false;
-    } else if (!uploadedUrl) {
-      setVideoError('A recipe video is required');
-      valid = false;
+    if (result.videoError) {
+      setVideoError(result.videoError);
     }
 
-    const newErrors: Record<string, StepFormItemErrors> = {};
-    for (const step of steps) {
-      const rowError: StepFormItemErrors = {};
-      if (!step.title.trim()) {
-        rowError.title = 'Title is required';
-      }
-      if (step.timestamp.trim() && !/^\d{1,2}:\d{2}$/.test(step.timestamp.trim())) {
-        rowError.timestamp = 'Use MM:SS format (e.g. 01:30)';
-      }
-      if (Object.keys(rowError).length > 0) {
-        newErrors[step.id] = rowError;
-      }
-    }
-
-    if (Object.keys(newErrors).length > 0) {
+    if (Object.keys(result.stepErrors).length > 0) {
       setSteps((prev) =>
-        prev.map((s) => (newErrors[s.id] ? { ...s, isExpanded: true } : s))
+        prev.map((s) => (result.stepErrors[s.id] ? { ...s, isExpanded: true } : s))
       );
-      setStepErrors(newErrors);
-      valid = false;
+      setStepErrors(result.stepErrors as Record<string, StepFormItemErrors>);
     }
 
-    return valid;
+    return !result.videoError && Object.keys(result.stepErrors).length === 0;
   };
 
   const handleNext = () => {

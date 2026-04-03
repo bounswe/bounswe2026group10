@@ -14,6 +14,7 @@ import { IngredientRowEditor } from './IngredientRowEditor';
 import type { IngredientFormItem } from './IngredientRowEditor';
 import { ToolSearchSection } from './ToolSearchSection';
 import { useRecipeForm } from '../../context/RecipeFormContext';
+import { validateIngredients } from '../../utils/recipeValidation';
 import { searchIngredients } from '../../api/ingredients';
 import type { IngredientItem } from '../../api/ingredients';
 import { getTools } from '../../api/tools';
@@ -85,31 +86,7 @@ export function CreateIngredientsToolsScreen() {
   };
 
   const validate = (): boolean => {
-    const newErrors: Record<string, { name?: string; quantity?: string }> = {};
-    let hasValidIngredient = false;
-
-    for (const ing of ingredients) {
-      const rowError: { name?: string; quantity?: string } = {};
-      if (ing.name.trim()) {
-        hasValidIngredient = true;
-        const qty = parseFloat(ing.quantity);
-        if (!ing.quantity.trim() || isNaN(qty) || qty <= 0) {
-          rowError.quantity = 'Enter a valid quantity';
-        }
-      }
-      if (Object.keys(rowError).length > 0) {
-        newErrors[ing.id] = rowError;
-      }
-    }
-
-    if (!hasValidIngredient) {
-      const firstId = ingredients[0].id;
-      newErrors[firstId] = {
-        ...newErrors[firstId],
-        name: 'Add at least one ingredient',
-      };
-    }
-
+    const newErrors = validateIngredients(ingredients);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };

@@ -25,6 +25,7 @@ import { StepHeader } from './StepHeader';
 import { ImportCards } from './ImportCards';
 import { OriginSection } from './OriginSection';
 import { useRecipeForm } from '../../context/RecipeFormContext';
+import { validateBasicInfo } from '../../utils/recipeValidation';
 import { getDishGenres } from '../../api/dish-genres';
 import { getDietaryTags } from '../../api/dietary-tags';
 import { uploadImage } from '../../api/images';
@@ -157,12 +158,7 @@ export function CreateBasicInfoScreen() {
   // ─── Validation & navigation ──────────────────────────────────────────────────
 
   const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-    if (!title.trim()) {
-      newErrors.title = 'Recipe title is required';
-    } else if (title.trim().length < 3) {
-      newErrors.title = 'Recipe title must be at least 3 characters';
-    }
+    const newErrors = validateBasicInfo(title);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };

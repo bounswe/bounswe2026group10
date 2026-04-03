@@ -17,31 +17,8 @@ import { IconButton } from "../shared/IconButton";
 import { StepHeader } from "../create-basic/StepHeader";
 import { useRecipeForm } from "../../context/RecipeFormContext";
 import { createRecipe, publishRecipe } from "../../api/recipes";
-import type { RecipeFormState } from "../../context/RecipeFormContext";
-
-function buildPayload(draft: RecipeFormState) {
-  return {
-    title: draft.title,
-    type: draft.type.toLowerCase() as "community" | "cultural",
-    story: draft.story || undefined,
-    dishVarietyId: draft.varietyId ?? undefined,
-    servingSize: draft.servingSize,
-    videoUrl: draft.videoUrl ?? undefined,
-    tagIds: [...draft.dietaryTagIds, ...draft.allergenTagIds],
-    ingredients: draft.ingredients
-      .filter((ing) => ing.name.trim() && ing.ingredientId !== null)
-      .map((ing) => ({
-        ingredientId: ing.ingredientId as number,
-        quantity: parseFloat(ing.quantity),
-        unit: ing.unit,
-      })),
-    steps: draft.steps.map((s, i) => ({
-      stepOrder: i + 1,
-      description: s.description || s.title,
-    })),
-    tools: draft.tools.map((t) => ({ name: t.name })),
-  };
-}
+import { buildRecipePayload } from "../../utils/buildRecipePayload";
+import { validateForPublish } from "../../utils/recipeValidation";
 
 export function CreateReviewScreen() {
   const navigation = useNavigation();
@@ -58,22 +35,8 @@ export function CreateReviewScreen() {
     navigation.getParent()?.navigate("HomeTab" as never);
   };
 
-  const validateForPublish = (): string[] => {
-    const missing: string[] = [];
-    if (!draft.varietyId) missing.push('Dish variety — go back to Basic Info and select a Genre + Variety');
-    if (!draft.servingSize) missing.push('Serving size — go back to Basic Info');
-    const validIngredients = draft.ingredients.filter(
-      (i) => i.ingredientId !== null && i.name.trim()
-    );
-    if (validIngredients.length === 0)
-      missing.push('At least 1 ingredient — go back to Ingredients & Tools');
-    if (draft.steps.length === 0)
-      missing.push('At least 1 step — go back to Steps');
-    return missing;
-  };
-
   const handlePublish = async () => {
-    const missing = validateForPublish();
+    const missing = validateForPublish(draft);
     if (missing.length > 0) {
       Alert.alert(
         'Recipe Incomplete',
@@ -85,7 +48,7 @@ export function CreateReviewScreen() {
     try {
       setPublishing(true);
       const created = await createRecipe({
-        ...buildPayload(draft),
+        ...buildRecipePayload(draft),
         isPublished: false,
       });
       console.log("[publish] recipe created:", created.id);
@@ -101,7 +64,7 @@ export function CreateReviewScreen() {
 
   const handleSaveDraft = async () => {
     const result = await createRecipe({
-      ...buildPayload(draft),
+      ...buildRecipePayload(draft),
       isPublished: false,
     });
     console.log("[draft] recipe saved:", result.id);
