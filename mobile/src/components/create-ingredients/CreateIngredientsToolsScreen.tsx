@@ -30,11 +30,11 @@ function createEmptyIngredient(): IngredientFormItem {
 
 export function CreateIngredientsToolsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
-  const { updateDraft } = useRecipeForm();
-  const [ingredients, setIngredients] = useState<IngredientFormItem[]>([
-    createEmptyIngredient(),
-  ]);
-  const [tools, setTools] = useState<Tool[]>([]);
+  const { draft, updateDraft, resetDraft } = useRecipeForm();
+  const [ingredients, setIngredients] = useState<IngredientFormItem[]>(
+    draft.ingredients.length > 0 ? draft.ingredients : [createEmptyIngredient()]
+  );
+  const [tools, setTools] = useState<Tool[]>(draft.tools);
   const [errors, setErrors] = useState<Record<string, { name?: string; quantity?: string }>>({});
   const [allIngredients, setAllIngredients] = useState<IngredientItem[]>([]);
   const [allTools, setAllTools] = useState<ToolItem[]>([]);
@@ -128,7 +128,14 @@ export function CreateIngredientsToolsScreen() {
   const handleClose = () => {
     Alert.alert('Discard Recipe?', 'Your changes will be lost.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Discard', style: 'destructive' },
+      {
+        text: 'Discard',
+        style: 'destructive',
+        onPress: () => {
+          resetDraft();
+          navigation.getParent()?.navigate('HomeTab' as never);
+        },
+      },
     ]);
   };
 

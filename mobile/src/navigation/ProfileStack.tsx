@@ -1,12 +1,12 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { ProfileStackParamList } from './types';
-import { PlaceholderScreen } from '../screens/PlaceholderScreen';
+import { DevLoginScreen } from '../screens/DevLoginScreen';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
 function ProfileScreen() {
-  return <PlaceholderScreen name="Profile" />;
+  return <DevLoginScreen />;
 }
 
 export function ProfileStack() {

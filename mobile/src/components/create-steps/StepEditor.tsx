@@ -26,6 +26,7 @@ export interface StepFormItem {
 
 export interface StepFormItemErrors {
   title?: string;
+  timestamp?: string;
 }
 
 interface StepEditorProps {
@@ -45,7 +46,7 @@ export function StepEditor({
   canDelete,
   errors,
 }: StepEditorProps) {
-  const hasErrors = !!errors?.title;
+  const hasErrors = !!(errors?.title || errors?.timestamp);
 
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -122,6 +123,7 @@ export function StepEditor({
             onChangeText={(text) => onUpdate({ ...step, timestamp: text })}
             placeholder="MM:SS"
             optional
+            error={errors?.timestamp}
           />
         </View>
       )}

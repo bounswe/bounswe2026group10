@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   LayoutAnimation,
   Platform,
@@ -45,15 +46,21 @@ function createEmptyStep(): StepFormItem {
 
 export function CreateStepsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
-  const { updateDraft } = useRecipeForm();
+  const { draft, updateDraft, resetDraft } = useRecipeForm();
 
-  // Single recipe video
-  const [videoUri, setVideoUri] = useState<string | null>(null);
-  const [videoFileName, setVideoFileName] = useState<string | null>(null);
+  // Single recipe video — restore from draft when coming back
+  const [videoFileName, setVideoFileName] = useState<string | null>(draft.videoFileName);
   const [videoError, setVideoError] = useState<string | undefined>();
+  // uploadedUrl is set as soon as the upload finishes (or restored from draft on back-nav)
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(draft.videoUrl);
+  const [uploading, setUploading] = useState(false);
 
-  // Steps
-  const [steps, setSteps] = useState<StepFormItem[]>([createEmptyStep()]);
+  // Steps — restore from draft when coming back
+  const [steps, setSteps] = useState<StepFormItem[]>(
+    draft.steps.length > 0
+      ? draft.steps.map((s) => ({ ...s, id: generateId(), isExpanded: false }))
+      : [createEmptyStep()]
+  );
   const [stepErrors, setStepErrors] = useState<Record<string, StepFormItemErrors>>({});
 
   const handlePickVideo = async () => {
@@ -62,19 +69,33 @@ export function CreateStepsScreen() {
       allowsEditing: false,
       quality: 1,
     });
-    if (!result.canceled && result.assets.length > 0) {
-      const asset = result.assets[0];
-      const fileName = asset.fileName ?? asset.uri.split('/').pop() ?? 'video.mp4';
-      console.log('[video] local URI selected:', asset.uri);
-      setVideoUri(asset.uri);
-      setVideoFileName(fileName);
-      setVideoError(undefined);
+    if (result.canceled || result.assets.length === 0) return;
+
+    const asset = result.assets[0];
+    const fileName = asset.fileName ?? asset.uri.split('/').pop() ?? 'video.mp4';
+    console.log('[video] local URI selected:', asset.uri);
+    setVideoFileName(fileName);
+    setUploadedUrl(null);
+    setVideoError(undefined);
+    setUploading(true);
+
+    try {
+      const { url } = await uploadVideo(asset.uri);
+      console.log('[video] upload complete:', url);
+      setUploadedUrl(url);
+      updateDraft({ videoUrl: url, videoFileName: fileName });
+    } catch (err: any) {
+      setVideoFileName(null);
+      setVideoError('Upload failed: ' + (err.message ?? 'please try again'));
+    } finally {
+      setUploading(false);
     }
   };
 
   const handleRemoveVideo = () => {
-    setVideoUri(null);
     setVideoFileName(null);
+    setUploadedUrl(null);
+    updateDraft({ videoUrl: null, videoFileName: null });
   };
 
   const handleUpdateStep = (id: string, updated: StepFormItem) => {
@@ -107,15 +128,25 @@ export function CreateStepsScreen() {
   const validate = (): boolean => {
     let valid = true;
 
-    if (!videoUri) {
+    if (uploading) {
+      setVideoError('Please wait for the video to finish uploading');
+      valid = false;
+    } else if (!uploadedUrl) {
       setVideoError('A recipe video is required');
       valid = false;
     }
 
     const newErrors: Record<string, StepFormItemErrors> = {};
     for (const step of steps) {
+      const rowError: StepFormItemErrors = {};
       if (!step.title.trim()) {
-        newErrors[step.id] = { title: 'Title is required' };
+        rowError.title = 'Title is required';
+      }
+      if (step.timestamp.trim() && !/^\d{1,2}:\d{2}$/.test(step.timestamp.trim())) {
+        rowError.timestamp = 'Use MM:SS format (e.g. 01:30)';
+      }
+      if (Object.keys(rowError).length > 0) {
+        newErrors[step.id] = rowError;
       }
     }
 
@@ -130,16 +161,10 @@ export function CreateStepsScreen() {
     return valid;
   };
 
-  const handleNext = async () => {
+  const handleNext = () => {
     if (!validate()) return;
 
-    console.log('[video] uploading recipe video:', videoUri);
-    const { url } = await uploadVideo(videoUri!);
-    console.log('[video] upload complete:', url);
-
     updateDraft({
-      videoUrl: url,
-      videoFileName,
       steps: steps.map((s) => ({
         title: s.title,
         description: s.description,
@@ -156,7 +181,14 @@ export function CreateStepsScreen() {
   const handleClose = () => {
     Alert.alert('Discard Recipe?', 'Your changes will be lost.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Discard', style: 'destructive' },
+      {
+        text: 'Discard',
+        style: 'destructive',
+        onPress: () => {
+          resetDraft();
+          navigation.getParent()?.navigate('HomeTab' as never);
+        },
+      },
     ]);
   };
 
@@ -187,12 +219,21 @@ export function CreateStepsScreen() {
             <Text style={styles.requiredStar}> *</Text>
           </View>
 
-          {videoUri ? (
+          {uploading ? (
+            <View style={[styles.videoBox, styles.videoBoxUploading]}>
+              <View style={styles.videoFilenameRow}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.videoFilenameText} numberOfLines={1}>
+                  {videoFileName ?? 'video'} — uploading…
+                </Text>
+              </View>
+            </View>
+          ) : uploadedUrl ? (
             <View style={[styles.videoBox, styles.videoBoxFilled]}>
               <View style={styles.videoFilenameRow}>
                 <MaterialCommunityIcons name="check-circle" size={20} color={colors.positive} />
                 <Text style={styles.videoFilenameText} numberOfLines={1}>
-                  {videoFileName ?? 'video.mp4'}
+                  {videoFileName ?? 'video'} — uploaded
                 </Text>
                 <TouchableOpacity
                   onPress={handleRemoveVideo}
@@ -326,6 +367,10 @@ const styles = StyleSheet.create({
   videoBoxFilled: {
     borderStyle: 'solid',
     borderColor: colors.positive,
+  },
+  videoBoxUploading: {
+    borderStyle: 'solid',
+    borderColor: colors.primary,
   },
   videoBoxError: {
     borderColor: colors.negative,
