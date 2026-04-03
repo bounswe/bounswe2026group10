@@ -266,6 +266,17 @@
       "culturalDesc": "Tarihi önemi olan geleneksel tarif",
       "expertOnly": "Uzman rolü gereklidir"
     },
+    "parse": {
+      "label": "Serbest metin tarif girişi",
+      "placeholder": "Tarif anlatımınızı buraya yazın veya yapıştırın, ardından malzeme/araç/adımlara ayrıştırın.",
+      "hint": "En az 10 karakter gerekli.",
+      "parseButton": "Tarifi Ayrıştır",
+      "parsing": "Ayrıştırılıyor…",
+      "error": "Tarif metni ayrıştırılamadı. Lütfen tekrar deneyin.",
+      "previewTitle": "Ayrıştırılmış çıktı hazır",
+      "previewSummary": "{{ingredients}} malzeme, {{tools}} araç, {{steps}} adım çıkarıldı ve mümkün olanlar forma uygulandı.",
+      "unmatchedIngredients": "{{count}} malzeme katalogdan manuel seçilmeli: {{names}}"
+    },
     "ingredients": {
       "title": "Malzemeler",
       "searchPlaceholder": "Malzeme ara…",
