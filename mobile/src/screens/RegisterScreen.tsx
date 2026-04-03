@@ -150,7 +150,7 @@ export function RegisterScreen({ navigation }: Props) {
             label="Confirm Password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            placeholder="••••••••"
+            placeholder="Re-enter password"
             error={errors.confirmPassword}
           />
 
