@@ -55,10 +55,11 @@ export function RegisterScreen({ navigation }: Props) {
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'learner' | 'cook' | null>(null);
+  const [role, setRole] = useState<'learner' | 'cook' | 'expert' | null>(null);
   const [region, setRegion] = useState('');
   const [language, setLanguage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -68,6 +69,7 @@ export function RegisterScreen({ navigation }: Props) {
     const next: Record<string, string> = {};
     if (!firstName.trim()) next.firstName = 'Required';
     if (!lastName.trim()) next.lastName = 'Required';
+    if (!username.trim()) next.username = 'Required';
     if (!email.trim() || !email.includes('@')) next.email = 'Valid email required';
     if (password.length < 8) next.password = 'At least 8 characters';
     if (password !== confirmPassword) next.confirmPassword = 'Passwords do not match';
@@ -85,6 +87,7 @@ export function RegisterScreen({ navigation }: Props) {
       await register({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
+        username: username.trim(),
         email: email.trim(),
         password,
         role: role!,
@@ -140,6 +143,13 @@ export function RegisterScreen({ navigation }: Props) {
             error={errors.lastName}
           />
           <FormTextInput
+            label="Username"
+            value={username}
+            onChangeText={setUsername}
+            placeholder="your_username"
+            error={errors.username}
+          />
+          <FormTextInput
             label="Email Address"
             value={email}
             onChangeText={setEmail}
@@ -178,6 +188,13 @@ export function RegisterScreen({ navigation }: Props) {
               icon="chef-hat"
               selected={role === 'cook'}
               onPress={() => setRole('cook')}
+            />
+            <RoleCard
+              title="Expert"
+              description="Guiding others with culinary expertise and cultural knowledge."
+              icon="medal-outline"
+              selected={role === 'expert'}
+              onPress={() => setRole('expert')}
             />
           </View>
 

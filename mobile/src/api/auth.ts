@@ -4,9 +4,10 @@ import { fetchApi, setToken } from './client';
 export interface RegisterParams {
   email: string;
   password: string;
+  username: string;
   firstName: string;
   lastName: string;
-  role: 'learner' | 'cook';
+  role: 'learner' | 'cook' | 'expert';
   region: string;
   preferredLanguage: string;
 }
