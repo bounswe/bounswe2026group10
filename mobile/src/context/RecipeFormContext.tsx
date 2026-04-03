@@ -19,12 +19,16 @@ export interface RecipeFormState {
   genreId: number | null;     // numeric DB id from GET /dish-genres
   varietyId: number | null;   // numeric DB id (= dishVarietyId) from GET /dish-genres
   dietaryTagIds: number[];    // numeric DB ids from GET /dietary-tags, category=dietary
+  dietaryTagNames: string[];  // display names corresponding to dietaryTagIds
   allergenTagIds: number[];   // numeric DB ids from GET /dietary-tags, category=allergen
+  allergenTagNames: string[]; // display names corresponding to allergenTagIds
   story: string;
   servingSize: number | undefined;
   // Screen 13 — Ingredients & Tools
   ingredients: IngredientFormItem[];
   tools: Tool[];
+  // Screen 12 — recipe images (CDN URLs of successfully uploaded photos)
+  imageUrls: string[];
   // Screen 14 — single recipe video (CDN URL post-upload) + steps with timestamps
   videoUrl: string | null;
   videoFileName: string | null;
@@ -40,11 +44,14 @@ const EMPTY_DRAFT: RecipeFormState = {
   genreId: null,
   varietyId: null,
   dietaryTagIds: [],
+  dietaryTagNames: [],
   allergenTagIds: [],
+  allergenTagNames: [],
   story: '',
   servingSize: undefined,
   ingredients: [],
   tools: [],
+  imageUrls: [],
   videoUrl: null,
   videoFileName: null,
   steps: [],

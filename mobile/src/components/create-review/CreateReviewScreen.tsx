@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -47,7 +48,8 @@ export function CreateReviewScreen() {
   const { draft, resetDraft } = useRecipeForm();
   const [publishing, setPublishing] = useState(false);
 
-  const tagCount = draft.dietaryTagIds.length + draft.allergenTagIds.length;
+  const hasDietaryTags = draft.dietaryTagNames.length > 0;
+  const hasAllergenTags = draft.allergenTagNames.length > 0;
 
   const metaParts = [draft.originCountry].filter(Boolean);
 
@@ -56,7 +58,30 @@ export function CreateReviewScreen() {
     navigation.getParent()?.navigate("HomeTab" as never);
   };
 
+  const validateForPublish = (): string[] => {
+    const missing: string[] = [];
+    if (!draft.varietyId) missing.push('Dish variety — go back to Basic Info and select a Genre + Variety');
+    if (!draft.servingSize) missing.push('Serving size — go back to Basic Info');
+    const validIngredients = draft.ingredients.filter(
+      (i) => i.ingredientId !== null && i.name.trim()
+    );
+    if (validIngredients.length === 0)
+      missing.push('At least 1 ingredient — go back to Ingredients & Tools');
+    if (draft.steps.length === 0)
+      missing.push('At least 1 step — go back to Steps');
+    return missing;
+  };
+
   const handlePublish = async () => {
+    const missing = validateForPublish();
+    if (missing.length > 0) {
+      Alert.alert(
+        'Recipe Incomplete',
+        'Please complete the following before publishing:\n\n' +
+          missing.map((m) => `• ${m}`).join('\n')
+      );
+      return;
+    }
     try {
       setPublishing(true);
       const created = await createRecipe({
@@ -88,7 +113,7 @@ export function CreateReviewScreen() {
   const handleClose = () => {
     Alert.alert("Discard Recipe?", "Your changes will be lost.", [
       { text: "Cancel", style: "cancel" },
-      { text: "Discard", style: "destructive" },
+      { text: "Discard", style: "destructive", onPress: goHome },
     ]);
   };
 
@@ -129,13 +154,47 @@ export function CreateReviewScreen() {
           </View>
         )}
 
-        {/* Tags */}
-        {tagCount > 0 && (
+        {/* Images */}
+        {draft.imageUrls.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>TAGS</Text>
-            <Text style={styles.bodyText}>
-              {tagCount} tag{tagCount !== 1 ? "s" : ""} selected
-            </Text>
+            <Text style={styles.sectionLabel}>IMAGES</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.imageStrip}
+            >
+              {draft.imageUrls.map((url, i) => (
+                <Image key={i} source={{ uri: url }} style={styles.reviewImage} />
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Dietary tags */}
+        {hasDietaryTags && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>DIETARY TAGS</Text>
+            <View style={styles.tagRow}>
+              {draft.dietaryTagNames.map((name) => (
+                <View key={name} style={styles.tagChip}>
+                  <Text style={styles.tagChipText}>{name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Allergen tags */}
+        {hasAllergenTags && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>ALLERGEN TAGS</Text>
+            <View style={styles.tagRow}>
+              {draft.allergenTagNames.map((name) => (
+                <View key={name} style={styles.tagChip}>
+                  <Text style={styles.tagChipText}>{name}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         )}
 
@@ -380,6 +439,16 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     marginBottom: spacing.sm,
     marginLeft: 28 + spacing.sm,
+  },
+  imageStrip: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  reviewImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
   },
   videoRow: {
     flexDirection: "row",
