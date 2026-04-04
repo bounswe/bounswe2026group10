@@ -3,6 +3,7 @@ import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 import { getUserRating, rateRecipe } from '../../api/recipes';
+import { useAuth } from '../../context/AuthContext';
 
 interface RatingPromptProps {
   recipeId: string;
@@ -10,20 +11,25 @@ interface RatingPromptProps {
 }
 
 export function RatingPrompt({ recipeId, onViewComments }: RatingPromptProps) {
+  const { authState } = useAuth();
+  const isAuthenticated = authState.status === 'authenticated';
   const [selectedRating, setSelectedRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     getUserRating(recipeId)
       .then((rating) => {
         if (rating) setSelectedRating(rating.score);
       })
-      .catch(() => {
-        // Not authenticated or no rating — ignore
-      });
-  }, [recipeId]);
+      .catch(() => {});
+  }, [recipeId, isAuthenticated]);
 
   const handleStarPress = async (score: number) => {
+    if (!isAuthenticated) {
+      Alert.alert('Sign in required', 'Please log in to rate this recipe.');
+      return;
+    }
     if (submitting) return;
     setSubmitting(true);
     try {
