@@ -130,8 +130,8 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 
 ### Recipes (`/recipes`)
 - `GET /recipes/:id` — Recipe detail (public if published, creator-only if draft)
-- `POST /recipes` — Create recipe (cook/expert only, accepts `tagIds`)
-- `PATCH /recipes/:id` — Update draft (creator only, cook/expert, accepts `tagIds`)
+- `POST /recipes` — Create recipe (cook/expert only, accepts `tagIds`, optional `country`, `city`, `district`)
+- `PATCH /recipes/:id` — Update draft (creator only, cook/expert, accepts `tagIds`, optional `country`, `city`, `district`)
 - `POST /recipes/:id/publish` — Publish draft (validates completeness)
 - `POST /recipes/:id/ratings` — Rate recipe 1-5 (cannot self-rate, upsert)
 - `GET /recipes/:id/ratings/me` — Get own rating
