@@ -12,7 +12,7 @@ const router = Router();
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const ALLOWED_VIDEO_TYPES = ["video/mp4"];
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime"];
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;  // 10 MB
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100 MB
 const STORAGE_BUCKET = "media";
@@ -32,7 +32,7 @@ const upload = multer({
  *
  * Request: multipart/form-data, field name "file"
  * Images: JPEG, PNG, WebP — max 10 MB
- * Videos: MP4 — max 100 MB
+ * Videos: MP4/MOV — max 100 MB
  *
  * Response 201: { url, type, size }
  */
@@ -73,7 +73,7 @@ router.post(
 
     if (!isImage && !isVideo) {
       res.status(400).json(
-        errorResponse("INVALID_FILE_TYPE", "Only JPEG, PNG, WebP images and MP4 videos are allowed.")
+        errorResponse("INVALID_FILE_TYPE", "Only JPEG, PNG, WebP images and MP4/MOV videos are allowed.")
       );
       return;
     }
