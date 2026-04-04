@@ -15,6 +15,8 @@ const discoveryQuerySchema = z.object({
   tagIds: z.string().optional(),
   genreId: z.coerce.number().int().positive().optional(),
   varietyId: z.coerce.number().int().positive().optional(),
+  // Case-insensitive partial match on recipe title (e.g. "pasta")
+  search: z.string().trim().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
@@ -25,6 +27,7 @@ const discoveryQuerySchema = z.object({
 //   ?excludeAllergens=1,2,3   (allergen IDs)
 //   ?genreId=1
 //   ?varietyId=1
+//   ?search=pasta             (case-insensitive partial title match)
 //   ?page=1&limit=20
 router.get("/recipes", async (req, res) => {
     const parsed = discoveryQuerySchema.safeParse(req.query);
@@ -34,7 +37,7 @@ router.get("/recipes", async (req, res) => {
         .join("; ");
       return res.status(400).json(errorResponse("VALIDATION_ERROR", message));
     }
-    const { region, excludeAllergens, tagIds, genreId, varietyId, page, limit } = parsed.data;
+    const { region, excludeAllergens, tagIds, genreId, varietyId, search, page, limit } = parsed.data;
 
     // ── Step 0: Resolve tag filter ───────────────────────────────────────────
     let tagFilteredRecipeIds: string[] | null = null;
@@ -179,6 +182,10 @@ router.get("/recipes", async (req, res) => {
 
     if (region) {
       query = query.eq("dish_varieties.region", region);
+    }
+
+    if (search) {
+      query = query.ilike("title", `%${search}%`);
     }
 
     if (varietyId !== undefined) {
