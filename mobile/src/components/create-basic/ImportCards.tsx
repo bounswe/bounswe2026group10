@@ -3,11 +3,11 @@ import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
-export function ImportCards() {
-  const handlePasteText = () => {
-    Alert.alert('Coming Soon', 'Text import will be available in a future update.');
-  };
+interface ImportCardsProps {
+  onPasteText: () => void;
+}
 
+export function ImportCards({ onPasteText }: ImportCardsProps) {
   const handleVoiceRecording = () => {
     Alert.alert('Coming Soon', 'Voice recording will be available in a future update.');
   };
@@ -16,7 +16,7 @@ export function ImportCards() {
     <View style={styles.container}>
       <Text style={styles.sectionLabel}>IMPORT YOUR RECIPE</Text>
       <View style={styles.cards}>
-        <TouchableOpacity style={styles.card} onPress={handlePasteText} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.card} onPress={onPasteText} activeOpacity={0.7}>
           <MaterialCommunityIcons name="text-box-outline" size={28} color={colors.primary} />
           <Text style={styles.cardTitle}>Paste Text</Text>
           <Text style={styles.cardSubtitle}>Type or paste a recipe</Text>

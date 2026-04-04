@@ -23,6 +23,7 @@ import { FormDropdown } from '../shared/FormDropdown';
 import { ChipSelector } from '../shared/ChipSelector';
 import { StepHeader } from './StepHeader';
 import { ImportCards } from './ImportCards';
+import { RecipeParseModal } from './RecipeParseModal';
 import { OriginSection } from './OriginSection';
 import { useRecipeForm } from '../../context/RecipeFormContext';
 import { validateBasicInfo } from '../../utils/recipeValidation';
@@ -54,6 +55,7 @@ export function CreateBasicInfoScreen() {
   const [selectedAllergenIds, setSelectedAllergenIds] = useState<string[]>(draft.allergenTagIds.map(String));
   const [story, setStory] = useState(draft.story);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [parseModalVisible, setParseModalVisible] = useState(false);
 
   // Images — restore already-uploaded ones from draft on back-nav
   const [images, setImages] = useState<ImageItem[]>(
@@ -229,7 +231,12 @@ export function CreateBasicInfoScreen() {
           subtitle="Lay the foundation for your culinary story."
         />
 
-        <ImportCards />
+        <ImportCards onPasteText={() => setParseModalVisible(true)} />
+        <RecipeParseModal
+          visible={parseModalVisible}
+          onClose={() => setParseModalVisible(false)}
+          onApplied={(parsedTitle) => setTitle(parsedTitle)}
+        />
 
         <FormTextInput
           label="Recipe Title"
