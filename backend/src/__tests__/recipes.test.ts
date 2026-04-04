@@ -129,6 +129,30 @@ describe("GET /recipes/:id", () => {
     expect(res.body.data.dishVarietyId).toBeNull();
   });
 
+  it("returns country, city, district when set", async () => {
+    setupRecipeMock(
+      { ...mockRecipeData, country: "Turkey", city: "Adana", district: "Seyhan" },
+      null
+    );
+    const res = await request(app).get("/recipes/recipe-uuid-1");
+    expect(res.status).toBe(200);
+    expect(res.body.data.country).toBe("Turkey");
+    expect(res.body.data.city).toBe("Adana");
+    expect(res.body.data.district).toBe("Seyhan");
+  });
+
+  it("returns null for country, city, district when not set", async () => {
+    setupRecipeMock(
+      { ...mockRecipeData, country: null, city: null, district: null },
+      null
+    );
+    const res = await request(app).get("/recipes/recipe-uuid-1");
+    expect(res.status).toBe(200);
+    expect(res.body.data.country).toBeNull();
+    expect(res.body.data.city).toBeNull();
+    expect(res.body.data.district).toBeNull();
+  });
+
   it("returns 404 when recipe does not exist", async () => {
     setupRecipeMock(null, { code: "PGRST116", message: "Not found" });
     const res = await request(app).get("/recipes/nonexistent-uuid");
@@ -258,6 +282,97 @@ describe("Recipe Endpoints (Creation & Publishing)", () => {
       expect(response.status).toBe(201);
       expect(response.body.data.type).toBe("cultural");
       expect(response.body.data.id).toBe("recipe-1");
+    });
+
+    it("should return 201 with location fields when provided", async () => {
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { id: "recipe-loc-1", created_at: "2023-01-01" },
+      });
+      const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes") return { insert: mockInsert };
+        return { insert: jest.fn().mockResolvedValue({ error: null }) };
+      });
+
+      const response = await request(app)
+        .post("/recipes")
+        .set("Authorization", "Bearer valid_token")
+        .send({ ...validCommunityPayload, country: "Turkey", city: "Adana", district: "Seyhan" });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.country).toBe("Turkey");
+      expect(response.body.data.city).toBe("Adana");
+      expect(response.body.data.district).toBe("Seyhan");
+    });
+
+    it("should return 201 with null location fields when not provided", async () => {
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { id: "recipe-no-loc-1", created_at: "2023-01-01" },
+      });
+      const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes") return { insert: mockInsert };
+        return { insert: jest.fn().mockResolvedValue({ error: null }) };
+      });
+
+      const response = await request(app)
+        .post("/recipes")
+        .set("Authorization", "Bearer valid_token")
+        .send(validCommunityPayload);
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.country).toBeNull();
+      expect(response.body.data.city).toBeNull();
+      expect(response.body.data.district).toBeNull();
+    });
+
+    it("should trim whitespace from location fields", async () => {
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { id: "recipe-trim-1", created_at: "2023-01-01" },
+      });
+      const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes") return { insert: mockInsert };
+        return { insert: jest.fn().mockResolvedValue({ error: null }) };
+      });
+
+      const response = await request(app)
+        .post("/recipes")
+        .set("Authorization", "Bearer valid_token")
+        .send({ ...validCommunityPayload, country: "  Turkey  ", city: "  Adana  " });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.country).toBe("Turkey");
+      expect(response.body.data.city).toBe("Adana");
+    });
+
+    it("should return 201 with only country provided", async () => {
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { id: "recipe-partial-1", created_at: "2023-01-01" },
+      });
+      const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes") return { insert: mockInsert };
+        return { insert: jest.fn().mockResolvedValue({ error: null }) };
+      });
+
+      const response = await request(app)
+        .post("/recipes")
+        .set("Authorization", "Bearer valid_token")
+        .send({ ...validCommunityPayload, country: "Greece" });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.country).toBe("Greece");
+      expect(response.body.data.city).toBeNull();
+      expect(response.body.data.district).toBeNull();
     });
 
     it("should return 201 for valid incomplete draft", async () => {
