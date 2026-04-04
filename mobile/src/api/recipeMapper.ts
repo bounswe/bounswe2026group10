@@ -121,9 +121,10 @@ export function mapBackendRecipeToMobile(data: BackendRecipeDetail): Recipe {
     tools,
     steps,
     origin: {
-      country: data.genreName ?? data.dishVarietyName ?? '',
+      country: data.genreName ?? '',
     },
     dishVarietyId: data.dishVarietyId != null ? String(data.dishVarietyId) : '',
+    dishVarietyName: data.dishVarietyName ?? '',
     tags,
     allergens: Array.from(allergenSet),
     status: data.isPublished ? 'PUBLISHED' : 'DRAFT',

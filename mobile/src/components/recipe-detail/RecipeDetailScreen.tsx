@@ -83,6 +83,7 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
           region={recipe.origin.city
             ? `${recipe.origin.city}, ${recipe.origin.country}`
             : recipe.origin.country}
+          dishVarietyName={recipe.dishVarietyName}
           tags={recipe.tags}
           allergens={recipe.allergens}
           onAuthorPress={() => Alert.alert('Profile', 'Navigation coming soon')}
