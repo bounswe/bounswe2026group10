@@ -1,7 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { login as apiLogin, register as apiRegister, logout as apiLogout, getMe } from '../api/auth';
 import type { RegisterParams, LoginParams, AuthTokens } from '../api/auth';
-import { persistToken, loadPersistedToken, setToken } from '../api/client';
+import {
+  persistToken,
+  loadPersistedToken,
+  setToken,
+  persistRefreshToken,
+  loadPersistedRefreshToken,
+  setRefreshToken,
+} from '../api/client';
 
 type AuthState =
   | { status: 'loading' }
@@ -25,10 +32,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function checkStoredToken() {
       try {
-        const token = await loadPersistedToken();
+        const [token, refreshToken] = await Promise.all([
+          loadPersistedToken(),
+          loadPersistedRefreshToken(),
+        ]);
         if (!token) {
           setAuthState({ status: 'unauthenticated', isGuest: false });
           return;
+        }
+        if (refreshToken) {
+          setRefreshToken(refreshToken);
         }
         const me = await getMe();
         setAuthState({
@@ -39,11 +52,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             username: me.username,
             role: me.role,
             accessToken: token,
-            refreshToken: '',
+            refreshToken: refreshToken ?? '',
           },
         });
       } catch {
-        await persistToken(null);
+        await Promise.all([persistToken(null), persistRefreshToken(null)]);
         setAuthState({ status: 'unauthenticated', isGuest: false });
       }
     }
@@ -52,13 +65,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function login(params: LoginParams) {
     const tokens = await apiLogin(params);
-    await persistToken(tokens.accessToken);
+    await Promise.all([
+      persistToken(tokens.accessToken),
+      persistRefreshToken(tokens.refreshToken),
+    ]);
     setAuthState({ status: 'authenticated', user: tokens });
   }
 
   async function register(params: RegisterParams) {
     const tokens = await apiRegister(params);
-    await persistToken(tokens.accessToken);
+    await Promise.all([
+      persistToken(tokens.accessToken),
+      persistRefreshToken(tokens.refreshToken),
+    ]);
     setAuthState({ status: 'authenticated', user: tokens });
   }
 
@@ -69,7 +88,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // continue logout even if server call fails
     }
     setToken(null);
-    await persistToken(null);
+    setRefreshToken(null);
+    await Promise.all([persistToken(null), persistRefreshToken(null)]);
     setAuthState({ status: 'unauthenticated', isGuest: false });
   }
 
