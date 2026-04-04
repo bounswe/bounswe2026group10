@@ -111,6 +111,11 @@ export function CreateBasicInfoScreen() {
     .filter((t) => t.category === 'allergen')
     .map((t) => ({ label: t.name, value: String(t.id) }));
 
+  // Sync uploaded image CDN URLs to the draft whenever the images list changes
+  useEffect(() => {
+    updateDraft({ imageUrls: images.filter((img) => img.cdnUrl).map((img) => img.cdnUrl!) });
+  }, [images]);
+
   useEffect(() => {
     getDishGenres()
       .then((data) => {
@@ -156,13 +161,11 @@ export function CreateBasicInfoScreen() {
     newItems.forEach((item) => {
       uploadImage(item.localUri)
         .then(({ url }) => {
-          setImages((prev) => {
-            const updated = prev.map((img) =>
+          setImages((prev) =>
+            prev.map((img) =>
               img.id === item.id ? { ...img, cdnUrl: url, uploading: false } : img
-            );
-            updateDraft({ imageUrls: updated.filter((img) => img.cdnUrl).map((img) => img.cdnUrl!) });
-            return updated;
-          });
+            )
+          );
         })
         .catch(() => {
           setImages((prev) =>
@@ -175,11 +178,7 @@ export function CreateBasicInfoScreen() {
   };
 
   const handleRemoveImage = (id: string) => {
-    setImages((prev) => {
-      const updated = prev.filter((img) => img.id !== id);
-      updateDraft({ imageUrls: updated.filter((img) => img.cdnUrl).map((img) => img.cdnUrl!) });
-      return updated;
-    });
+    setImages((prev) => prev.filter((img) => img.id !== id));
   };
 
   // ─── Validation & navigation ──────────────────────────────────────────────────

@@ -1,14 +1,17 @@
 import React from 'react';
+import { Text, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from './types';
 import { RecipeDetailScreen } from '../components/recipe-detail/RecipeDetailScreen';
-import { mockRecipe } from '../data/mockRecipe';
-import { mockAlternatives } from '../data/mockAlternatives';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
 function HomeScreen() {
-  return <RecipeDetailScreen recipe={mockRecipe} alternatives={mockAlternatives} />;
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text>Home feed coming soon</Text>
+    </View>
+  );
 }
 
 export function HomeStack() {
@@ -16,12 +19,7 @@ export function HomeStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="RecipeDetail">
-        {({ route }) => (
-          <RecipeDetailScreen
-            recipe={route.params.recipe}
-            alternatives={route.params.alternatives}
-          />
-        )}
+        {({ route }) => <RecipeDetailScreen recipeId={route.params.recipeId} />}
       </Stack.Screen>
     </Stack.Navigator>
   );

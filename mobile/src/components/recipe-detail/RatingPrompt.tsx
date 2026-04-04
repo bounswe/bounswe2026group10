@@ -1,13 +1,42 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { StarRating } from '../shared/StarRating';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
+import { getUserRating, rateRecipe } from '../../api/recipes';
 
 interface RatingPromptProps {
+  recipeId: string;
   onViewComments?: () => void;
 }
 
-export function RatingPrompt({ onViewComments }: RatingPromptProps) {
+export function RatingPrompt({ recipeId, onViewComments }: RatingPromptProps) {
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    getUserRating(recipeId)
+      .then((rating) => {
+        if (rating) setSelectedRating(rating.score);
+      })
+      .catch(() => {
+        // Not authenticated or no rating — ignore
+      });
+  }, [recipeId]);
+
+  const handleStarPress = async (score: number) => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await rateRecipe(recipeId, score);
+      setSelectedRating(score);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to submit rating';
+      Alert.alert('Rating', message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleViewComments =
     onViewComments ?? (() => Alert.alert('Comments', 'Coming soon'));
 
@@ -16,7 +45,20 @@ export function RatingPrompt({ onViewComments }: RatingPromptProps) {
       <Text style={styles.heading}>How did it turn out?</Text>
 
       <View style={styles.ratingRow}>
-        <StarRating rating={0} size={28} />
+        {[1, 2, 3, 4, 5].map((star) => (
+          <TouchableOpacity
+            key={star}
+            onPress={() => handleStarPress(star)}
+            disabled={submitting}
+            activeOpacity={0.7}
+          >
+            <MaterialCommunityIcons
+              name={star <= selectedRating ? 'star' : 'star-outline'}
+              size={32}
+              color={colors.starYellow}
+            />
+          </TouchableOpacity>
+        ))}
       </View>
 
       <TouchableOpacity onPress={handleViewComments}>
@@ -47,6 +89,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   ratingRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
     marginBottom: spacing.lg,
   },
   viewAll: {
