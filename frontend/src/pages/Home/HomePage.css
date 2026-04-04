@@ -6,6 +6,137 @@
   gap: var(--space-2xl);
 }
 
+.home-page__hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: var(--space-xl);
+  padding: clamp(var(--space-lg), 4vw, var(--space-2xl));
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(134, 69, 42, 0.12);
+  background:
+    radial-gradient(circle at top right, rgba(181, 117, 77, 0.2), transparent 34%),
+    linear-gradient(135deg, rgba(134, 69, 42, 0.08), rgba(255, 248, 240, 0.95));
+  box-shadow: var(--shadow-sm);
+}
+
+.home-page__hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  justify-content: center;
+}
+
+.home-page__hero-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(2.1rem, 4.5vw, 3.8rem);
+  line-height: 1.04;
+  color: var(--text-primary);
+}
+
+.home-page__hero-subtitle,
+.home-page__section-copy {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  max-width: 36rem;
+}
+
+.home-page__hero-actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.home-page__hero-btn,
+.home-page__section-link,
+.home-page__retry {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: transform var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.home-page__hero-btn:hover,
+.home-page__section-link:hover,
+.home-page__retry:hover {
+  transform: translateY(-1px);
+}
+
+.home-page__hero-btn {
+  padding: 0.8rem 1.15rem;
+  border: 1px solid transparent;
+}
+
+.home-page__hero-btn--primary {
+  background: var(--color-main);
+  color: var(--text-on-main);
+}
+
+.home-page__hero-btn--primary:hover {
+  background: var(--color-main-dark);
+}
+
+.home-page__hero-btn--secondary,
+.home-page__section-link {
+  border: 1px solid rgba(134, 69, 42, 0.18);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--color-main);
+}
+
+.home-page__hero-btn--secondary:hover,
+.home-page__section-link:hover {
+  background: var(--surface-overlay);
+}
+
+.home-page__hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+}
+
+.home-page__stat {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(134, 69, 42, 0.12);
+}
+
+.home-page__stat-value {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.home-page__stat-label {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.home-page__hero-feature {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  justify-content: center;
+}
+
+.home-page__section-eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-main);
+}
+
 .home-page__section {
   display: flex;
   flex-direction: column;
@@ -14,8 +145,9 @@
 
 .home-page__section-header {
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   justify-content: space-between;
+  gap: var(--space-md);
 }
 
 .home-page__section-title {
@@ -40,6 +172,11 @@
   padding: 0.2rem 0.55rem;
 }
 
+.home-page__section-link {
+  padding: 0.65rem 1rem;
+  white-space: nowrap;
+}
+
 /* ── Community picks grid ────────────────────────────────────────────────── */
 
 .home-page__picks-grid {
@@ -48,7 +185,24 @@
   gap: var(--space-md);
 }
 
+/* ── Genre grid ──────────────────────────────────────────────────────────── */
+
+.home-page__genre-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.home-page__genre-grid .genre-card {
+  width: 100%;
+  min-height: 9rem;
+}
+
 @media (min-width: 768px) {
+  .home-page__hero {
+    align-items: center;
+  }
+
   .recipe-card--hero .recipe-card__hero-img {
     height: 20rem;
   }
@@ -72,29 +226,13 @@
   .home-page__picks-grid .recipe-card--horizontal .recipe-card__body {
     padding: var(--space-md);
   }
-}
 
-/* ── Genre horizontal scroll ─────────────────────────────────────────────── */
+  .home-page__genre-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 
-.home-page__genre-scroll {
-  display: flex;
-  gap: var(--space-md);
-  overflow-x: auto;
-  padding-bottom: var(--space-sm);
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-neutral-darker) transparent;
-}
-
-.home-page__genre-scroll .genre-card {
-  width: 8rem;
-  height: 8rem;
-  flex-shrink: 0;
-}
-
-@media (min-width: 768px) {
-  .home-page__genre-scroll .genre-card {
-    width: 9rem;
-    height: 9rem;
+  .home-page__genre-grid .genre-card {
+    min-height: 10rem;
   }
 }
 
@@ -140,15 +278,10 @@
 }
 
 .home-page__retry {
-  font-family: var(--font-body);
-  font-size: 0.9rem;
   padding: 0.45rem 1.2rem;
-  border-radius: var(--radius-sm);
   border: 1px solid var(--color-main);
   background: transparent;
   color: var(--color-main);
-  cursor: pointer;
-  transition: background var(--transition-fast);
 }
 
 .home-page__retry:hover {

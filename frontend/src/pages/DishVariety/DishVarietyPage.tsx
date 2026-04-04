@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { discoveryService, type DishVarietyDetail, type VarietyRecipeSummary } from '@/services/discovery-service'
+import { RecipeCard } from '@/components/UiComponents/RecipeCard'
+import { discoveryService, type DishVarietyDetail, type RecipeSummary, type VarietyRecipeSummary } from '@/services/discovery-service'
+import { recipeService } from '@/services/recipe-service'
 import './DishVarietyPage.css'
 
 function BackIcon() {
@@ -20,31 +22,57 @@ function StarIcon() {
   )
 }
 
-function RecipeRow({ recipe, onClick }: { recipe: VarietyRecipeSummary; onClick: () => void }) {
+function RecipeSpotlight({
+  recipe,
+  description,
+  imageUrl,
+  onClick,
+}: {
+  recipe: VarietyRecipeSummary
+  description: string | null
+  imageUrl: string | null
+  onClick: () => void
+}) {
   const { t } = useTranslation('common')
+
   return (
-    <button type="button" className="variety-recipe-row" onClick={onClick}>
-      <div className="variety-recipe-row__body">
-        <h3 className="variety-recipe-row__title">{recipe.title}</h3>
-        <div className="variety-recipe-row__meta">
-          <span className={`variety-recipe-row__type variety-recipe-row__type--${recipe.type}`}>
-            {recipe.type === 'cultural' ? t('recipeDetail.cultural') : t('recipeDetail.community')}
-          </span>
-          {recipe.region && (
-            <span className="variety-recipe-row__region">{recipe.region}</span>
-          )}
-          {recipe.averageRating !== null && (
-            <span className="variety-recipe-row__rating">
-              <StarIcon />
-              {recipe.averageRating.toFixed(1)}
-            </span>
-          )}
+    <article className="variety-recipe-spotlight" aria-label={t('dishVariety.culturalSpotlight')}>
+      {imageUrl && (
+        <div className="variety-recipe-spotlight__media">
+          <img src={imageUrl} alt={recipe.title} loading="lazy" />
         </div>
+      )}
+
+      <div className="variety-recipe-spotlight__eyebrow">{t('dishVariety.culturalSpotlight')}</div>
+      <h3 className="variety-recipe-spotlight__title">{recipe.title}</h3>
+
+      <div className="variety-recipe-spotlight__meta">
+        <span className="variety-recipe-spotlight__type">{t('recipeDetail.cultural')}</span>
+        {recipe.region && <span>{recipe.region}</span>}
+        {recipe.averageRating !== null && (
+          <span className="variety-recipe-spotlight__rating">
+            <StarIcon />
+            {recipe.averageRating.toFixed(1)}
+            <small>({recipe.ratingCount})</small>
+          </span>
+        )}
+        {recipe.createdAt && (
+          <span>
+            {t('dishVariety.publishedOn', {
+              date: new Date(recipe.createdAt).toLocaleDateString(),
+            })}
+          </span>
+        )}
       </div>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="variety-recipe-row__arrow">
-        <polyline points="9 18 15 12 9 6" />
-      </svg>
-    </button>
+
+      <p className="variety-recipe-spotlight__description">
+        {description?.trim() || t('dishVariety.noDescription')}
+      </p>
+
+      <button type="button" className="variety-recipe-spotlight__cta" onClick={onClick}>
+        {t('dishVariety.openRecipe')}
+      </button>
+    </article>
   )
 }
 
@@ -54,6 +82,9 @@ export function DishVarietyPage() {
   const { t } = useTranslation('common')
 
   const [variety, setVariety] = useState<DishVarietyDetail | null>(null)
+  const [featuredDescription, setFeaturedDescription] = useState<string | null>(null)
+  const [featuredImageUrl, setFeaturedImageUrl] = useState<string | null>(null)
+  const [communityImageMap, setCommunityImageMap] = useState<Record<string, string | null>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -66,6 +97,67 @@ export function DishVarietyPage() {
       .catch(() => setError(t('common.errorRetry')))
       .finally(() => setLoading(false))
   }, [id, t])
+
+  useEffect(() => {
+    const culturalRecipeId = variety?.recipes.find((recipe) => recipe.type === 'cultural')?.id
+    if (!culturalRecipeId) {
+      setFeaturedDescription(null)
+      setFeaturedImageUrl(null)
+      return
+    }
+
+    let cancelled = false
+    recipeService
+      .getById(culturalRecipeId)
+      .then((recipe) => {
+        if (!cancelled) {
+          setFeaturedDescription(recipe.story ?? null)
+          const firstImage = recipe.media.find((item) => item.type === 'image')
+          setFeaturedImageUrl(firstImage?.url ?? null)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFeaturedDescription(null)
+          setFeaturedImageUrl(null)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [variety?.recipes])
+
+  useEffect(() => {
+    const communityIds =
+      variety?.recipes.filter((recipe) => recipe.type === 'community').map((recipe) => recipe.id) ?? []
+
+    if (communityIds.length === 0) {
+      setCommunityImageMap({})
+      return
+    }
+
+    let cancelled = false
+
+    Promise.all(
+      communityIds.map(async (recipeId) => {
+        try {
+          const detail = await recipeService.getById(recipeId)
+          const firstImage = detail.media.find((item) => item.type === 'image')
+          return [recipeId, firstImage?.url ?? null] as const
+        } catch {
+          return [recipeId, null] as const
+        }
+      }),
+    ).then((entries) => {
+      if (cancelled) return
+      setCommunityImageMap(Object.fromEntries(entries))
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [variety?.recipes])
 
   if (loading) {
     return (
@@ -90,6 +182,9 @@ export function DishVarietyPage() {
       </div>
     )
   }
+
+  const culturalRecipe = variety.recipes.find((recipe) => recipe.type === 'cultural') ?? null
+  const communityRecipes = variety.recipes.filter((recipe) => recipe.type === 'community')
 
   return (
     <div className="dish-variety-page">
@@ -120,15 +215,44 @@ export function DishVarietyPage() {
         {variety.recipes.length === 0 ? (
           <p className="dish-variety-page__empty">{t('dishVariety.noRecipes')}</p>
         ) : (
-          <div className="dish-variety-page__recipes">
-            {variety.recipes.map((r) => (
-              <RecipeRow
-                key={r.id}
-                recipe={r}
-                onClick={() => navigate(`/recipes/${r.id}`)}
+          <>
+            {culturalRecipe && (
+              <RecipeSpotlight
+                recipe={culturalRecipe}
+                description={featuredDescription}
+                imageUrl={featuredImageUrl}
+                onClick={() => navigate(`/recipes/${culturalRecipe.id}`)}
               />
-            ))}
-          </div>
+            )}
+
+            {communityRecipes.length > 0 ? (
+              <>
+                <h3 className="dish-variety-page__subsection-title">{t('dishVariety.communityRecipes')}</h3>
+                <div className="dish-variety-page__recipes">
+                  {communityRecipes.map((r) => (
+                    <RecipeCard
+                      key={r.id}
+                      recipe={{
+                        id: r.id,
+                        title: r.title,
+                        recipeType: 'community',
+                        averageRating: r.averageRating ?? undefined,
+                        ratingCount: r.ratingCount,
+                        createdAt: r.createdAt,
+                        imageUrl: communityImageMap[r.id] ?? undefined,
+                        author: { username: 'Community' },
+                        region: r.region ?? undefined,
+                      } as RecipeSummary}
+                      variant="horizontal"
+                      onClick={() => navigate(`/recipes/${r.id}`)}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="dish-variety-page__empty">{t('dishVariety.noCommunityRecipes')}</p>
+            )}
+          </>
         )}
       </section>
 

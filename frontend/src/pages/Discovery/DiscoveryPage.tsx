@@ -114,14 +114,10 @@ export function DiscoveryPage() {
   return (
     <div className="discovery-page">
       <section className="discovery-page__hero">
-        <p className="discovery-page__eyebrow">{t('nav.discovery')}</p>
         <h1 className="discovery-page__title">{t('discovery.title')}</h1>
         <p className="discovery-page__subtitle">{t('discovery.subtitle')}</p>
-      </section>
 
-      <section className="discovery-page__section discovery-page__search">
         <label className="discovery-page__searchbar" htmlFor="discovery-search-input">
-          <span className="discovery-page__searchbar-label">{t('discovery.searchLabel')}</span>
           <span className="discovery-page__searchbar-input-wrap">
             <input
               id="discovery-search-input"
@@ -133,20 +129,17 @@ export function DiscoveryPage() {
               }}
               placeholder={t('discovery.searchPlaceholder')}
             />
-            {searchInput && (
-              <button
-                type="button"
-                className="discovery-page__search-clear"
-                aria-label={t('discovery.clearSearch')}
-                onClick={() => {
-                  setSearchInput('')
-                  setDebouncedSearch('')
-                  setGenrePage(1)
-                }}
-              >
-                ×
-              </button>
-            )}
+
+            <button
+              type="button"
+              className="discovery-page__search-icon"
+              aria-label={t('discovery.searchLabel')}
+            >
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+                <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+                <path d="M20 20L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
           </span>
         </label>
       </section>

@@ -131,7 +131,17 @@
   "home": {
     "featured": "Öne Çıkan Tarif",
     "communityPicks": "Topluluk Seçkileri",
+    "communityPicksSubtitle": "Şu anda en yüksek puanlı topluluk tarifleri.",
     "browseByGenre": "Türe Göre Keşfet",
+    "browseByGenreSubtitle": "Bir mutfak türüyle başlayın ve eşleşen yemeklere geçin.",
+    "heroKicker": "Ne pişiyor keşfet",
+    "heroTitle": "En iyi tarifler, türler ve topluluk favorileri tek yerde.",
+    "heroSubtitle": "En yüksek puanlı tariflere bakın, bir tür seçin ya da keşfet sayfasında devam edin.",
+    "exploreDiscovery": "Keşfi Aç",
+    "searchRecipes": "Tarif Ara",
+    "heroGenres": "Türler",
+    "heroRecipes": "Tarifler",
+    "heroPicks": "Öne çıkanlar",
     "noRecipes": "Henüz tarif yok. Yakında tekrar kontrol edin!"
   },
   "search": {
@@ -149,12 +159,17 @@
     "title": "Tarif Keşfet",
     "subtitle": "Tarifleri türe, bölgeye, alerjen kısıtlarına ve beslenme tercihlerine göre keşfedin.",
     "searchLabel": "Türleri ve yemek çeşitlerini ara",
-    "searchPlaceholder": "Örneğin tatlı, börek, çorba...",
+    "searchPlaceholder": "Tür, yemek, malzeme ara...",
     "clearSearch": "Aramayı temizle",
     "searchGenresTitle": "Eşleşen Türler",
     "searchGenresHint": "\"{{query}}\" ile eşleşen türler",
     "searchVarietiesTitle": "Eşleşen Çeşitler",
     "searchVarietiesHint": "\"{{query}}\" ile eşleşen yemek çeşitleri",
+    "quickSearchesLabel": "Hızlı arama önerileri",
+    "quickChipQuick": "Hızlı",
+    "quickChipVegetarian": "Vejetaryen",
+    "quickChipGlutenFree": "Glutensiz",
+    "quickChipBaklava": "Baklava",
     "noSearchMatches": "Aramanızla eşleşen tür veya yemek çeşidi yok.",
     "noGenreLabel": "Tür yok",
     "selectGenrePrompt": "Yemek çeşitlerini listelemek için bir tür seçin.",
@@ -233,7 +248,15 @@
   "dishVariety": {
     "notFound": "Yemek çeşidi bulunamadı.",
     "recipes": "{{count}} Tarif",
-    "noRecipes": "Bu yemek çeşidi için henüz yayınlanmış tarif yok."
+    "noRecipes": "Bu yemek çeşidi için henüz yayınlanmış tarif yok.",
+    "culturalSpotlight": "Öne Çıkan Kültürel Tarif",
+    "otherRecipes": "Diğer Tarifler",
+    "noOtherRecipes": "Henüz başka tarif listelenmedi.",
+    "communityRecipes": "Topluluk Tarifleri",
+    "noCommunityRecipes": "Henüz topluluk tarifi listelenmedi.",
+    "openRecipe": "Tarifi aç",
+    "publishedOn": "Yayın tarihi: {{date}}",
+    "noDescription": "Bu tarif için henüz açıklama bulunmuyor."
   },
   "create": {
     "title": "Tarif Oluştur",

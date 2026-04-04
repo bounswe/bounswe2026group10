@@ -11,6 +11,7 @@ export function HomePage() {
   const navigate = useNavigate()
 
   const [recipes, setRecipes] = useState<RecipeSummary[]>([])
+  const [totalRecipes, setTotalRecipes] = useState(0)
   const [genres, setGenres] = useState<Genre[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -21,12 +22,13 @@ export function HomePage() {
     setError(null)
 
     Promise.all([
-      discoveryService.getRecipes({ limit: 10 }),
+      discoveryService.getRecipeResults({ limit: 10, page: 1 }),
       discoveryService.getGenres(),
     ])
-      .then(([r, g]) => {
+      .then(([recipeResults, g]) => {
         if (cancelled) return
-        setRecipes(r)
+        setRecipes(recipeResults.recipes)
+        setTotalRecipes(recipeResults.pagination.total)
         setGenres(g)
       })
       .catch(() => {
@@ -40,7 +42,15 @@ export function HomePage() {
   }, [t])
 
   const featured = recipes[0] ?? null
-  const picks = recipes.slice(1, 10)
+  const picks = recipes.slice(1, 4)
+
+  const handleExploreDiscovery = () => {
+    navigate('/discovery')
+  }
+
+  const handleSearchRecipes = () => {
+    navigate('/search')
+  }
 
   if (loading) {
     return (
@@ -67,26 +77,59 @@ export function HomePage() {
   return (
     <div className="home-page">
 
-      {/* ── Featured Recipe ─────────────────────────────────────────────── */}
-      <section className="home-page__section">
-        <span className="home-page__featured-label">{t('home.featured')}</span>
-        <h2 className="home-page__section-title">{t('home.featured')}</h2>
-        {featured ? (
-          <RecipeCard
-            recipe={featured}
-            variant="hero"
-            onClick={() => navigate(`/recipes/${featured.id}`)}
-          />
-        ) : (
-          <p className="home-page__empty">{t('home.noRecipes')}</p>
-        )}
+      {/* ── Hero ───────────────────────────────────────────────────────── */}
+      <section className="home-page__hero">
+        <div className="home-page__hero-copy">
+          <span className="home-page__featured-label">{t('home.heroKicker')}</span>
+          <h1 className="home-page__hero-title">{t('home.heroTitle')}</h1>
+          <p className="home-page__hero-subtitle">{t('home.heroSubtitle')}</p>
+          <div className="home-page__hero-actions">
+            <button type="button" className="home-page__hero-btn home-page__hero-btn--primary" onClick={handleExploreDiscovery}>
+              {t('home.exploreDiscovery')}
+            </button>
+            <button type="button" className="home-page__hero-btn home-page__hero-btn--secondary" onClick={handleSearchRecipes}>
+              {t('home.searchRecipes')}
+            </button>
+          </div>
+          <div className="home-page__hero-stats">
+            <div className="home-page__stat">
+              <span className="home-page__stat-value">{genres.length}</span>
+              <span className="home-page__stat-label">{t('home.heroGenres')}</span>
+            </div>
+            <div className="home-page__stat">
+              <span className="home-page__stat-value">{totalRecipes}</span>
+              <span className="home-page__stat-label">{t('home.heroRecipes')}</span>
+            </div>
+            <div className="home-page__stat">
+              <span className="home-page__stat-value">{picks.length}</span>
+              <span className="home-page__stat-label">{t('home.heroPicks')}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="home-page__hero-feature">
+          <span className="home-page__section-eyebrow">{t('home.featured')}</span>
+          {featured ? (
+            <RecipeCard
+              recipe={featured}
+              variant="hero"
+              onClick={() => navigate(`/recipes/${featured.id}`)}
+            />
+          ) : (
+            <p className="home-page__empty">{t('home.noRecipes')}</p>
+          )}
+        </div>
       </section>
 
       {/* ── Community Picks ─────────────────────────────────────────────── */}
       {picks.length > 0 && (
         <section className="home-page__section">
           <div className="home-page__section-header">
-            <h2 className="home-page__section-title">{t('home.communityPicks')}</h2>
+            <div>
+              <span className="home-page__section-eyebrow">{t('home.communityPicks')}</span>
+              <h2 className="home-page__section-title">{t('home.communityPicks')}</h2>
+              <p className="home-page__section-copy">{t('home.communityPicksSubtitle')}</p>
+            </div>
           </div>
           <div className="home-page__picks-grid">
             {picks.map((r) => (
@@ -104,8 +147,17 @@ export function HomePage() {
       {/* ── Browse by Genre ─────────────────────────────────────────────── */}
       {genres.length > 0 && (
         <section className="home-page__section">
-          <h2 className="home-page__section-title">{t('home.browseByGenre')}</h2>
-          <div className="home-page__genre-scroll">
+          <div className="home-page__section-header">
+            <div>
+              <span className="home-page__section-eyebrow">{t('home.browseByGenre')}</span>
+              <h2 className="home-page__section-title">{t('home.browseByGenre')}</h2>
+              <p className="home-page__section-copy">{t('home.browseByGenreSubtitle')}</p>
+            </div>
+            <button type="button" className="home-page__section-link" onClick={handleExploreDiscovery}>
+              {t('home.exploreDiscovery')}
+            </button>
+          </div>
+          <div className="home-page__genre-grid">
             {genres.map((g) => (
               <GenreCard
                 key={g.id}
