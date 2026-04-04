@@ -493,6 +493,77 @@ describe("GET /discovery/recipes", () => {
     expect(res.status).toBe(500);
     expect(res.body.error.code).toBe("DB_ERROR");
   });
+
+  it("filters recipes by partial title match (search param)", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRecipes, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?search=adana");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(res.body.data.recipes[0].title).toBe("Adana Kebap");
+  });
+
+  it("returns empty when search matches no recipes", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: [], error: null, count: 0 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?search=xqzwnotarecipe");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(0);
+    expect(res.body.data.pagination.total).toBe(0);
+  });
+
+  it("treats empty search string as no filter", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRecipes, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?search=");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+  });
+
+  it("trims whitespace-only search and applies no filter", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRecipes, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?search=   ");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+  });
+
+  it("combines search with genreId filter", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_varieties") return chainable({ data: [{ id: 1 }], error: null });
+      if (table === "recipes") return chainable({ data: mockRecipes, error: null, count: 1 });
+    });
+
+    const res = await request(app).get("/discovery/recipes?search=adana&genreId=1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(res.body.data.recipes[0].title).toBe("Adana Kebap");
+  });
+
+  it("combines search with region filter", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRecipes, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?search=adana&region=Turkey");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
