@@ -205,6 +205,18 @@ export function CreateBasicInfoScreen() {
         style: 'destructive',
         onPress: () => {
           resetDraft();
+          setTitle('');
+          setCountry('');
+          setCity('');
+          setDistrict('');
+          setGenreId(null);
+          setVarietyId(null);
+          setServingSize('');
+          setSelectedDietaryIds([]);
+          setSelectedAllergenIds([]);
+          setStory('');
+          setImages([]);
+          setErrors({});
           navigation.getParent()?.navigate('HomeTab' as never);
         },
       },
