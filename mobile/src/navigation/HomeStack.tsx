@@ -1,15 +1,10 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from './types';
+import { HomeScreen } from '../screens/HomeScreen';
 import { RecipeDetailScreen } from '../components/recipe-detail/RecipeDetailScreen';
-import { mockRecipe } from '../data/mockRecipe';
-import { mockAlternatives } from '../data/mockAlternatives';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
-
-function HomeScreen() {
-  return <RecipeDetailScreen recipe={mockRecipe} alternatives={mockAlternatives} />;
-}
 
 export function HomeStack() {
   return (
