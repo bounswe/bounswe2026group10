@@ -111,7 +111,7 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
 
         <AlternativeVersions cards={EMPTY_ALTERNATIVES} />
 
-        <RatingPrompt recipeId={recipeId} />
+        <RatingPrompt recipeId={recipeId} creatorUsername={recipe.creatorUsername} />
       </ScrollView>
 
       <Modal

@@ -29,6 +29,7 @@ export interface Recipe {
   status: RecipeStatus;
   createdAt: ISODateString;
   updatedAt: ISODateString;
+  creatorUsername: string;
 }
 
 export interface RecipeCard {

@@ -7,10 +7,11 @@ import { useAuth } from '../../context/AuthContext';
 
 interface RatingPromptProps {
   recipeId: string;
+  creatorUsername?: string;
   onViewComments?: () => void;
 }
 
-export function RatingPrompt({ recipeId, onViewComments }: RatingPromptProps) {
+export function RatingPrompt({ recipeId, creatorUsername, onViewComments }: RatingPromptProps) {
   const { authState } = useAuth();
   const isAuthenticated = authState.status === 'authenticated';
   const [selectedRating, setSelectedRating] = useState(0);
@@ -28,6 +29,10 @@ export function RatingPrompt({ recipeId, onViewComments }: RatingPromptProps) {
   const handleStarPress = async (score: number) => {
     if (!isAuthenticated) {
       Alert.alert('Sign in required', 'Please log in to rate this recipe.');
+      return;
+    }
+    if (isAuthenticated && authState.user.username === creatorUsername) {
+      Alert.alert('Rating', 'You cannot rate your own recipe.');
       return;
     }
     if (submitting) return;

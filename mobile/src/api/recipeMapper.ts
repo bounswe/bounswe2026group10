@@ -129,5 +129,6 @@ export function mapBackendRecipeToMobile(data: BackendRecipeDetail): Recipe {
     status: data.isPublished ? 'PUBLISHED' : 'DRAFT',
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
+    creatorUsername: data.creatorUsername ?? '',
   };
 }
