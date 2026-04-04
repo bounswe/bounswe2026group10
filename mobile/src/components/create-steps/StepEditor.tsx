@@ -18,14 +18,13 @@ if (Platform.OS === 'android') {
 
 export interface StepFormItem {
   id: string;
-  title: string;
   description: string;
   timestamp: string; // MM:SS format, e.g. "01:30"
   isExpanded: boolean;
 }
 
 export interface StepFormItemErrors {
-  title?: string;
+  description?: string;
   timestamp?: string;
 }
 
@@ -46,16 +45,16 @@ export function StepEditor({
   canDelete,
   errors,
 }: StepEditorProps) {
-  const hasErrors = !!(errors?.title || errors?.timestamp);
+  const hasErrors = !!(errors?.description || errors?.timestamp);
 
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     onUpdate({ ...step, isExpanded: !step.isExpanded });
   };
 
-  const previewText = step.title.trim() || step.description.trim()
-    ? (step.title.trim() || step.description).substring(0, 40) + (step.title.length > 40 ? '…' : '')
-    : 'No title yet';
+  const previewText = step.description.trim()
+    ? step.description.substring(0, 40) + (step.description.length > 40 ? '…' : '')
+    : 'No description yet';
 
   return (
     <View style={styles.card}>
@@ -100,21 +99,13 @@ export function StepEditor({
       {step.isExpanded && (
         <View style={styles.expandedBody}>
           <FormTextInput
-            label="STEP TITLE"
-            value={step.title}
-            onChangeText={(text) => onUpdate({ ...step, title: text })}
-            placeholder="e.g. Prepare the dough"
-            error={errors?.title}
-          />
-
-          <FormTextInput
             label="DESCRIPTION"
             value={step.description}
             onChangeText={(text) => onUpdate({ ...step, description: text })}
             placeholder="Describe what to do in this step…"
             multiline
             numberOfLines={4}
-            optional
+            error={errors?.description}
           />
 
           <FormTextInput

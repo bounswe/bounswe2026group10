@@ -11,7 +11,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import type { CreateStackParamList } from "../../navigation/types";
 import { colors, fonts, fontSizes, spacing } from "../../theme";
 import { IconButton } from "../shared/IconButton";
 import { StepHeader } from "../create-basic/StepHeader";
@@ -21,7 +23,7 @@ import { buildRecipePayload } from "../../utils/buildRecipePayload";
 import { validateForPublish } from "../../utils/recipeValidation";
 
 export function CreateReviewScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const { draft, resetDraft } = useRecipeForm();
   const [publishing, setPublishing] = useState(false);
 
@@ -32,6 +34,7 @@ export function CreateReviewScreen() {
 
   const goHome = () => {
     resetDraft();
+    navigation.popToTop();
     navigation.getParent()?.navigate("HomeTab" as never);
   };
 
@@ -217,14 +220,11 @@ export function CreateReviewScreen() {
                 <View style={styles.stepCircle}>
                   <Text style={styles.stepCircleText}>{index + 1}</Text>
                 </View>
-                <Text style={styles.stepTitle}>{step.title}</Text>
+                <Text style={styles.stepDescription} numberOfLines={2}>{step.description}</Text>
                 {!!step.timestamp && (
                   <Text style={styles.stepTimestamp}>{step.timestamp}</Text>
                 )}
               </View>
-              {!!step.description && (
-                <Text style={styles.stepDescription}>{step.description}</Text>
-              )}
             </View>
           ))}
           {draft.steps.length === 0 && (
@@ -390,18 +390,12 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     color: colors.white,
   },
-  stepTitle: {
-    flex: 1,
-    fontFamily: fonts.serifBold,
-    fontSize: fontSizes.md,
-    color: colors.onSurface,
-  },
   stepDescription: {
+    flex: 1,
     fontFamily: fonts.sans,
     fontSize: fontSizes.sm,
     color: colors.onSurfaceVariant,
-    marginBottom: spacing.sm,
-    marginLeft: 28 + spacing.sm,
+    marginHorizontal: spacing.sm,
   },
   imageStrip: {
     flexDirection: "row",

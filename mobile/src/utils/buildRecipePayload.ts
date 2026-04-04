@@ -18,7 +18,7 @@ export function buildRecipePayload(draft: RecipeFormState) {
       })),
     steps: draft.steps.map((s, i) => ({
       stepOrder: i + 1,
-      description: s.description || s.title,
+      description: s.description,
     })),
     tools: draft.tools.map((t) => ({ name: t.name })),
   };

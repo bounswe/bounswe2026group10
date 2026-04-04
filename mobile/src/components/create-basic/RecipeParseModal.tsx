@@ -126,7 +126,6 @@ export function RecipeParseModal({ visible, onClose, onApplied }: Props) {
         unit: mapToMeasurementUnit(ing.unit),
       })),
       steps: parsed.steps.map((s) => ({
-        title: "",
         description: s.description,
         timestamp: "",
       })),
