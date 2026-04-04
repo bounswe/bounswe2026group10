@@ -167,7 +167,7 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 
 ### Discovery (`/discovery`)
 - `GET /discovery/recipes` — Filtered recipe discovery
-  - Query params: `region`, `genreId`, `varietyId`, `excludeAllergens` (comma-separated IDs), `tagIds` (comma-separated dietary tag IDs — only recipes with ALL specified tags), `page`, `limit`
+  - Query params: `region`, `genreId`, `varietyId`, `excludeAllergens` (comma-separated IDs), `tagIds` (comma-separated dietary tag IDs — only recipes with ALL specified tags), `search` (case-insensitive partial match on recipe title), `page`, `limit`
 - `GET /discovery/recipes/by-ingredients` — Recipes fully makeable with provided ingredients
   - Query params: `ingredientIds` (comma-separated IDs, required), `page`, `limit`
   - Only returns recipes whose every ingredient is in the provided list; partial matches excluded
