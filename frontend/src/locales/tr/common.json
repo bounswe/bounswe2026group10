@@ -196,7 +196,9 @@
     "pagination": "Sayfa {{page}} / {{total}}",
     "previousPage": "Önceki",
     "nextPage": "Sonraki",
-    "loading": "Tarifler yükleniyor…"
+    "loading": "Tarifler yükleniyor…",
+    "genresTitle": "Türler",
+    "recipesTitle": "Tarifler"
   },
   "common": {
     "retry": "Tekrar dene",

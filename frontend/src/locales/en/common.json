@@ -196,7 +196,9 @@
     "pagination": "Page {{page}} of {{total}}",
     "previousPage": "Previous",
     "nextPage": "Next",
-    "loading": "Loading recipes…"
+    "loading": "Loading recipes…",
+    "genresTitle": "Genres",
+    "recipesTitle": "Recipes"
   },
   "common": {
     "retry": "Try again",

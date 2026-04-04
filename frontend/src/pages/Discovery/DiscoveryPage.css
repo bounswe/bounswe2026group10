@@ -8,9 +8,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-sm);
-  padding: clamp(1.5rem, 2.2vw, 2.75rem);
-  border-radius: var(--radius-lg);
+  gap: 0.4rem;
+  padding: clamp(0.65rem, 1.2vw, 1rem) clamp(0.75rem, 1.5vw, 1.25rem);
+  border-radius: var(--radius-md);
   background: linear-gradient(180deg, var(--surface-input) 0%, var(--color-neutral) 100%);
   border: 1px solid var(--color-neutral-darker);
 }
@@ -18,18 +18,19 @@
 .discovery-page__title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(2rem, 5vw, 4rem);
+  font-size: clamp(1.15rem, 2.8vw, 1.5rem);
   color: var(--color-main-dark);
-  line-height: 1.06;
+  line-height: 1.2;
   text-align: center;
 }
 
 .discovery-page__subtitle {
   margin: 0;
-  max-width: 52rem;
+  max-width: 36rem;
   color: var(--text-secondary);
   text-align: center;
-  line-height: 1.6;
+  line-height: 1.45;
+  font-size: 0.8rem;
 }
 
 .discovery-page__section {
@@ -38,26 +39,23 @@
   gap: var(--space-md);
 }
 
-.discovery-page__search {
-  gap: var(--space-sm);
-}
-
 .discovery-page__searchbar {
-  width: min(100%, 40rem);
+  width: min(100%, 28rem);
+  margin-top: 0.15rem;
 }
 
 .discovery-page__searchbar-input-wrap {
   display: flex;
   align-items: center;
-  padding: 0.88rem 1.05rem;
-  border-radius: 0.8rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-neutral-darker);
   background: var(--surface-card);
 }
 
 .discovery-page__searchbar-input-wrap:focus-within {
   border-color: var(--color-main);
-  box-shadow: 0 0 0 4px rgba(134, 69, 42, 0.14);
+  box-shadow: 0 0 0 2px rgba(134, 69, 42, 0.12);
 }
 
 .discovery-page__searchbar input {
@@ -66,7 +64,7 @@
   background: transparent;
   color: var(--text-primary);
   outline: none;
-  font-size: 1.02rem;
+  font-size: 0.9rem;
   font-weight: 500;
   min-width: 0;
 }
@@ -76,8 +74,8 @@
 }
 
 .discovery-page__search-icon {
-  width: 2rem;
-  height: 2rem;
+  width: 1.5rem;
+  height: 1.5rem;
   border-radius: 999px;
   border: none;
   background: none;
@@ -90,8 +88,8 @@
 }
 
 .discovery-page__search-icon svg {
-  width: 1.42rem;
-  height: 1.42rem;
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 .discovery-page__search-icon:hover {
@@ -101,6 +99,7 @@
 .discovery-page__section-header {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: var(--space-md);
   flex-wrap: wrap;
 }
@@ -126,24 +125,117 @@
   background: var(--surface-card);
   color: var(--text-primary);
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.discovery-page__genre-grid {
+.discovery-page__clear-genre:hover {
+  border-color: var(--color-main);
+  color: var(--color-main);
+}
+
+/* ── Genre horizontal scroll ───────────────────────────────────────────────── */
+
+.discovery-page__genre-scroll {
+  display: flex;
+  gap: var(--space-md);
+  overflow-x: auto;
+  padding-bottom: var(--space-sm);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-neutral-darker) transparent;
+}
+
+.discovery-page__genre-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.discovery-page__genre-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.discovery-page__genre-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-darker);
+  border-radius: 2px;
+}
+
+.discovery-page__genre-scroll .genre-card {
+  flex-shrink: 0;
+  width: 9rem;
+  min-height: 7rem;
+}
+
+/* ── Variety horizontal scroll ─────────────────────────────────────────────── */
+
+.discovery-page__variety-scroll {
+  display: flex;
+  gap: var(--space-sm);
+  overflow-x: auto;
+  padding-bottom: var(--space-sm);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-neutral-darker) transparent;
+  flex-wrap: nowrap;
+}
+
+.discovery-page__variety-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.discovery-page__variety-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.discovery-page__variety-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-darker);
+  border-radius: 2px;
+}
+
+.discovery-page__variety-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex-shrink: 0;
+  padding: 0.65rem 1.1rem;
+  border: 1px solid var(--color-neutral-darker);
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.discovery-page__variety-chip:hover {
+  border-color: var(--color-main);
+  background: var(--surface-input);
+}
+
+.discovery-page__variety-chip-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.discovery-page__variety-chip-genre {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ── Recipe grid ───────────────────────────────────────────────────────────── */
+
+.discovery-page__recipe-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-md);
 }
 
-.discovery-page__genre-grid .genre-card {
-  width: 100%;
-  min-height: 9.5rem;
-}
-
-.discovery-page__genre-pagination {
+.discovery-page__recipe-pagination {
   margin-top: var(--space-sm);
 }
 
-.discovery-page__genre-pagination .pagination-control {
+.discovery-page__recipe-pagination .pagination-control {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -154,7 +246,7 @@
   background: var(--surface-card);
 }
 
-.discovery-page__genre-pagination .pagination-control__btn {
+.discovery-page__recipe-pagination .pagination-control__btn {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -166,21 +258,54 @@
   cursor: pointer;
 }
 
-.discovery-page__genre-pagination .pagination-control__btn:disabled {
+.discovery-page__recipe-pagination .pagination-control__btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 
-.discovery-page__genre-pagination .pagination-control__btn:not(:disabled):hover {
+.discovery-page__recipe-pagination .pagination-control__btn:not(:disabled):hover {
   border-color: var(--color-main);
   color: var(--color-main);
 }
 
-.discovery-page__genre-pagination .pagination-control__info {
+.discovery-page__recipe-pagination .pagination-control__info {
   font-size: 0.9rem;
   color: var(--text-secondary);
   text-align: center;
 }
+
+/* ── Skeletons ─────────────────────────────────────────────────────────────── */
+
+.discovery-page__skeleton-genre {
+  flex-shrink: 0;
+  width: 9rem;
+  height: 7rem;
+  border-radius: var(--radius-md);
+}
+
+.discovery-page__skeleton-chip {
+  flex-shrink: 0;
+  width: 8rem;
+  height: 2.6rem;
+  border-radius: var(--radius-pill);
+}
+
+.discovery-page__skeleton-recipe {
+  height: 16rem;
+  border-radius: var(--radius-md);
+}
+
+/* ── Empty / error states ──────────────────────────────────────────────────── */
+
+.discovery-page__empty,
+.discovery-page__error {
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  border: 1px solid var(--color-neutral-darker);
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────────── */
 
 @media (max-width: 767px) {
   .discovery-page__hero {
@@ -196,79 +321,28 @@
     width: 100%;
   }
 
-  .discovery-page__genre-pagination .pagination-control {
+  .discovery-page__recipe-pagination .pagination-control {
     flex-wrap: wrap;
   }
 
-  .discovery-page__genre-pagination .pagination-control__btn {
+  .discovery-page__recipe-pagination .pagination-control__btn {
     flex: 1;
     justify-content: center;
   }
 
-  .discovery-page__genre-pagination .pagination-control__info {
+  .discovery-page__recipe-pagination .pagination-control__info {
     order: -1;
     width: 100%;
   }
 }
 
-.discovery-page__variety-list {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-sm);
-}
-
-.discovery-page__variety-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-sm);
-  width: 100%;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--color-neutral-darker);
-  border-radius: var(--radius-md);
-  background: var(--surface-card);
-  color: var(--text-primary);
-  text-align: left;
-  cursor: pointer;
-}
-
-.discovery-page__variety-item:hover {
-  border-color: var(--color-main);
-}
-
-.discovery-page__variety-name {
-  font-weight: 600;
-}
-
-.discovery-page__variety-count {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-.discovery-page__skeleton-card {
-  height: 7rem;
-  border-radius: var(--radius-md);
-}
-
-.discovery-page__empty,
-.discovery-page__error {
-  padding: var(--space-lg);
-  border-radius: var(--radius-md);
-  background: var(--surface-card);
-  border: 1px solid var(--color-neutral-darker);
-}
-
 @media (min-width: 768px) {
-  .discovery-page__genre-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .discovery-page__recipe-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .discovery-page__genre-grid .genre-card {
-    min-height: 10.5rem;
-  }
-
-  .discovery-page__variety-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .discovery-page__genre-scroll .genre-card {
+    width: 10.5rem;
+    min-height: 8.5rem;
   }
 }
