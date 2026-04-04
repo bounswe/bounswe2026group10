@@ -65,7 +65,6 @@ describe('mockRecipe conformance', () => {
       expect(VALID_UNITS).toContain(ing.unit);
       expect(Array.isArray(ing.allergens)).toBe(true);
       expect(typeof ing.substitutionAvailable).toBe('boolean');
-      expect(Array.isArray(ing.substitutes)).toBe(true);
     });
   });
 

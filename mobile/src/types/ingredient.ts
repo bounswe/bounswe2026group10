@@ -2,12 +2,12 @@ import type { AllergenTag, MeasurementUnit } from './common';
 
 export interface Ingredient {
   id: string;
+  ingredientId: number | null;
   name: string;
   quantity: number;
   unit: MeasurementUnit;
   allergens: AllergenTag[];
   substitutionAvailable: boolean;
-  substitutes: string[];
 }
 
 export interface Tool {

@@ -57,12 +57,12 @@ export function mapBackendRecipeToMobile(data: BackendRecipeDetail): Recipe {
     }
     return {
       id: ing.id,
+      ingredientId: ing.ingredientId ?? null,
       name: ing.ingredientName ?? '',
       quantity: ing.quantity,
       unit: toUnit(ing.unit),
       allergens: ingAllergens,
-      substitutionAvailable: false,
-      substitutes: [],
+      substitutionAvailable: ing.ingredientId != null,
     };
   });
 
