@@ -17,6 +17,7 @@ import { StepsSection } from './StepsSection';
 import { CookingModeButton } from './CookingModeButton';
 import { RatingPrompt } from './RatingPrompt';
 import { AlternativeVersions } from './AlternativeVersions';
+import { MorePhotosSection } from './MorePhotosSection';
 import { VideoGuideScreen } from '../video-guide/VideoGuideScreen';
 
 interface RecipeDetailScreenProps {
@@ -90,6 +91,8 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
         />
 
         {recipe.story ? <StoryCard story={recipe.story} /> : null}
+
+        {recipe.images.length > 1 ? <MorePhotosSection images={recipe.images} /> : null}
 
         <IngredientsSection
           ingredients={recipe.ingredients}
