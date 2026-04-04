@@ -17,6 +17,10 @@ const discoveryQuerySchema = z.object({
   varietyId: z.coerce.number().int().positive().optional(),
   // Case-insensitive partial match on recipe title (e.g. "pasta")
   search: z.string().trim().optional(),
+  // Location filters on recipe (e.g. "Turkey", "Adana", "Seyhan")
+  country: z.string().trim().optional(),
+  city: z.string().trim().optional(),
+  district: z.string().trim().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
@@ -28,6 +32,7 @@ const discoveryQuerySchema = z.object({
 //   ?genreId=1
 //   ?varietyId=1
 //   ?search=pasta             (case-insensitive partial title match)
+//   ?country=Turkey&city=Adana&district=Seyhan
 //   ?page=1&limit=20
 router.get("/recipes", async (req, res) => {
     const parsed = discoveryQuerySchema.safeParse(req.query);
@@ -37,7 +42,7 @@ router.get("/recipes", async (req, res) => {
         .join("; ");
       return res.status(400).json(errorResponse("VALIDATION_ERROR", message));
     }
-    const { region, excludeAllergens, tagIds, genreId, varietyId, search, page, limit } = parsed.data;
+    const { region, excludeAllergens, tagIds, genreId, varietyId, search, country, city, district, page, limit } = parsed.data;
 
     // ── Step 0: Resolve tag filter ───────────────────────────────────────────
     let tagFilteredRecipeIds: string[] | null = null;
@@ -169,6 +174,7 @@ router.get("/recipes", async (req, res) => {
       .from("recipes")
       .select(
         `id, title, type, average_rating, rating_count,
+         country, city, district,
          created_at, updated_at,
          dish_variety:dish_varieties!recipes_dish_variety_id_fkey(
            id, name, region,
@@ -186,6 +192,18 @@ router.get("/recipes", async (req, res) => {
 
     if (search) {
       query = query.ilike("title", `%${search}%`);
+    }
+
+    if (country) {
+      query = query.eq("country", country);
+    }
+
+    if (city) {
+      query = query.eq("city", city);
+    }
+
+    if (district) {
+      query = query.eq("district", district);
     }
 
     if (varietyId !== undefined) {
