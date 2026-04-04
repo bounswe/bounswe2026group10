@@ -305,6 +305,18 @@
   border: 1px solid var(--color-neutral-darker);
 }
 
+.discovery-page__empty--compact {
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-sm);
+}
+
+.discovery-page__empty--compact p {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 
 @media (max-width: 767px) {

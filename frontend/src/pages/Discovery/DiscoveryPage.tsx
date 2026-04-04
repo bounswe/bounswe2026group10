@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { GenreCard } from '@/components/UiComponents/GenreCard'
@@ -70,6 +70,13 @@ export function DiscoveryPage() {
     }
   }, [t])
 
+  /** Arama metni değişince sayfa 1'e dönsün; layout effect ile fetch'ten önce uygulanır. */
+  useLayoutEffect(() => {
+    setRecipePage(1)
+  }, [debouncedSearch])
+
+  const recipeSearchQuery = debouncedSearch.trim() || undefined
+
   useEffect(() => {
     let cancelled = false
     setRecipeLoading(true)
@@ -77,6 +84,7 @@ export function DiscoveryPage() {
     discoveryService
       .getRecipeResults({
         genreId: selectedGenreId ?? undefined,
+        search: recipeSearchQuery,
         page: recipePage,
         limit: RECIPES_PER_PAGE,
       })
@@ -87,7 +95,10 @@ export function DiscoveryPage() {
         }
       })
       .catch(() => {
-        if (!cancelled) setRecipes([])
+        if (!cancelled) {
+          setRecipes([])
+          setRecipeTotal(0)
+        }
       })
       .finally(() => {
         if (!cancelled) setRecipeLoading(false)
@@ -96,7 +107,7 @@ export function DiscoveryPage() {
     return () => {
       cancelled = true
     }
-  }, [selectedGenreId, recipePage])
+  }, [selectedGenreId, recipePage, recipeSearchQuery])
 
   const normalizedSearch = debouncedSearch.trim().toLowerCase()
 
@@ -213,7 +224,7 @@ export function DiscoveryPage() {
             ))}
           </div>
         ) : filteredGenres.length === 0 ? (
-          <div className="discovery-page__empty">
+          <div className="discovery-page__empty discovery-page__empty--compact">
             <p>{t('discovery.noSearchMatches')}</p>
           </div>
         ) : (
@@ -254,7 +265,7 @@ export function DiscoveryPage() {
             ))}
           </div>
         ) : filteredVarieties.length === 0 ? (
-          <div className="discovery-page__empty">
+          <div className="discovery-page__empty discovery-page__empty--compact">
             <p>{t('discovery.noSearchMatches')}</p>
           </div>
         ) : (
@@ -281,8 +292,14 @@ export function DiscoveryPage() {
         <div className="discovery-page__section-header">
           <div>
             <h2 className="discovery-page__section-title">{t('discovery.recipesTitle')}</h2>
-            {selectedGenre && (
-              <p className="discovery-page__section-copy">{selectedGenre.name}</p>
+            {normalizedSearch ? (
+              <p className="discovery-page__section-copy">
+                {t('discovery.recipesSearchHint', { query: debouncedSearch.trim() })}
+              </p>
+            ) : (
+              selectedGenre && (
+                <p className="discovery-page__section-copy">{selectedGenre.name}</p>
+              )
             )}
           </div>
         </div>
