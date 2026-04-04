@@ -42,7 +42,6 @@ export function VideoGuideScreen({ recipe, onClose }: VideoGuideScreenProps) {
         />
 
         <VideoPlayer
-          key={currentStep.stepNumber}
           videoUrl={currentStep.videoUrl}
           stepNumber={currentStep.stepNumber}
           stepDescription={currentStep.description}

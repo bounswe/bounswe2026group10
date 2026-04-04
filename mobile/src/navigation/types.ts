@@ -30,6 +30,7 @@ export type CreateStackParamList = {
 
 export type LibraryStackParamList = {
   MyLibrary: undefined;
+  RecipeDetail: { recipeId: string };
 };
 
 export type ProfileStackParamList = {

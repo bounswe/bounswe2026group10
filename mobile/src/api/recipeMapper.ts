@@ -43,6 +43,7 @@ export function mapBackendRecipeToMobile(data: BackendRecipeDetail): Recipe {
     .map((m) => m.url);
 
   const videoMedia = data.media.find((m) => m.type === 'video');
+  const recipeVideoUrl = videoMedia?.url ?? data.videoUrl ?? undefined;
 
   const allergenSet = new Set<AllergenTag>();
   const ingredients = data.ingredients.map((ing) => {
@@ -72,6 +73,7 @@ export function mapBackendRecipeToMobile(data: BackendRecipeDetail): Recipe {
       stepNumber: s.stepOrder,
       title: s.description,
       description: s.description,
+      videoUrl: recipeVideoUrl,
       videoTimestamp: s.videoTimestamp ?? undefined,
     }));
 
@@ -109,7 +111,7 @@ export function mapBackendRecipeToMobile(data: BackendRecipeDetail): Recipe {
       preferredLanguage: 'en',
     },
     images,
-    videoUrl: videoMedia?.url ?? data.videoUrl ?? undefined,
+    videoUrl: recipeVideoUrl,
     rating: data.averageRating ?? 0,
     ratingCount: data.ratingCount,
     prepTime: '',

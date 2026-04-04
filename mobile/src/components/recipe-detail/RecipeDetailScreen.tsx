@@ -35,7 +35,11 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
     setLoading(true);
     setError(null);
     getRecipeById(recipeId)
-      .then((data) => setRecipe(mapBackendRecipeToMobile(data)))
+      .then((data) => {
+        console.log('[RecipeDetail] id:', data.id);
+        console.log('[RecipeDetail] media:', JSON.stringify(data.media));
+        setRecipe(mapBackendRecipeToMobile(data));
+      })
       .catch((err: Error) => setError(err.message ?? 'Failed to load recipe'))
       .finally(() => setLoading(false));
   }, [recipeId]);

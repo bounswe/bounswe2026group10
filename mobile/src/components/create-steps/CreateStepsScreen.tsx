@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useIsFocused, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -46,7 +46,6 @@ function createEmptyStep(): StepFormItem {
 
 export function CreateStepsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
-  const isFocused = useIsFocused();
   const { draft, updateDraft, resetDraft } = useRecipeForm();
 
   // Single recipe video — restore from draft when coming back
@@ -63,20 +62,6 @@ export function CreateStepsScreen() {
       : [createEmptyStep()]
   );
   const [stepErrors, setStepErrors] = useState<Record<string, StepFormItemErrors>>({});
-
-  useEffect(() => {
-    if (!isFocused) return;
-    setVideoFileName(draft.videoFileName);
-    setUploadedUrl(draft.videoUrl);
-    setVideoError(undefined);
-    setUploading(false);
-    setSteps(
-      draft.steps.length > 0
-        ? draft.steps.map((s) => ({ ...s, id: generateId(), isExpanded: false }))
-        : [createEmptyStep()]
-    );
-    setStepErrors({});
-  }, [isFocused]);
 
   const handlePickVideo = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({

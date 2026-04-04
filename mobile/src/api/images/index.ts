@@ -16,12 +16,20 @@ export async function uploadImage(localUri: string): Promise<UploadImageResult> 
   const mimeType =
     ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
 
+  console.log('[uploadImage] starting upload:', { localUri: localUri.slice(-40), filename, mimeType });
+
   const formData = new FormData();
   formData.append('file', { uri: localUri, name: filename, type: mimeType } as any);
 
-  const result = await fetchApi<{ url: string; type: string; size: number }>(
-    '/media/upload',
-    { method: 'POST', body: formData }
-  );
-  return { url: result.url };
+  try {
+    const result = await fetchApi<{ url: string; type: string; size: number }>(
+      '/media/upload',
+      { method: 'POST', body: formData }
+    );
+    console.log('[uploadImage] success → url:', result.url);
+    return { url: result.url };
+  } catch (err) {
+    console.error('[uploadImage] FAILED for', filename, err);
+    throw err;
+  }
 }

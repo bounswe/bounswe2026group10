@@ -155,3 +155,21 @@ export async function getUserRating(id: string): Promise<UserRating | null> {
 export async function deleteUserRating(id: string): Promise<void> {
   await fetchApi<null>(`/recipes/${id}/ratings/me`, { method: 'DELETE' });
 }
+
+export async function attachRecipeMedia(
+  id: string,
+  url: string,
+  type: 'image' | 'video'
+): Promise<void> {
+  console.log('[attachRecipeMedia] POST /recipes/' + id + '/media', { url, type });
+  try {
+    await fetchApi<unknown>(`/recipes/${id}/media`, {
+      method: 'POST',
+      body: JSON.stringify({ url, type }),
+    });
+    console.log('[attachRecipeMedia] success for', url);
+  } catch (err) {
+    console.error('[attachRecipeMedia] FAILED for', url, err);
+    throw err;
+  }
+}

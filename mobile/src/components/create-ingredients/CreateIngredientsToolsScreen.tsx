@@ -1,24 +1,31 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useIsFocused, useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { CreateStackParamList } from '../../navigation/types';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import type { Tool } from '../../types/ingredient';
-import { colors, fonts, fontSizes, spacing } from '../../theme';
-import { IconButton } from '../shared/IconButton';
-import { SectionHeader } from '../shared/SectionHeader';
-import { StepHeader } from '../create-basic/StepHeader';
-import { IngredientRowEditor } from './IngredientRowEditor';
-import type { IngredientFormItem } from './IngredientRowEditor';
-import { ToolSearchSection } from './ToolSearchSection';
-import { useRecipeForm } from '../../context/RecipeFormContext';
-import { validateIngredients } from '../../utils/recipeValidation';
-import { searchIngredients } from '../../api/ingredients';
-import type { IngredientItem } from '../../api/ingredients';
-import { getTools } from '../../api/tools';
-import type { ToolItem } from '../../api/tools';
+import React, { useEffect, useState } from "react";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { CreateStackParamList } from "../../navigation/types";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import type { Tool } from "../../types/ingredient";
+import { colors, fonts, fontSizes, spacing } from "../../theme";
+import { IconButton } from "../shared/IconButton";
+import { SectionHeader } from "../shared/SectionHeader";
+import { StepHeader } from "../create-basic/StepHeader";
+import { IngredientRowEditor } from "./IngredientRowEditor";
+import type { IngredientFormItem } from "./IngredientRowEditor";
+import { ToolSearchSection } from "./ToolSearchSection";
+import { useRecipeForm } from "../../context/RecipeFormContext";
+import { validateIngredients } from "../../utils/recipeValidation";
+import { searchIngredients } from "../../api/ingredients";
+import type { IngredientItem } from "../../api/ingredients";
+import { getTools } from "../../api/tools";
+import type { ToolItem } from "../../api/tools";
 
 let nextId = 1;
 function generateId(): string {
@@ -26,54 +33,76 @@ function generateId(): string {
 }
 
 function createEmptyIngredient(): IngredientFormItem {
-  return { id: generateId(), ingredientId: null, name: '', quantity: '', unit: 'g' };
+  return {
+    id: generateId(),
+    ingredientId: null,
+    name: "",
+    quantity: "",
+    unit: "g",
+  };
 }
 
 export function CreateIngredientsToolsScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const isFocused = useIsFocused();
   const { draft, updateDraft, resetDraft } = useRecipeForm();
   const [ingredients, setIngredients] = useState<IngredientFormItem[]>(
-    draft.ingredients.length > 0 ? draft.ingredients : [createEmptyIngredient()]
+    draft.ingredients.length > 0
+      ? draft.ingredients
+      : [createEmptyIngredient()],
   );
   const [tools, setTools] = useState<Tool[]>(draft.tools);
-  const [errors, setErrors] = useState<Record<string, { name?: string; quantity?: string }>>({});
+  const [errors, setErrors] = useState<
+    Record<string, { name?: string; quantity?: string }>
+  >({});
   const [allIngredients, setAllIngredients] = useState<IngredientItem[]>([]);
   const [allTools, setAllTools] = useState<ToolItem[]>([]);
 
   useEffect(() => {
     if (!isFocused) return;
-    setIngredients(draft.ingredients.length > 0 ? draft.ingredients : [createEmptyIngredient()]);
+    setIngredients(
+      draft.ingredients.length > 0
+        ? draft.ingredients
+        : [createEmptyIngredient()],
+    );
     setTools(draft.tools);
     setErrors({});
   }, [isFocused]);
 
   useEffect(() => {
-    searchIngredients('')
+    searchIngredients("")
       .then((data) => {
-        console.log('[Ingredients] loaded', data.length, 'ingredients from backend');
+        console.log(
+          "[Ingredients] loaded",
+          data.length,
+          "ingredients from backend",
+        );
         setAllIngredients(data);
         // Auto-match parsed ingredients that have a name but no DB id yet
         setIngredients((prev) =>
           prev.map((ing) => {
             if (ing.name.trim() && ing.ingredientId === null) {
               const match = data.find(
-                (ai) => ai.name.toLowerCase() === ing.name.toLowerCase()
+                (ai) => ai.name.toLowerCase() === ing.name.toLowerCase(),
               );
               if (match) return { ...ing, ingredientId: match.id };
-              console.warn('[Ingredients] no DB match for parsed ingredient:', ing.name);
+              console.warn(
+                "[Ingredients] no DB match for parsed ingredient:",
+                ing.name,
+              );
             }
             return ing;
-          })
+          }),
         );
       })
-      .catch((err) => console.error('[Ingredients] failed to load:', err));
+      .catch((err) => console.error("[Ingredients] failed to load:", err));
     getTools()
       .then((data) => {
-        console.log('[Tools] loaded', data.length, 'tools from backend');
+        console.log("[Tools] loaded", data.length, "tools from backend");
         setAllTools(data);
       })
-      .catch((err) => console.error('[Tools] failed to load:', err));
+      .catch((err) => console.error("[Tools] failed to load:", err));
   }, []);
 
   const handleAddIngredient = () => {
@@ -115,24 +144,24 @@ export function CreateIngredientsToolsScreen() {
   const handleNext = () => {
     if (validate()) {
       updateDraft({ ingredients, tools });
-      navigation.navigate('CreateSteps');
+      navigation.navigate("CreateSteps");
     }
   };
 
   const handleSaveDraft = () => {
-    Alert.alert('Draft Saved', 'Your recipe draft has been saved.');
+    Alert.alert("Draft Saved", "Your recipe draft has been saved.");
   };
 
   const handleClose = () => {
-    Alert.alert('Discard Recipe?', 'Your changes will be lost.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert("Discard Recipe?", "Your changes will be lost.", [
+      { text: "Cancel", style: "cancel" },
       {
-        text: 'Discard',
-        style: 'destructive',
+        text: "Discard",
+        style: "destructive",
         onPress: () => {
           resetDraft();
           navigation.popToTop();
-          navigation.getParent()?.navigate('HomeTab' as never);
+          navigation.getParent()?.navigate("HomeTab" as never);
         },
       },
     ]);
@@ -161,8 +190,15 @@ export function CreateIngredientsToolsScreen() {
         <SectionHeader
           title="Ingredients"
           rightElement={
-            <TouchableOpacity onPress={handleAddIngredient} style={styles.addButton}>
-              <MaterialCommunityIcons name="plus-circle-outline" size={20} color={colors.primary} />
+            <TouchableOpacity
+              onPress={handleAddIngredient}
+              style={styles.addButton}
+            >
+              <MaterialCommunityIcons
+                name="plus-circle-outline"
+                size={20}
+                color={colors.primary}
+              />
               <Text style={styles.addButtonText}>Add Item</Text>
             </TouchableOpacity>
           }
@@ -172,7 +208,9 @@ export function CreateIngredientsToolsScreen() {
               key={ingredient.id}
               ingredient={ingredient}
               allIngredients={allIngredients}
-              onUpdate={(updated) => handleUpdateIngredient(ingredient.id, updated)}
+              onUpdate={(updated) =>
+                handleUpdateIngredient(ingredient.id, updated)
+              }
               onRemove={() => handleRemoveIngredient(ingredient.id)}
               error={errors[ingredient.id]}
             />
@@ -194,17 +232,33 @@ export function CreateIngredientsToolsScreen() {
             onPress={() => navigation.goBack()}
             activeOpacity={0.7}
           >
-            <MaterialCommunityIcons name="arrow-left" size={20} color={colors.onSurface} />
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={20}
+              color={colors.onSurface}
+            />
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.nextButton} onPress={handleNext} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.nextButton}
+          onPress={handleNext}
+          activeOpacity={0.8}
+        >
           <Text style={styles.nextButtonText}>Next: Steps</Text>
-          <MaterialCommunityIcons name="arrow-right" size={20} color={colors.white} />
+          <MaterialCommunityIcons
+            name="arrow-right"
+            size={20}
+            color={colors.white}
+          />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.saveDraftButton} onPress={handleSaveDraft} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.saveDraftButton}
+          onPress={handleSaveDraft}
+          activeOpacity={0.7}
+        >
           <Text style={styles.saveDraftText}>Save Draft</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -218,8 +272,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
   },
@@ -228,18 +282,18 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifBold,
     fontSize: fontSizes.xl,
     color: colors.primary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   topBarSpacer: {
     width: 40,
   },
   content: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing['4xl'],
+    paddingBottom: spacing["4xl"],
   },
   addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
   },
   addButtonText: {
@@ -248,13 +302,13 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   navigationRow: {
-    marginTop: spacing['3xl'],
+    marginTop: spacing["3xl"],
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   backButtonText: {
     fontFamily: fonts.sansMedium,
@@ -262,9 +316,9 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
   },
   nextButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: colors.primary,
     borderRadius: 24,
     paddingVertical: spacing.lg,
@@ -277,7 +331,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   saveDraftButton: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: spacing.lg,
     marginTop: spacing.sm,
   },
