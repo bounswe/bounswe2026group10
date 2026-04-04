@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { CreateStackParamList } from '../../navigation/types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -31,6 +31,7 @@ function createEmptyIngredient(): IngredientFormItem {
 
 export function CreateIngredientsToolsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
+  const isFocused = useIsFocused();
   const { draft, updateDraft, resetDraft } = useRecipeForm();
   const [ingredients, setIngredients] = useState<IngredientFormItem[]>(
     draft.ingredients.length > 0 ? draft.ingredients : [createEmptyIngredient()]
@@ -41,10 +42,30 @@ export function CreateIngredientsToolsScreen() {
   const [allTools, setAllTools] = useState<ToolItem[]>([]);
 
   useEffect(() => {
+    if (!isFocused) return;
+    setIngredients(draft.ingredients.length > 0 ? draft.ingredients : [createEmptyIngredient()]);
+    setTools(draft.tools);
+    setErrors({});
+  }, [isFocused]);
+
+  useEffect(() => {
     searchIngredients('')
       .then((data) => {
         console.log('[Ingredients] loaded', data.length, 'ingredients from backend');
         setAllIngredients(data);
+        // Auto-match parsed ingredients that have a name but no DB id yet
+        setIngredients((prev) =>
+          prev.map((ing) => {
+            if (ing.name.trim() && ing.ingredientId === null) {
+              const match = data.find(
+                (ai) => ai.name.toLowerCase() === ing.name.toLowerCase()
+              );
+              if (match) return { ...ing, ingredientId: match.id };
+              console.warn('[Ingredients] no DB match for parsed ingredient:', ing.name);
+            }
+            return ing;
+          })
+        );
       })
       .catch((err) => console.error('[Ingredients] failed to load:', err));
     getTools()
@@ -110,6 +131,7 @@ export function CreateIngredientsToolsScreen() {
         style: 'destructive',
         onPress: () => {
           resetDraft();
+          navigation.popToTop();
           navigation.getParent()?.navigate('HomeTab' as never);
         },
       },

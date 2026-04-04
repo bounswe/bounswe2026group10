@@ -4,7 +4,6 @@ import type { Tool } from '../types/ingredient';
 import type { IngredientFormItem } from '../components/create-ingredients/IngredientRowEditor';
 
 export interface ReviewStep {
-  title: string;
   description: string;
   timestamp: string; // MM:SS format
 }

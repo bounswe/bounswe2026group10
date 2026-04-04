@@ -128,9 +128,23 @@ router.post("/login", validate(loginSchema), async (req, res): Promise<void> => 
     return;
   }
 
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("username, role")
+    .eq("user_id", data.user.id)
+    .single();
+
+  if (profileError || !profile) {
+    res.status(403).json(errorResponse("FORBIDDEN", "User profile not found."));
+    return;
+  }
+
   res.status(200).json(
     successResponse({
       userId: data.user.id,
+      email: data.user.email,
+      username: profile.username,
+      role: profile.role,
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
     })

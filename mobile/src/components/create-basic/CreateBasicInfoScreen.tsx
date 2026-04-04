@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -23,6 +23,7 @@ import { FormDropdown } from '../shared/FormDropdown';
 import { ChipSelector } from '../shared/ChipSelector';
 import { StepHeader } from './StepHeader';
 import { ImportCards } from './ImportCards';
+import { RecipeParseModal } from './RecipeParseModal';
 import { OriginSection } from './OriginSection';
 import { useRecipeForm } from '../../context/RecipeFormContext';
 import { validateBasicInfo } from '../../utils/recipeValidation';
@@ -42,6 +43,7 @@ interface ImageItem {
 
 export function CreateBasicInfoScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
+  const isFocused = useIsFocused();
   const { draft, updateDraft, resetDraft } = useRecipeForm();
   const [title, setTitle] = useState(draft.title);
   const [country, setCountry] = useState(draft.originCountry);
@@ -54,6 +56,7 @@ export function CreateBasicInfoScreen() {
   const [selectedAllergenIds, setSelectedAllergenIds] = useState<string[]>(draft.allergenTagIds.map(String));
   const [story, setStory] = useState(draft.story);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [parseModalVisible, setParseModalVisible] = useState(false);
 
   // Images — restore already-uploaded ones from draft on back-nav
   const [images, setImages] = useState<ImageItem[]>(
@@ -68,6 +71,30 @@ export function CreateBasicInfoScreen() {
   // API data
   const [genres, setGenres] = useState<DishGenre[]>([]);
   const [allTags, setAllTags] = useState<DietaryTagItem[]>([]);
+
+  useEffect(() => {
+    if (!isFocused) return;
+    setTitle(draft.title);
+    setCountry(draft.originCountry);
+    setCity(draft.originCity);
+    setDistrict(draft.originDistrict);
+    setGenreId(draft.genreId);
+    setVarietyId(draft.varietyId);
+    setServingSize(draft.servingSize ? String(draft.servingSize) : '');
+    setSelectedDietaryIds(draft.dietaryTagIds.map(String));
+    setSelectedAllergenIds(draft.allergenTagIds.map(String));
+    setStory(draft.story);
+    setImages(
+      draft.imageUrls.map((url, i) => ({
+        id: `draft-${i}`,
+        localUri: url,
+        cdnUrl: url,
+        uploading: false,
+      }))
+    );
+    setErrors({});
+    setParseModalVisible(false);
+  }, [isFocused]);
 
   // Build dropdown options from API data
   const genreOptions = genres.map((g) => ({ label: g.name, value: String(g.id) }));
@@ -158,7 +185,7 @@ export function CreateBasicInfoScreen() {
   // ─── Validation & navigation ──────────────────────────────────────────────────
 
   const validate = (): boolean => {
-    const newErrors = validateBasicInfo(title);
+    const newErrors = validateBasicInfo(title, country, genreId, varietyId, servingSize);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -203,6 +230,18 @@ export function CreateBasicInfoScreen() {
         style: 'destructive',
         onPress: () => {
           resetDraft();
+          setTitle('');
+          setCountry('');
+          setCity('');
+          setDistrict('');
+          setGenreId(null);
+          setVarietyId(null);
+          setServingSize('');
+          setSelectedDietaryIds([]);
+          setSelectedAllergenIds([]);
+          setStory('');
+          setImages([]);
+          setErrors({});
           navigation.getParent()?.navigate('HomeTab' as never);
         },
       },
@@ -229,7 +268,12 @@ export function CreateBasicInfoScreen() {
           subtitle="Lay the foundation for your culinary story."
         />
 
-        <ImportCards />
+        <ImportCards onPasteText={() => setParseModalVisible(true)} />
+        <RecipeParseModal
+          visible={parseModalVisible}
+          onClose={() => setParseModalVisible(false)}
+          onApplied={(parsedTitle) => setTitle(parsedTitle)}
+        />
 
         <FormTextInput
           label="Recipe Title"
@@ -248,40 +292,44 @@ export function CreateBasicInfoScreen() {
           country={country}
           city={city}
           district={district}
-          onCountryChange={setCountry}
+          onCountryChange={(v) => { setCountry(v); if (errors.country) setErrors((p) => ({ ...p, country: '' })); }}
           onCityChange={setCity}
           onDistrictChange={setDistrict}
+          countryError={errors.country}
         />
 
         <FormDropdown
           label="Genre"
           value={genreId !== null ? String(genreId) : ''}
           options={genreOptions}
-          onSelect={handleGenreChange}
+          onSelect={(v) => { handleGenreChange(v); if (errors.genre) setErrors((p) => ({ ...p, genre: '' })); }}
           placeholder="Select genre"
           searchable
+          error={errors.genre}
         />
 
         <FormDropdown
           label="Variety"
           value={varietyId !== null ? String(varietyId) : ''}
           options={varietyOptions}
-          onSelect={(id) => setVarietyId(Number(id))}
+          onSelect={(id) => { setVarietyId(Number(id)); if (errors.variety) setErrors((p) => ({ ...p, variety: '' })); }}
           placeholder={genreId !== null ? 'Select variety' : 'Select a genre first'}
           searchable
+          error={errors.variety}
         />
 
         <View style={styles.servingSizeRow}>
           <Text style={styles.servingSizeLabel}>Serving Size</Text>
           <TextInput
-            style={styles.servingSizeInput}
+            style={[styles.servingSizeInput, errors.servingSize ? styles.servingSizeInputError : null]}
             value={servingSize}
-            onChangeText={setServingSize}
+            onChangeText={(v) => { setServingSize(v); if (errors.servingSize) setErrors((p) => ({ ...p, servingSize: '' })); }}
             placeholder="e.g. 4"
             placeholderTextColor={colors.outline}
             keyboardType="number-pad"
           />
         </View>
+        {errors.servingSize && <Text style={styles.servingSizeError}>{errors.servingSize}</Text>}
 
         <ChipSelector
           label="Dietary Tags"
@@ -436,6 +484,15 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.outline,
     paddingVertical: spacing.xs,
     width: 80,
+  },
+  servingSizeInputError: {
+    borderBottomColor: colors.negative,
+  },
+  servingSizeError: {
+    fontFamily: fonts.sans,
+    fontSize: fontSizes.sm,
+    color: colors.negative,
+    marginTop: spacing.xs,
   },
   // ── Images ──
   imagesSection: {

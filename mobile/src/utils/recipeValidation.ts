@@ -2,10 +2,22 @@ import type { RecipeFormState } from '../context/RecipeFormContext';
 
 // ── Basic Info ─────────────────────────────────────────────────────────────────
 
-export function validateBasicInfo(title: string): { title?: string } {
-  if (!title.trim()) return { title: 'Recipe title is required' };
-  if (title.trim().length < 3) return { title: 'Recipe title must be at least 3 characters' };
-  return {};
+export function validateBasicInfo(
+  title: string,
+  country: string,
+  genreId: number | null,
+  varietyId: number | null,
+  servingSize: string,
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (!title.trim()) errors.title = 'Recipe title is required';
+  else if (title.trim().length < 3) errors.title = 'Recipe title must be at least 3 characters';
+  if (!country.trim()) errors.country = 'Origin country is required';
+  if (!genreId) errors.genre = 'Please select a dish genre';
+  if (!varietyId) errors.variety = 'Please select a dish variety';
+  const size = parseFloat(servingSize);
+  if (!servingSize.trim() || isNaN(size) || size <= 0) errors.servingSize = 'Serving size is required';
+  return errors;
 }
 
 // ── Ingredients ────────────────────────────────────────────────────────────────
@@ -48,7 +60,7 @@ export function validateIngredients(
 // ── Steps ──────────────────────────────────────────────────────────────────────
 
 export interface StepError {
-  title?: string;
+  description?: string;
   timestamp?: string;
 }
 
@@ -60,21 +72,19 @@ export interface StepsValidationResult {
 export function validateSteps(
   uploading: boolean,
   uploadedUrl: string | null,
-  steps: Array<{ id: string; title: string; timestamp: string }>
+  steps: Array<{ id: string; description: string; timestamp: string }>
 ): StepsValidationResult {
   let videoError: string | undefined;
 
   if (uploading) {
     videoError = 'Please wait for the video to finish uploading';
-  } else if (!uploadedUrl) {
-    videoError = 'A recipe video is required';
   }
 
   const stepErrors: Record<string, StepError> = {};
   for (const step of steps) {
     const rowError: StepError = {};
-    if (!step.title.trim()) {
-      rowError.title = 'Title is required';
+    if (!step.description.trim()) {
+      rowError.description = 'Description is required';
     }
     if (step.timestamp.trim() && !/^\d{1,2}:\d{2}$/.test(step.timestamp.trim())) {
       rowError.timestamp = 'Use MM:SS format (e.g. 01:30)';
@@ -91,14 +101,10 @@ export function validateSteps(
 
 export function validateForPublish(draft: RecipeFormState): string[] {
   const missing: string[] = [];
-  if (!draft.varietyId)
-    missing.push('Dish variety — go back to Basic Info and select a Genre + Variety');
-  if (!draft.servingSize)
-    missing.push('Serving size — go back to Basic Info');
-  const validIngredients = draft.ingredients.filter(
-    (i) => i.ingredientId !== null && i.name.trim()
+  const confirmedIngredients = draft.ingredients.filter(
+    (i) => i.name.trim() && i.ingredientId !== null
   );
-  if (validIngredients.length === 0)
+  if (confirmedIngredients.length === 0)
     missing.push('At least 1 ingredient — go back to Ingredients & Tools');
   if (draft.steps.length === 0)
     missing.push('At least 1 step — go back to Steps');

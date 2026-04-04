@@ -16,10 +16,18 @@ export function buildRecipePayload(draft: RecipeFormState) {
         quantity: parseFloat(ing.quantity),
         unit: ing.unit,
       })),
-    steps: draft.steps.map((s, i) => ({
-      stepOrder: i + 1,
-      description: s.description || s.title,
-    })),
+    steps: draft.steps.map((s, i) => {
+      let videoTimestamp: number | null = null;
+      if (s.timestamp.trim()) {
+        const [mm, ss] = s.timestamp.split(':').map(Number);
+        videoTimestamp = mm * 60 + ss;
+      }
+      return {
+        stepOrder: i + 1,
+        description: s.description,
+        videoTimestamp,
+      };
+    }),
     tools: draft.tools.map((t) => ({ name: t.name })),
   };
 }

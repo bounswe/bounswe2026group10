@@ -47,6 +47,7 @@ const recipeSchema = z.object({
       z.object({
         stepOrder: z.number().int().min(1),
         description: z.string().min(1),
+        videoTimestamp: z.number().min(0).nullable().optional(),
       })
     )
     .optional()
@@ -156,7 +157,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
        creator:profiles!recipes_creator_id_fkey(id, username),
        dish_variety:dish_varieties(id, name, dish_genre:dish_genres(id, name)),
        recipe_ingredients(id, quantity, unit, ingredient:ingredients(id, name, ingredient_allergens(allergen:allergens(name)))),
-       recipe_steps(id, step_order, description),
+       recipe_steps(id, step_order, description, video_timestamp),
        recipe_tools(id, name),
        recipe_media(id, url, type),
        recipe_dietary_tags(dietary_tag:dietary_tags(id, name, category))`
@@ -251,6 +252,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
         id: s.id,
         stepOrder: s.step_order,
         description: stepTranslationMap[s.id] ?? s.description,
+        videoTimestamp: s.video_timestamp ?? null,
       })),
       tools: (data.recipe_tools ?? []).map((t: any) => ({
         id: t.id,
@@ -409,6 +411,7 @@ router.post(
             recipe_id: recipeId,
             step_order: s.stepOrder,
             description: s.description,
+            video_timestamp: s.videoTimestamp ?? null,
           }))
         ).then(r => r)
       );

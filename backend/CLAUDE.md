@@ -95,7 +95,7 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - **profiles** — `id`, `user_id` (FK auth.users), `username` (unique), `role`
 - **recipes** — `id`, `creator_id` (FK profiles), `dish_variety_id` (FK), `title`, `story`, `video_url`, `serving_size`, `type` (community|cultural), `is_published`, `average_rating`, `rating_count`, `created_at`, `updated_at`
 - **recipe_ingredients** — `id`, `recipe_id` (FK), `ingredient_id` (FK), `quantity`, `unit`
-- **recipe_steps** — `id`, `recipe_id` (FK), `step_order`, `description`
+- **recipe_steps** — `id`, `recipe_id` (FK), `step_order`, `description`, `video_timestamp` (numeric, nullable — seconds into the recipe video)
 - **recipe_tools** — `id`, `recipe_id` (FK), `name`
 - **recipe_media** — `id`, `recipe_id` (FK), `url`, `type` (image|video), `created_at`
 - **ratings** — `id`, `recipe_id` (FK), `user_id` (FK profiles), `score` (1-5), `created_at`, `updated_at` — unique constraint on (recipe_id, user_id)

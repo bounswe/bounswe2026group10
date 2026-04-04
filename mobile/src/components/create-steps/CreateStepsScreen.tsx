@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -38,7 +38,6 @@ function generateId(): string {
 function createEmptyStep(): StepFormItem {
   return {
     id: generateId(),
-    title: '',
     description: '',
     timestamp: '',
     isExpanded: true,
@@ -47,6 +46,7 @@ function createEmptyStep(): StepFormItem {
 
 export function CreateStepsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
+  const isFocused = useIsFocused();
   const { draft, updateDraft, resetDraft } = useRecipeForm();
 
   // Single recipe video — restore from draft when coming back
@@ -63,6 +63,20 @@ export function CreateStepsScreen() {
       : [createEmptyStep()]
   );
   const [stepErrors, setStepErrors] = useState<Record<string, StepFormItemErrors>>({});
+
+  useEffect(() => {
+    if (!isFocused) return;
+    setVideoFileName(draft.videoFileName);
+    setUploadedUrl(draft.videoUrl);
+    setVideoError(undefined);
+    setUploading(false);
+    setSteps(
+      draft.steps.length > 0
+        ? draft.steps.map((s) => ({ ...s, id: generateId(), isExpanded: false }))
+        : [createEmptyStep()]
+    );
+    setStepErrors({});
+  }, [isFocused]);
 
   const handlePickVideo = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -148,7 +162,6 @@ export function CreateStepsScreen() {
 
     updateDraft({
       steps: steps.map((s) => ({
-        title: s.title,
         description: s.description,
         timestamp: s.timestamp,
       })),
@@ -168,6 +181,7 @@ export function CreateStepsScreen() {
         style: 'destructive',
         onPress: () => {
           resetDraft();
+          navigation.popToTop();
           navigation.getParent()?.navigate('HomeTab' as never);
         },
       },
@@ -198,7 +212,7 @@ export function CreateStepsScreen() {
         <View style={styles.videoSection}>
           <View style={styles.videoLabelRow}>
             <Text style={styles.videoLabel}>RECIPE VIDEO</Text>
-            <Text style={styles.requiredStar}> *</Text>
+            <Text style={styles.optionalLabel}> (optional)</Text>
           </View>
 
           {uploading ? (
@@ -329,10 +343,10 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     letterSpacing: 0.5,
   },
-  requiredStar: {
-    fontFamily: fonts.sansMedium,
+  optionalLabel: {
+    fontFamily: fonts.sans,
     fontSize: fontSizes.xs,
-    color: colors.negative,
+    color: colors.onSurfaceVariant,
   },
   videoBox: {
     borderRadius: 12,
