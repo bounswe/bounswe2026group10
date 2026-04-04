@@ -1,6 +1,5 @@
-import { fetchApi, mockDelay } from './client';
+import { fetchApi } from './client';
 import type { DishGenre } from './dish-genres';
-import { mockCommunityPicks, mockGenres } from '../data/mockHome';
 
 export { type DishGenre } from './dish-genres';
 
@@ -27,7 +26,6 @@ export interface RecipeListResponse {
 /**
  * Fetch published recipes sorted by rating (best first).
  * Uses GET /recipes which already sorts by average_rating desc.
- * Falls back to mock data if the backend is unreachable.
  */
 export async function fetchCommunityPicks(
   page = 1,
@@ -35,24 +33,23 @@ export async function fetchCommunityPicks(
 ): Promise<RecipeListResponse> {
   try {
     return await fetchApi<RecipeListResponse>(`/recipes?page=${page}&limit=${limit}`);
-  } catch {
-    await mockDelay();
+  } catch (error) {
+    console.error('fetchCommunityPicks error:', error);
     return {
-      recipes: mockCommunityPicks,
-      pagination: { page, limit, total: mockCommunityPicks.length },
+      recipes: [],
+      pagination: { page, limit, total: 0 },
     };
   }
 }
 
 /**
  * Fetch dish genres from the backend.
- * Falls back to mock data if the backend is unreachable.
  */
 export async function fetchGenres(): Promise<DishGenre[]> {
   try {
     return await fetchApi<DishGenre[]>('/dish-genres');
-  } catch {
-    await mockDelay();
-    return mockGenres;
+  } catch (error) {
+    console.error('fetchGenres error:', error);
+    return [];
   }
 }
