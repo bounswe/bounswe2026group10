@@ -29,7 +29,26 @@
 .app-header__trailing {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-sm);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.app-header__meta {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--color-neutral-dark);
+  border-radius: var(--radius-pill);
+  background: var(--surface-overlay);
+}
+
+.app-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   flex-shrink: 0;
 }
 
@@ -57,4 +76,37 @@
 .app-header__logout:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .app-header__inner {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .app-header__brand {
+    width: 100%;
+    text-align: center;
+  }
+
+  .app-header__trailing {
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .app-header__meta {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .app-header__actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .app-header__logout {
+    min-width: 6.25rem;
+  }
 }
