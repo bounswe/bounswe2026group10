@@ -42,6 +42,11 @@ jest.mock('../api/home', () => ({
   fetchGenres: (...args: any[]) => mockFetchGenres(...args),
 }));
 
+const mockUseAuth = jest.fn();
+jest.mock('../context/AuthContext', () => ({
+  useAuth: () => mockUseAuth(),
+}));
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function renderAndFlush() {
@@ -62,14 +67,28 @@ describe('HomeScreen', () => {
       pagination: { page: 1, limit: 10, total: 1 },
     });
     mockFetchGenres.mockResolvedValue(mockGenres);
+    mockUseAuth.mockReturnValue({
+      authState: { status: 'unauthenticated', isGuest: false },
+    });
   });
 
   // ─── Rendering ──────────────────────────────────────────────────────────────
 
   describe('rendering', () => {
-    it('shows the Discover header', async () => {
+    it('shows the Discover header when unauthenticated', async () => {
       const { getByText } = await renderAndFlush();
       expect(getByText('Discover')).toBeTruthy();
+    });
+
+    it('shows personalized greeting when authenticated', async () => {
+      mockUseAuth.mockReturnValue({
+        authState: {
+          status: 'authenticated',
+          user: { userId: 'u1', username: 'TestUser', email: 't@t.com', role: 'cook', accessToken: 'a', refreshToken: 'r' },
+        },
+      });
+      const { getByText } = await renderAndFlush();
+      expect(getByText('Hi, TestUser!')).toBeTruthy();
     });
 
     it('shows Community Picks section header', async () => {

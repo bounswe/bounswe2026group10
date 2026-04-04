@@ -26,11 +26,11 @@ describe('fetchCommunityPicks', () => {
     expect(mockFetchApi).toHaveBeenCalledWith('/recipes?page=2&limit=5');
   });
 
-  it('falls back to mock data when fetchApi rejects', async () => {
+  it('returns empty list when fetchApi rejects', async () => {
     mockFetchApi.mockRejectedValueOnce(new Error('Network error'));
     const result = await fetchCommunityPicks();
-    expect(result.recipes.length).toBeGreaterThan(0);
-    expect(result.pagination).toBeDefined();
+    expect(result.recipes).toEqual([]);
+    expect(result.pagination.total).toBe(0);
   });
 });
 
@@ -45,10 +45,9 @@ describe('fetchGenres', () => {
     expect(result).toEqual(genres);
   });
 
-  it('falls back to mock data when fetchApi rejects', async () => {
+  it('returns empty list when fetchApi rejects', async () => {
     mockFetchApi.mockRejectedValueOnce(new Error('Network error'));
     const result = await fetchGenres();
-    expect(result.length).toBeGreaterThan(0);
-    expect(result[0]).toHaveProperty('name');
+    expect(result).toEqual([]);
   });
 });

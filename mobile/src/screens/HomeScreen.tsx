@@ -17,9 +17,11 @@ import {
 import { HomeSectionHeader } from '../components/home/HomeSectionHeader';
 import { CommunityPickCard } from '../components/home/CommunityPickCard';
 import { GenreCard } from '../components/home/GenreCard';
+import { useAuth } from '../context/AuthContext';
 import { colors, fonts, fontSizes, spacing } from '../theme';
 
 export function HomeScreen() {
+  const { authState } = useAuth();
   const [communityPicks, setCommunityPicks] = useState<RecipeListItem[]>([]);
   const [genres, setGenres] = useState<DishGenre[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +76,9 @@ export function HomeScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>Discover</Text>
+          <Text style={styles.greeting}>
+            {authState.status === 'authenticated' ? `Hi, ${authState.user.username}!` : 'Discover'}
+          </Text>
           <Text style={styles.subtitle}>Heritage recipes from around the world</Text>
         </View>
 
