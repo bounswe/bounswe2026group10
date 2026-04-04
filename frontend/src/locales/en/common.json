@@ -198,7 +198,8 @@
     "nextPage": "Next",
     "loading": "Loading recipes…",
     "genresTitle": "Genres",
-    "recipesTitle": "Recipes"
+    "recipesTitle": "Recipes",
+    "recipesSearchHint": "Recipe titles matching \"{{query}}\""
   },
   "common": {
     "retry": "Try again",

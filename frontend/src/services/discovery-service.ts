@@ -57,6 +57,8 @@ export interface DiscoveryParams {
   tagIds?: string
   genreId?: string
   varietyId?: number
+  /** Case-insensitive partial match on recipe title (GET /discovery/recipes) */
+  search?: string
   page?: number
   limit?: number
 }

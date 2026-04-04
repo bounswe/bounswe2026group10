@@ -198,7 +198,8 @@
     "nextPage": "Sonraki",
     "loading": "Tarifler yükleniyor…",
     "genresTitle": "Türler",
-    "recipesTitle": "Tarifler"
+    "recipesTitle": "Tarifler",
+    "recipesSearchHint": "\"{{query}}\" ile eşleşen tarif başlıkları"
   },
   "common": {
     "retry": "Tekrar dene",
