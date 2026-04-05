@@ -67,8 +67,13 @@ export function SearchResultsSheet({
     >
       <SafeAreaView style={styles.container} edges={['top']}>
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.backButton}>
+        <View style={styles.header} pointerEvents="box-none">
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.backButton}
+            hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+            activeOpacity={0.5}
+          >
             <MaterialCommunityIcons
               name="arrow-left"
               size={24}
@@ -161,16 +166,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingTop: spacing['2xl'],
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.outline,
     gap: spacing.md,
   },
   backButton: {
-    padding: spacing.xs,
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
   },
   heading: {
     flex: 1,
+    marginLeft: spacing.sm,
     fontFamily: fonts.serifBold,
     fontSize: fontSizes.xl,
     color: colors.onSurface,
