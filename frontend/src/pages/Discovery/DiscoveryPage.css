@@ -459,6 +459,40 @@
   color: #fff;
 }
 
+.discovery-page__filter-location {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xs);
+}
+
+.discovery-page__filter-location-select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--color-neutral-darker);
+  border-radius: var(--radius-pill);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  padding-right: 2rem;
+}
+
+.discovery-page__filter-location-select:focus {
+  outline: none;
+  border-color: var(--color-main);
+  box-shadow: 0 0 0 2px rgba(134, 69, 42, 0.12);
+}
+
+.discovery-page__filter-location-select:hover {
+  border-color: var(--color-main);
+}
+
 .discovery-page__filter-clear {
   align-self: flex-start;
   padding: 0.3rem 0.8rem;

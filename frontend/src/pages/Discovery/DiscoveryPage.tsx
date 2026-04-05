@@ -9,6 +9,7 @@ import {
   type DietaryTag,
   type DishVariety,
   type Genre,
+  type LocationOptions,
   type RecipeSummary,
 } from '@/services/discovery-service'
 import './DiscoveryPage.css'
@@ -43,6 +44,9 @@ export function DiscoveryPage() {
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
   const [excludedAllergenIds, setExcludedAllergenIds] = useState<string[]>([])
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [selectedCountry, setSelectedCountry] = useState('')
+  const [selectedCity, setSelectedCity] = useState('')
+  const [locationOptions, setLocationOptions] = useState<LocationOptions>({ countries: [], citiesByCountry: {} })
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -55,12 +59,18 @@ export function DiscoveryPage() {
     let cancelled = false
     setError(null)
 
-    Promise.all([discoveryService.getGenres(), discoveryService.getVarieties(), discoveryService.getDietaryTags()])
-      .then(([genreData, varietyData, tagData]) => {
+    Promise.all([
+      discoveryService.getGenres(),
+      discoveryService.getVarieties(),
+      discoveryService.getDietaryTags(),
+      discoveryService.getLocations(),
+    ])
+      .then(([genreData, varietyData, tagData, locationData]) => {
         if (!cancelled) {
           setGenres(genreData)
           setAllVarieties(varietyData)
           setAllTags(tagData)
+          setLocationOptions(locationData)
         }
       })
       .catch(() => {
@@ -81,7 +91,7 @@ export function DiscoveryPage() {
   /** Arama metni veya filtreler değişince sayfa 1'e dönsün. */
   useLayoutEffect(() => {
     setRecipePage(1)
-  }, [debouncedSearch, selectedTagIds, excludedAllergenIds])
+  }, [debouncedSearch, selectedTagIds, excludedAllergenIds, selectedCountry, selectedCity])
 
   const recipeSearchQuery = debouncedSearch.trim() || undefined
 
@@ -95,6 +105,8 @@ export function DiscoveryPage() {
         search: recipeSearchQuery,
         tagIds: selectedTagIds.length > 0 ? selectedTagIds.join(',') : undefined,
         excludeAllergens: excludedAllergenIds.length > 0 ? excludedAllergenIds.join(',') : undefined,
+        country: selectedCountry || undefined,
+        city: selectedCity || undefined,
         page: recipePage,
         limit: RECIPES_PER_PAGE,
       })
@@ -117,7 +129,7 @@ export function DiscoveryPage() {
     return () => {
       cancelled = true
     }
-  }, [selectedGenreId, recipePage, recipeSearchQuery, selectedTagIds, excludedAllergenIds])
+  }, [selectedGenreId, recipePage, recipeSearchQuery, selectedTagIds, excludedAllergenIds, selectedCountry, selectedCity])
 
   const normalizedSearch = debouncedSearch.trim().toLowerCase()
 
@@ -163,7 +175,11 @@ export function DiscoveryPage() {
 
   const dietaryTags = useMemo(() => allTags.filter((t) => t.category === 'dietary'), [allTags])
   const allergenTags = useMemo(() => allTags.filter((t) => t.category === 'allergen'), [allTags])
-  const activeFilterCount = selectedTagIds.length + excludedAllergenIds.length
+  const activeFilterCount =
+    selectedTagIds.length +
+    excludedAllergenIds.length +
+    (selectedCountry ? 1 : 0) +
+    (selectedCity ? 1 : 0)
 
   function toggleTag(id: string) {
     setSelectedTagIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id])
@@ -179,6 +195,8 @@ export function DiscoveryPage() {
     setDebouncedSearch('')
     setSelectedTagIds([])
     setExcludedAllergenIds([])
+    setSelectedCountry('')
+    setSelectedCity('')
     setRecipePage(1)
   }
 
@@ -341,6 +359,37 @@ export function DiscoveryPage() {
 
         {filtersOpen && (
           <div className="discovery-page__filter-panel">
+            <div className="discovery-page__filter-group">
+              <p className="discovery-page__filter-group-label">{t('discovery.location')}</p>
+              <div className="discovery-page__filter-location">
+                <select
+                  className="discovery-page__filter-location-select"
+                  value={selectedCountry}
+                  onChange={(e) => {
+                    setSelectedCountry(e.target.value)
+                    setSelectedCity('')
+                  }}
+                  aria-label={t('discovery.countryPlaceholder')}
+                >
+                  <option value="">{t('discovery.countryPlaceholder')}</option>
+                  {locationOptions.countries.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+
+                <select
+                  className="discovery-page__filter-location-select"
+                  value={selectedCity}
+                  onChange={(e) => setSelectedCity(e.target.value)}
+                  aria-label={t('discovery.cityPlaceholder')}
+                >
+                  <option value="">{t('discovery.cityPlaceholder')}</option>
+                  {(locationOptions.citiesByCountry[selectedCountry] ?? []).map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
             {dietaryTags.length > 0 && (
               <div className="discovery-page__filter-group">
                 <p className="discovery-page__filter-group-label">{t('discovery.dietaryTags')}</p>
@@ -375,11 +424,17 @@ export function DiscoveryPage() {
                 </div>
               </div>
             )}
+
             {activeFilterCount > 0 && (
               <button
                 type="button"
                 className="discovery-page__filter-clear"
-                onClick={() => { setSelectedTagIds([]); setExcludedAllergenIds([]) }}
+                onClick={() => {
+                  setSelectedTagIds([])
+                  setExcludedAllergenIds([])
+                  setSelectedCountry('')
+                  setSelectedCity('')
+                }}
               >
                 {t('discovery.clearFilters')}
               </button>

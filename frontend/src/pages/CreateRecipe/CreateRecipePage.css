@@ -121,6 +121,18 @@
   max-width: 10rem;
 }
 
+.cr-location-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-xs);
+}
+
+@media (max-width: 480px) {
+  .cr-location-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .cr-label {
   font-size: 0.875rem;
   font-weight: 500;
@@ -497,7 +509,8 @@
 
 .cr-review-card__genre,
 .cr-review-card__variety,
-.cr-review-card__servings {
+.cr-review-card__servings,
+.cr-review-card__location {
   font-size: 0.875rem;
   color: var(--text-secondary);
 }

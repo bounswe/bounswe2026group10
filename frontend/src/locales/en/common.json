@@ -119,14 +119,40 @@
   },
   "library": {
     "title": "My Library",
-    "placeholder": "Favorites, drafts, and your published recipes will appear here."
+    "placeholder": "Favorites, drafts, and your published recipes will appear here.",
+    "loading": "Loading your recipes…",
+    "edit": "Edit",
+    "tabAll": "All",
+    "tabPublished": "Published",
+    "tabDraft": "Drafts",
+    "empty": "No recipes here yet.",
+    "showAll": "Show all",
+    "statusPublished": "Published",
+    "statusDraft": "Draft",
+    "typeCultural": "Cultural",
+    "typeCommunity": "Community",
+    "sortLabel": "Sort by",
+    "sortDateDesc": "Newest first",
+    "sortDateAsc": "Oldest first",
+    "sortRatingDesc": "Highest rated",
+    "sortRatingAsc": "Lowest rated",
+    "filterCountry": "Filter by country",
+    "filterCountryAll": "All countries",
+    "filterCity": "Filter by city",
+    "filterCityAll": "All cities"
   },
   "profileScreen": {
     "title": "Profile",
     "loading": "Loading profile…",
     "username": "Username",
     "email": "Email",
-    "role": "Role"
+    "role": "Role",
+    "statTotal": "Total",
+    "statPublished": "Published",
+    "statDraft": "Drafts",
+    "recentRecipes": "Recent Recipes",
+    "seeAll": "See all {{count}} recipes",
+    "noRecipes": "No recipes yet. Start creating!"
   },
   "home": {
     "featured": "Featured Recipe",
@@ -199,7 +225,20 @@
     "loading": "Loading recipes…",
     "genresTitle": "Genres",
     "recipesTitle": "Recipes",
-    "recipesSearchHint": "Recipe titles matching \"{{query}}\""
+    "recipesSearchHint": "Recipe titles matching \"{{query}}\"",
+    "location": "Location",
+    "countryPlaceholder": "Country",
+    "cityPlaceholder": "City"
+  },
+  "edit": {
+    "title": "Edit Recipe",
+    "sectionBasic": "Basic Information",
+    "loading": "Loading recipe…",
+    "save": "Save Changes",
+    "saving": "Saving…",
+    "saveSuccess": "Changes saved.",
+    "saveError": "Could not save changes. Please try again.",
+    "cancel": "Cancel"
   },
   "common": {
     "retry": "Try again",
@@ -298,7 +337,11 @@
       "communityDesc": "A recipe from your personal collection",
       "cultural": "Cultural Recipe",
       "culturalDesc": "Traditional recipe with historical significance",
-      "expertOnly": "Expert role required"
+      "expertOnly": "Expert role required",
+      "location": "Location (optional)",
+      "countryPlaceholder": "Country",
+      "cityPlaceholder": "City",
+      "districtPlaceholder": "District"
     },
     "parse": {
       "label": "Free-text recipe input",

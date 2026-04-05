@@ -115,6 +115,9 @@ interface RecipeDraft {
   genreId: string
   dishVarietyId: string
   servingSize: string
+  country: string
+  city: string
+  district: string
   ingredients: IngredientRow[]
   tools: string[]
   steps: StepItem[]
@@ -127,6 +130,9 @@ const INITIAL_DRAFT: RecipeDraft = {
   genreId: '',
   dishVarietyId: '',
   servingSize: '',
+  country: '',
+  city: '',
+  district: '',
   ingredients: [{ ingredientId: null, name: '', searchQuery: '', quantity: '', unit: '' }],
   tools: [''],
   steps: [{ text: '' }],
@@ -336,6 +342,9 @@ export function CreateRecipePage() {
         type: draft.type,
         dishVarietyId: draft.dishVarietyId ? Number(draft.dishVarietyId) : undefined,
         servingSize: draft.servingSize ? Number(draft.servingSize) : undefined,
+        country: draft.country.trim() || undefined,
+        city: draft.city.trim() || undefined,
+        district: draft.district.trim() || undefined,
         ingredients: ingredientsPayload,
         steps: draft.steps
           .filter((s) => s.text.trim())
@@ -722,6 +731,34 @@ export function CreateRecipePage() {
               />
             </div>
 
+            {/* Location */}
+            <div className="cr-field">
+              <label className="cr-label">{t('create.fields.location')}</label>
+              <div className="cr-location-row">
+                <input
+                  type="text"
+                  className="cr-input"
+                  value={draft.country}
+                  onChange={(e) => set('country', e.target.value)}
+                  placeholder={t('create.fields.countryPlaceholder')}
+                />
+                <input
+                  type="text"
+                  className="cr-input"
+                  value={draft.city}
+                  onChange={(e) => set('city', e.target.value)}
+                  placeholder={t('create.fields.cityPlaceholder')}
+                />
+                <input
+                  type="text"
+                  className="cr-input"
+                  value={draft.district}
+                  onChange={(e) => set('district', e.target.value)}
+                  placeholder={t('create.fields.districtPlaceholder')}
+                />
+              </div>
+            </div>
+
             {/* Recipe Type */}
             <div className="cr-field">
               <label className="cr-label">{t('create.fields.recipeType')}</label>
@@ -979,6 +1016,11 @@ export function CreateRecipePage() {
                 {draft.servingSize && (
                   <span className="cr-review-card__servings">
                     {t('create.review.servings', { count: Number(draft.servingSize) })}
+                  </span>
+                )}
+                {(draft.country || draft.city) && (
+                  <span className="cr-review-card__location">
+                    {[draft.district, draft.city, draft.country].filter(Boolean).join(', ')}
                   </span>
                 )}
               </div>
