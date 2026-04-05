@@ -28,15 +28,6 @@ app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// ─── Meta ─────────────────────────────────────────────────────────────────────
-app.get("/meta/regions", (_req, res) => {
-  res.status(200).json({
-    success: true,
-    data: ["Turkey", "Greece", "Italy", "Mexico", "India", "Japan"],
-    error: null,
-  });
-});
-
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use("/auth", authRouter);
 app.use("/recipes", recipesRouter);

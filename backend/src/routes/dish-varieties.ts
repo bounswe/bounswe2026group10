@@ -76,7 +76,7 @@ router.get("/:id", async (req, res) => {
 
   const { data: recipes, error: recipesError } = await supabase
     .from("recipes")
-    .select("id, title, type, average_rating, rating_count, created_at, updated_at")
+    .select("id, title, type, average_rating, rating_count, country, city, district, created_at, updated_at")
     .eq("dish_variety_id", id)
     .eq("is_published", true)
     .order("average_rating", { ascending: false });
@@ -119,7 +119,7 @@ router.get("/:id/recipes", async (req, res) => {
   const { data: recipes, error: recipesError } = await supabase
     .from("recipes")
     .select(
-      `id, title, type, average_rating, rating_count, created_at, updated_at,
+      `id, title, type, average_rating, rating_count, country, city, district, created_at, updated_at,
        creator:profiles!recipes_creator_id_fkey(id, username)`
     )
     .eq("dish_variety_id", id)
