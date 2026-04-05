@@ -160,13 +160,12 @@ router.get("/mine", requireAuth, async (req: Request, res: Response): Promise<vo
        country, city, district, created_at, updated_at,
        recipe_media(id, url, type)`
     )
-    .eq("creator_id", user.profileId)
-    .order("created_at", { ascending: false });
+    .eq("creator_id", user.profileId);
 
   if (validStatus === "published") query = query.eq("is_published", true);
   if (validStatus === "draft") query = query.eq("is_published", false);
 
-  const { data, error } = await query;
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) {
     res.status(500).json(errorResponse("DB_ERROR", error.message));
