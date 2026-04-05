@@ -93,21 +93,6 @@ export async function fetchDietaryTags(): Promise<DietaryTag[]> {
 }
 
 /**
- * Fetch regions/countries for filter UI.
- * Uses GET /meta/regions
- */
-export async function fetchRegions(): Promise<string[]> {
-  try {
-    const regions = await fetchApi<string[]>('/meta/regions');
-    return regions;
-  } catch (error) {
-    console.error('fetchRegions error:', error);
-    // Fallback to hardcoded regions
-    return ['Turkey', 'Greece', 'Italy', 'Mexico', 'India', 'Japan'];
-  }
-}
-
-/**
  * Search recipes with filters (region, allergens, dietary tags).
  * Two-step process:
  * 1. If query provided, resolve it to varietyId via searchDishVarieties
