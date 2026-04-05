@@ -2,7 +2,6 @@ import {
   searchDishVarieties,
   fetchSearchGenres,
   fetchDietaryTags,
-  fetchRegions,
   searchRecipesWithFilters,
 } from '../api/search';
 import { fetchApi } from '../api/client';
@@ -112,31 +111,6 @@ describe('fetchDietaryTags', () => {
   it('returns empty array on error', async () => {
     mockFetchApi.mockRejectedValueOnce(new Error('offline'));
     const result = await fetchDietaryTags();
-    expect(result).toEqual([]);
-  });
-});
-
-// ─── fetchRegions ────────────────────────────────────────────────────────────
-
-describe('fetchRegions', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('calls GET /meta/regions', async () => {
-    mockFetchApi.mockResolvedValueOnce([]);
-    await fetchRegions();
-    expect(mockFetchApi).toHaveBeenCalledWith('/meta/regions');
-  });
-
-  it('returns regions array from plain array response', async () => {
-    const mockRegions = ['Turkey', 'Greece', 'Italy'];
-    mockFetchApi.mockResolvedValueOnce(mockRegions);
-    const result = await fetchRegions();
-    expect(result).toEqual(mockRegions);
-  });
-
-  it('returns empty array on error', async () => {
-    mockFetchApi.mockRejectedValueOnce(new Error('offline'));
-    const result = await fetchRegions();
     expect(result).toEqual([]);
   });
 });
