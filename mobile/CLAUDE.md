@@ -138,3 +138,30 @@ Full guide: [Development Guideline wiki](https://github.com/bounswe/bounswe2026g
 ## Related issue
 Closes #<issue-number>
 ```
+
+## Testing Rules
+
+**Always create test files alongside new implementation files.** This is a hard rule.
+
+| New file | Required test file |
+|---|---|
+| `src/screens/FooScreen.tsx` | `src/__tests__/FooScreen.test.tsx` |
+| `src/api/foo.ts` | `src/__tests__/api.foo.test.ts` |
+| `src/components/bar/Baz.tsx` | `src/__tests__/Baz.test.tsx` |
+
+### Test patterns
+
+**API tests** (`src/__tests__/api.*.test.ts`):
+- Mock `../api/client` with `jest.fn()`
+- Test: correct endpoint called, params forwarded, fallback to mock on rejection, return value shape
+
+**Screen tests** (`src/__tests__/*Screen.test.tsx`):
+- Mock `@expo/vector-icons`, `react-native-safe-area-context`, and any context/navigation used
+- Use `renderAndFlush` helper to handle async effects:
+  ```typescript
+  async function renderAndFlush() {
+    const result = render(<FooScreen />);
+    await act(async () => { await Promise.resolve(); });
+    return result;
+  }
+  ```
