@@ -18,7 +18,6 @@ jest.mock('../api/search', () => ({
   searchDishVarieties: jest.fn(),
   searchRecipesWithFilters: jest.fn(),
   fetchDietaryTags: jest.fn(),
-  fetchRegions: jest.fn(),
 }));
 
 import {
@@ -46,9 +45,9 @@ const mockSearchGenres = [
 ];
 
 const mockSearchVarieties = [
-  { id: 1, name: 'Lentil Soup', description: 'Red lentil soup', genreId: 1, genreName: 'Soups', region: null },
-  { id: 2, name: 'Hummus', description: 'Chickpea dip', genreId: 2, genreName: 'Mezes', region: null },
-  { id: 3, name: 'Pilaf', description: 'Rice dish', genreId: 3, genreName: 'Main Courses', region: null },
+  { id: 1, name: 'Lentil Soup', description: 'Red lentil soup', genreId: 1, genreName: 'Soups' },
+  { id: 2, name: 'Hummus', description: 'Chickpea dip', genreId: 2, genreName: 'Mezes' },
+  { id: 3, name: 'Pilaf', description: 'Rice dish', genreId: 3, genreName: 'Main Courses' },
 ];
 
 describe('SearchScreen', () => {
@@ -81,11 +80,11 @@ describe('SearchScreen', () => {
       expect(getAllByText('Kebabs').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('shows "All Dishes" section with varieties in default state', async () => {
+    it('shows "Varieties" section with varieties in default state', async () => {
       const { getByText } = await renderAndFlush();
-      expect(getByText('All Dishes')).toBeTruthy();
+      expect(getByText('Varieties')).toBeTruthy();
       // verify a variety from mock data appears
-      expect(getByText('Adana Kebap')).toBeTruthy();
+      expect(getByText('Lentil Soup')).toBeTruthy();
     });
   });
 
@@ -98,22 +97,21 @@ describe('SearchScreen', () => {
       await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
       expect(getByText('Best Rating')).toBeTruthy();
       expect(getByText('Most Recent')).toBeTruthy();
-      expect(getByText('By Region')).toBeTruthy();
     });
 
     it('shows result count heading after search (variety count only)', async () => {
-      const kebapVarieties = mockSearchVarieties.filter((v) =>
-        v.name.toLowerCase().includes('kebap')
+      const soupVarieties = mockSearchVarieties.filter((v) =>
+        v.name.toLowerCase().includes('soup')
       );
-      // Override to return only kebap varieties for this search
-      mockSearchVarietiesFn.mockResolvedValue(kebapVarieties);
-      mockFetchGenres.mockResolvedValue([]); // no genre matches for "kebap"
+      // Override to return only soup varieties for this search
+      mockSearchVarietiesFn.mockResolvedValue(soupVarieties);
+      mockFetchGenres.mockResolvedValue([]); // no genre matches for "soup"
 
       const { getByPlaceholderText, getByText } = await renderAndFlush();
-      fireEvent.changeText(getByPlaceholderText('Search heirloom flavors...'), 'kebap');
+      fireEvent.changeText(getByPlaceholderText('Search heirloom flavors...'), 'soup');
       await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
-      // 3 kebap varieties → heading says "3 Dishes"
-      expect(getByText(`${kebapVarieties.length} Dishes for 'kebap'`)).toBeTruthy();
+      // 1 soup variety → heading says "1 Varieties for 'soup'"
+      expect(getByText(`${soupVarieties.length} Varieties for 'soup'`)).toBeTruthy();
     });
 
     it('shows genre chip even when 0 variety results (e.g. Soups query)', async () => {
@@ -125,8 +123,8 @@ describe('SearchScreen', () => {
       await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
       // Genre chip shown
       expect(getByText('Soups')).toBeTruthy();
-      // No 'No dishes found' because there IS a matching genre
-      expect(queryByText('No dishes found')).toBeNull();
+      // No 'No varieties found' because there IS a matching genre
+      expect(queryByText('No varieties found')).toBeNull();
     });
 
     it('shows empty state only when no genres AND no varieties found', async () => {
@@ -135,7 +133,7 @@ describe('SearchScreen', () => {
       const { getByPlaceholderText, getByText } = await renderAndFlush();
       fireEvent.changeText(getByPlaceholderText('Search heirloom flavors...'), 'xyzzy');
       await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
-      expect(getByText('No dishes found')).toBeTruthy();
+      expect(getByText('No Varieties found')).toBeTruthy();
     });
   });
 
