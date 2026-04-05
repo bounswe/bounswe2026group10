@@ -2,16 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
-import { getUserRating, rateRecipe } from '../../api/recipes';
+import { getUserRating, rateRecipe, deleteUserRating } from '../../api/recipes';
 import { useAuth } from '../../context/AuthContext';
 
 interface RatingPromptProps {
   recipeId: string;
   creatorUsername?: string;
-  onViewComments?: () => void;
+  onNavigateToComments?: () => void;
+  onRatingChange?: () => void;
 }
 
-export function RatingPrompt({ recipeId, creatorUsername, onViewComments }: RatingPromptProps) {
+export function RatingPrompt({ recipeId, creatorUsername, onNavigateToComments, onRatingChange }: RatingPromptProps) {
   const { authState } = useAuth();
   const isAuthenticated = authState.status === 'authenticated';
   const [selectedRating, setSelectedRating] = useState(0);
@@ -38,8 +39,14 @@ export function RatingPrompt({ recipeId, creatorUsername, onViewComments }: Rati
     if (submitting) return;
     setSubmitting(true);
     try {
-      await rateRecipe(recipeId, score);
-      setSelectedRating(score);
+      if (score === selectedRating) {
+        await deleteUserRating(recipeId);
+        setSelectedRating(0);
+      } else {
+        await rateRecipe(recipeId, score);
+        setSelectedRating(score);
+      }
+      onRatingChange?.();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to submit rating';
       Alert.alert('Rating', message);
@@ -49,7 +56,7 @@ export function RatingPrompt({ recipeId, creatorUsername, onViewComments }: Rati
   };
 
   const handleViewComments =
-    onViewComments ?? (() => Alert.alert('Comments', 'Coming soon'));
+    onNavigateToComments ?? (() => Alert.alert('Comments', 'Coming soon'));
 
   return (
     <View style={styles.container}>

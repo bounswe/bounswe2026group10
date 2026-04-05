@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { HomeStackParamList } from '../../navigation/types';
 import type { Recipe, RecipeCard } from '../../types/recipe';
 import { colors, spacing } from '../../theme';
 import { useServingAdjuster } from '../../hooks/useServingAdjuster';
@@ -27,12 +30,13 @@ interface RecipeDetailScreenProps {
 const EMPTY_ALTERNATIVES: RecipeCard[] = [];
 
 export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
+  const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showVideoGuide, setShowVideoGuide] = useState(false);
 
-  useEffect(() => {
+  const fetchRecipe = useCallback(() => {
     setLoading(true);
     setError(null);
     getRecipeById(recipeId)
@@ -44,6 +48,10 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
       .catch((err: Error) => setError(err.message ?? 'Failed to load recipe'))
       .finally(() => setLoading(false));
   }, [recipeId]);
+
+  useEffect(() => {
+    fetchRecipe();
+  }, [fetchRecipe]);
 
   const { servings, increment, decrement } = useServingAdjuster(recipe?.servings ?? 1);
 
@@ -115,7 +123,20 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
 
         <AlternativeVersions cards={EMPTY_ALTERNATIVES} />
 
-        <RatingPrompt recipeId={recipeId} creatorUsername={recipe.creatorUsername} />
+        <RatingPrompt
+          recipeId={recipeId}
+          creatorUsername={recipe.creatorUsername}
+          onRatingChange={fetchRecipe}
+          onNavigateToComments={() =>
+            navigation.navigate('CommentsRatings', {
+              recipeId,
+              recipeTitle: recipe.title,
+              rating: recipe.rating,
+              ratingCount: recipe.ratingCount,
+              creatorUsername: recipe.creatorUsername,
+            })
+          }
+        />
       </ScrollView>
 
       <Modal
