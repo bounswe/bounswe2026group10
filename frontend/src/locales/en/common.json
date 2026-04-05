@@ -246,7 +246,15 @@
     "ratingRemoveModalTitle": "Remove your rating?",
     "ratingRemoveModalMessage": "Your star rating for this recipe will be deleted. You can submit a new rating anytime.",
     "ratingRemoveModalConfirm": "Remove",
-    "ratingRemoveModalCancel": "Cancel"
+    "ratingRemoveModalCancel": "Cancel",
+    "scaling": "Scaling ingredients...",
+    "scaleError": "Could not scale ingredients",
+    "substituteModalTitle": "Substitutes for {{name}}",
+    "substituteLoading": "Loading substitutes...",
+    "substituteNoResults": "No substitutes found for this ingredient.",
+    "substituteLoadError": "Could not load substitutes.",
+    "substituteClose": "Close",
+    "substituteConfidence": "Confidence: {{pct}}%"
   },
   "dishVariety": {
     "notFound": "Dish variety not found.",

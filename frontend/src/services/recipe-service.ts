@@ -11,6 +11,15 @@ export interface RecipeIngredient {
   allergens: string[]
 }
 
+export interface ScaledRecipeIngredient {
+  id: string
+  ingredientId: string | null
+  ingredientName: string | null
+  quantity: number
+  unit: string
+  allergens: string[]
+}
+
 export interface RecipeStep {
   id: string
   stepOrder: number
@@ -136,6 +145,22 @@ export const recipeService = {
       createdAt: d.createdAt ?? '',
       updatedAt: d.updatedAt ?? '',
     }
+  },
+
+  /**
+   * GET /recipes/:id/scale?servings=N — returns ingredient quantities scaled to the desired serving count.
+   */
+  scale: async (id: string, servings: number): Promise<ScaledRecipeIngredient[]> => {
+    const res = await httpClient.get(`/recipes/${id}/scale`, { params: { servings } })
+    const d = res.data?.data
+    return (d.ingredients ?? []).map((i: any) => ({
+      id: String(i.id),
+      ingredientId: i.ingredientId ? String(i.ingredientId) : null,
+      ingredientName: i.ingredientName ?? null,
+      quantity: Number(i.quantity),
+      unit: String(i.unit ?? ''),
+      allergens: i.allergens ?? [],
+    }))
   },
 
   /**

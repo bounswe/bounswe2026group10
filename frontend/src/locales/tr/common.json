@@ -246,7 +246,15 @@
     "ratingRemoveModalTitle": "Puanınızı kaldırmak istiyor musunuz?",
     "ratingRemoveModalMessage": "Bu tarif için verdiğiniz yıldız puanı silinecek. İsterseniz sonra yeniden puan verebilirsiniz.",
     "ratingRemoveModalConfirm": "Kaldır",
-    "ratingRemoveModalCancel": "Vazgeç"
+    "ratingRemoveModalCancel": "Vazgeç",
+    "scaling": "Malzemeler ölçeklendiriliyor...",
+    "scaleError": "Malzeme miktarları ölçeklendirilemedi",
+    "substituteModalTitle": "{{name}} için alternatifler",
+    "substituteLoading": "Alternatifler yükleniyor...",
+    "substituteNoResults": "Bu malzeme için alternatif bulunamadı.",
+    "substituteLoadError": "Alternatifler yüklenemedi.",
+    "substituteClose": "Kapat",
+    "substituteConfidence": "Güven: %{{pct}}"
   },
   "dishVariety": {
     "notFound": "Yemek çeşidi bulunamadı.",
