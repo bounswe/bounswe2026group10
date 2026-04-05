@@ -54,7 +54,6 @@ export function SearchScreen() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSearchActive = query.trim().length > 0;
   const hasFilters =
-    filters.country ||
     filters.excludeAllergenIds.length > 0 ||
     filters.dietaryTagIds.length > 0;
 
@@ -216,11 +215,6 @@ export function SearchScreen() {
             onPress={() => setFilterModalVisible(true)}
           >
             <View style={styles.filterBadgeContent}>
-              {filters.country && (
-                <View style={styles.filterTag}>
-                  <Text style={styles.filterTagText}>{filters.country}</Text>
-                </View>
-              )}
               {filters.excludeAllergenNames.map((name) => (
                 <View key={name} style={styles.filterTag}>
                   <Text style={styles.filterTagText}>{name}</Text>
