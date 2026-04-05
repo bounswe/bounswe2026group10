@@ -14,6 +14,7 @@ interface RecipeHeaderProps {
   ratingCount: number;
   type: RecipeType;
   region: string;
+  dishVarietyName?: string;
   tags: DietaryTag[];
   allergens: AllergenTag[];
   onAuthorPress?: () => void;
@@ -41,6 +42,7 @@ export function RecipeHeader({
   ratingCount,
   type,
   region,
+  dishVarietyName,
   tags,
   allergens,
   onAuthorPress,
@@ -65,11 +67,20 @@ export function RecipeHeader({
           label={type}
           backgroundColor={type === 'CULTURAL' ? colors.secondary : colors.tertiary}
         />
-        <Badge
-          label={region}
-          backgroundColor={colors.surfaceContainer}
-          textColor={colors.onSurface}
-        />
+        {region ? (
+          <Badge
+            label={region}
+            backgroundColor={colors.surfaceContainer}
+            textColor={colors.onSurface}
+          />
+        ) : null}
+        {dishVarietyName ? (
+          <Badge
+            label={dishVarietyName}
+            backgroundColor={colors.surfaceContainer}
+            textColor={colors.onSurface}
+          />
+        ) : null}
       </View>
 
       {(tags.length > 0 || allergens.length > 0) && (

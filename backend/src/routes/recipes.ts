@@ -904,6 +904,7 @@ router.post(
       .single();
 
     if (error) {
+      console.error("[attachMedia] DB insert error:", error);
       res.status(500).json(errorResponse("DB_ERROR", "Failed to attach media to recipe."));
       return;
     }

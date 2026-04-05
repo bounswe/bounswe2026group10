@@ -18,7 +18,7 @@ import { colors, fonts, fontSizes, spacing } from "../../theme";
 import { IconButton } from "../shared/IconButton";
 import { StepHeader } from "../create-basic/StepHeader";
 import { useRecipeForm } from "../../context/RecipeFormContext";
-import { createRecipe, publishRecipe } from "../../api/recipes";
+import { attachRecipeMedia, createRecipe, publishRecipe } from "../../api/recipes";
 import { buildRecipePayload } from "../../utils/buildRecipePayload";
 import { validateForPublish } from "../../utils/recipeValidation";
 
@@ -38,6 +38,31 @@ export function CreateReviewScreen() {
     navigation.getParent()?.navigate("HomeTab" as never);
   };
 
+  const attachMedia = async (recipeId: string) => {
+    console.log('[attachMedia] recipeId:', recipeId, 'imageUrls:', draft.imageUrls, 'videoUrl:', draft.videoUrl);
+    const imageAttachments = draft.imageUrls.map((url) => {
+      console.log('[attachMedia] attaching image:', url);
+      return attachRecipeMedia(recipeId, url, 'image').then((res) => {
+        console.log('[attachMedia] image attached OK:', url);
+        return res;
+      }).catch((err) => {
+        console.error('[attachMedia] FAILED to attach image:', url, err);
+        throw err;
+      });
+    });
+    const videoAttachment = draft.videoUrl
+      ? [attachRecipeMedia(recipeId, draft.videoUrl, 'video').then((res) => {
+          console.log('[attachMedia] video attached OK:', draft.videoUrl);
+          return res;
+        }).catch((err) => {
+          console.error('[attachMedia] FAILED to attach video:', draft.videoUrl, err);
+          throw err;
+        })]
+      : [];
+    await Promise.all([...imageAttachments, ...videoAttachment]);
+    console.log('[attachMedia] all media attached for recipe:', recipeId);
+  };
+
   const handlePublish = async () => {
     const missing = validateForPublish(draft);
     if (missing.length > 0) {
@@ -55,6 +80,7 @@ export function CreateReviewScreen() {
         isPublished: false,
       });
       console.log("[publish] recipe created:", created.id);
+      await attachMedia(created.id);
       const published = await publishRecipe(created.id);
       console.log("[publish] recipe published:", published);
       Alert.alert("Published!", "Your recipe is now live.", [
@@ -71,6 +97,7 @@ export function CreateReviewScreen() {
       isPublished: false,
     });
     console.log("[draft] recipe saved:", result.id);
+    await attachMedia(result.id);
     Alert.alert("Draft Saved", "Your recipe has been saved to drafts.", [
       { text: "OK", onPress: goHome },
     ]);

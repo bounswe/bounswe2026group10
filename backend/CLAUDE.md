@@ -176,7 +176,7 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 ### Media (`/media`)
 - `POST /media/upload` — Upload file (cook/expert only, multipart/form-data)
   - Images: JPEG/PNG/WebP, max 10 MB
-  - Videos: MP4, max 100 MB
+  - Videos: MP4/MOV, max 100 MB
 
 ### Ingredients (`/ingredients`)
 - `GET /ingredients` — List/search ingredients by partial name (case-insensitive)

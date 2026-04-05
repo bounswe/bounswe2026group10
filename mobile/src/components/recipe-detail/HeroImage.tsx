@@ -9,7 +9,9 @@ interface HeroImageProps {
 export function HeroImage({ imageUrl }: HeroImageProps) {
   return (
     <View style={styles.container}>
-      <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
+      {imageUrl ? (
+        <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
+      ) : null}
     </View>
   );
 }

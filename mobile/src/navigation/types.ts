@@ -1,5 +1,3 @@
-import type { Recipe, RecipeCard } from '../types/recipe';
-
 export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
@@ -16,7 +14,7 @@ export type RootTabParamList = {
 
 export type HomeStackParamList = {
   Home: undefined;
-  RecipeDetail: { recipe: Recipe; alternatives: RecipeCard[] };
+  RecipeDetail: { recipeId: string };
 };
 
 export type SearchStackParamList = {
@@ -32,6 +30,7 @@ export type CreateStackParamList = {
 
 export type LibraryStackParamList = {
   MyLibrary: undefined;
+  RecipeDetail: { recipeId: string };
 };
 
 export type ProfileStackParamList = {

@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Recipe, RecipeCard } from '../../types/recipe';
 import { colors, spacing } from '../../theme';
 import { useServingAdjuster } from '../../hooks/useServingAdjuster';
+import { getRecipeById } from '../../api/recipes';
+import { mapBackendRecipeToMobile } from '../../api/recipeMapper';
 import { IconButton } from '../shared/IconButton';
 import { HeroImage } from './HeroImage';
 import { RecipeHeader } from './RecipeHeader';
@@ -15,16 +17,51 @@ import { StepsSection } from './StepsSection';
 import { CookingModeButton } from './CookingModeButton';
 import { RatingPrompt } from './RatingPrompt';
 import { AlternativeVersions } from './AlternativeVersions';
+import { MorePhotosSection } from './MorePhotosSection';
 import { VideoGuideScreen } from '../video-guide/VideoGuideScreen';
 
 interface RecipeDetailScreenProps {
-  recipe: Recipe;
-  alternatives: RecipeCard[];
+  recipeId: string;
 }
 
-export function RecipeDetailScreen({ recipe, alternatives }: RecipeDetailScreenProps) {
-  const { servings, increment, decrement } = useServingAdjuster(recipe.servings);
+const EMPTY_ALTERNATIVES: RecipeCard[] = [];
+
+export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
+  const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showVideoGuide, setShowVideoGuide] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    getRecipeById(recipeId)
+      .then((data) => {
+        console.log('[RecipeDetail] id:', data.id);
+        console.log('[RecipeDetail] media:', JSON.stringify(data.media));
+        setRecipe(mapBackendRecipeToMobile(data));
+      })
+      .catch((err: Error) => setError(err.message ?? 'Failed to load recipe'))
+      .finally(() => setLoading(false));
+  }, [recipeId]);
+
+  const { servings, increment, decrement } = useServingAdjuster(recipe?.servings ?? 1);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  if (error || !recipe) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <Text style={styles.errorText}>{error ?? 'Recipe not found'}</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -47,12 +84,15 @@ export function RecipeDetailScreen({ recipe, alternatives }: RecipeDetailScreenP
           region={recipe.origin.city
             ? `${recipe.origin.city}, ${recipe.origin.country}`
             : recipe.origin.country}
+          dishVarietyName={recipe.dishVarietyName}
           tags={recipe.tags}
           allergens={recipe.allergens}
           onAuthorPress={() => Alert.alert('Profile', 'Navigation coming soon')}
         />
 
-        {recipe.story && <StoryCard story={recipe.story} />}
+        {recipe.story ? <StoryCard story={recipe.story} /> : null}
+
+        {recipe.images.length > 1 ? <MorePhotosSection images={recipe.images} /> : null}
 
         <IngredientsSection
           ingredients={recipe.ingredients}
@@ -73,10 +113,11 @@ export function RecipeDetailScreen({ recipe, alternatives }: RecipeDetailScreenP
 
         <CookingModeButton onPress={() => setShowVideoGuide(true)} />
 
-        <AlternativeVersions cards={alternatives} />
+        <AlternativeVersions cards={EMPTY_ALTERNATIVES} />
 
-        <RatingPrompt />
+        <RatingPrompt recipeId={recipeId} creatorUsername={recipe.creatorUsername} />
       </ScrollView>
+
       <Modal
         visible={showVideoGuide}
         animationType="slide"
@@ -95,6 +136,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
+  },
+  centered: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: {
+    color: colors.negative,
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
   },
   topBar: {
     flexDirection: 'row',

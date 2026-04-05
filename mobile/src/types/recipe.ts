@@ -24,11 +24,13 @@ export interface Recipe {
   steps: Step[];
   origin: Origin;
   dishVarietyId: string;
+  dishVarietyName: string;
   tags: DietaryTag[];
   allergens: AllergenTag[];
   status: RecipeStatus;
   createdAt: ISODateString;
   updatedAt: ISODateString;
+  creatorUsername: string;
 }
 
 export interface RecipeCard {

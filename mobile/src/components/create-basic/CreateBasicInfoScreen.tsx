@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -9,29 +9,29 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useIsFocused, useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import type { CreateStackParamList } from '../../navigation/types';
-import { colors, fonts, fontSizes, spacing } from '../../theme';
-import { IconButton } from '../shared/IconButton';
-import { FormTextInput } from '../shared/FormTextInput';
-import { FormDropdown } from '../shared/FormDropdown';
-import { ChipSelector } from '../shared/ChipSelector';
-import { StepHeader } from './StepHeader';
-import { ImportCards } from './ImportCards';
-import { RecipeParseModal } from './RecipeParseModal';
-import { OriginSection } from './OriginSection';
-import { useRecipeForm } from '../../context/RecipeFormContext';
-import { validateBasicInfo } from '../../utils/recipeValidation';
-import { getDishGenres } from '../../api/dish-genres';
-import { getDietaryTags } from '../../api/dietary-tags';
-import { uploadImage } from '../../api/images';
-import type { DishGenre } from '../../api/dish-genres';
-import type { DietaryTagItem } from '../../api/dietary-tags';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import type { CreateStackParamList } from "../../navigation/types";
+import { colors, fonts, fontSizes, spacing } from "../../theme";
+import { IconButton } from "../shared/IconButton";
+import { FormTextInput } from "../shared/FormTextInput";
+import { FormDropdown } from "../shared/FormDropdown";
+import { ChipSelector } from "../shared/ChipSelector";
+import { StepHeader } from "./StepHeader";
+import { ImportCards } from "./ImportCards";
+import { RecipeParseModal } from "./RecipeParseModal";
+import { OriginSection } from "./OriginSection";
+import { useRecipeForm } from "../../context/RecipeFormContext";
+import { validateBasicInfo } from "../../utils/recipeValidation";
+import { getDishGenres } from "../../api/dish-genres";
+import { getDietaryTags } from "../../api/dietary-tags";
+import { uploadImage } from "../../api/images";
+import type { DishGenre } from "../../api/dish-genres";
+import type { DietaryTagItem } from "../../api/dietary-tags";
 
 interface ImageItem {
   id: string;
@@ -42,7 +42,8 @@ interface ImageItem {
 }
 
 export function CreateBasicInfoScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const isFocused = useIsFocused();
   const { draft, updateDraft, resetDraft } = useRecipeForm();
   const [title, setTitle] = useState(draft.title);
@@ -51,9 +52,15 @@ export function CreateBasicInfoScreen() {
   const [district, setDistrict] = useState(draft.originDistrict);
   const [genreId, setGenreId] = useState<number | null>(draft.genreId);
   const [varietyId, setVarietyId] = useState<number | null>(draft.varietyId);
-  const [servingSize, setServingSize] = useState(draft.servingSize ? String(draft.servingSize) : '');
-  const [selectedDietaryIds, setSelectedDietaryIds] = useState<string[]>(draft.dietaryTagIds.map(String));
-  const [selectedAllergenIds, setSelectedAllergenIds] = useState<string[]>(draft.allergenTagIds.map(String));
+  const [servingSize, setServingSize] = useState(
+    draft.servingSize ? String(draft.servingSize) : "",
+  );
+  const [selectedDietaryIds, setSelectedDietaryIds] = useState<string[]>(
+    draft.dietaryTagIds.map(String),
+  );
+  const [selectedAllergenIds, setSelectedAllergenIds] = useState<string[]>(
+    draft.allergenTagIds.map(String),
+  );
   const [story, setStory] = useState(draft.story);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [parseModalVisible, setParseModalVisible] = useState(false);
@@ -65,7 +72,7 @@ export function CreateBasicInfoScreen() {
       localUri: url,
       cdnUrl: url,
       uploading: false,
-    }))
+    })),
   );
 
   // API data
@@ -80,7 +87,7 @@ export function CreateBasicInfoScreen() {
     setDistrict(draft.originDistrict);
     setGenreId(draft.genreId);
     setVarietyId(draft.varietyId);
-    setServingSize(draft.servingSize ? String(draft.servingSize) : '');
+    setServingSize(draft.servingSize ? String(draft.servingSize) : "");
     setSelectedDietaryIds(draft.dietaryTagIds.map(String));
     setSelectedAllergenIds(draft.allergenTagIds.map(String));
     setStory(draft.story);
@@ -90,40 +97,59 @@ export function CreateBasicInfoScreen() {
         localUri: url,
         cdnUrl: url,
         uploading: false,
-      }))
+      })),
     );
     setErrors({});
     setParseModalVisible(false);
   }, [isFocused]);
 
   // Build dropdown options from API data
-  const genreOptions = genres.map((g) => ({ label: g.name, value: String(g.id) }));
+  const genreOptions = genres.map((g) => ({
+    label: g.name,
+    value: String(g.id),
+  }));
   const selectedGenre = genres.find((g) => g.id === genreId);
   const varietyOptions = selectedGenre
-    ? selectedGenre.varieties.map((v) => ({ label: v.name, value: String(v.id) }))
+    ? selectedGenre.varieties.map((v) => ({
+        label: v.name,
+        value: String(v.id),
+      }))
     : [];
 
   // Build chip options from API data — values are string IDs
   const dietaryChipOptions = allTags
-    .filter((t) => t.category === 'dietary')
+    .filter((t) => t.category === "dietary")
     .map((t) => ({ label: t.name, value: String(t.id) }));
   const allergenChipOptions = allTags
-    .filter((t) => t.category === 'allergen')
+    .filter((t) => t.category === "allergen")
     .map((t) => ({ label: t.name, value: String(t.id) }));
+
+  // Sync uploaded image CDN URLs to the draft whenever the images list changes
+  useEffect(() => {
+    const urls = images.filter((img) => img.cdnUrl).map((img) => img.cdnUrl!);
+    console.log('[BasicInfo] syncing imageUrls to draft:', urls);
+    updateDraft({ imageUrls: urls });
+  }, [images]);
 
   useEffect(() => {
     getDishGenres()
       .then((data) => {
-        console.log('[BasicInfo] dish-genres loaded:', JSON.stringify(data).slice(0, 200));
+        console.log(
+          "[BasicInfo] dish-genres loaded:",
+          JSON.stringify(data).slice(0, 200),
+        );
         setGenres(data);
       })
-      .catch((err) => console.error('[BasicInfo] dish-genres error:', err));
+      .catch((err) => console.error("[BasicInfo] dish-genres error:", err));
     getDietaryTags()
       .then((data) => {
-        console.log('[BasicInfo] dietary-tags loaded:', JSON.stringify(data).slice(0, 200));
+        console.log(
+          "[BasicInfo] dietary-tags loaded:",
+          JSON.stringify(data).slice(0, 200),
+        );
         setAllTags(data);
       })
-      .catch((err) => console.error('[BasicInfo] dietary-tags error:', err));
+      .catch((err) => console.error("[BasicInfo] dietary-tags error:", err));
   }, []);
 
   const handleGenreChange = (id: string) => {
@@ -138,7 +164,7 @@ export function CreateBasicInfoScreen() {
 
   const handleAddImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'] as ImagePicker.MediaType[],
+      mediaTypes: ["images"] as ImagePicker.MediaType[],
       allowsMultipleSelection: true,
       quality: 0.8,
     });
@@ -154,38 +180,45 @@ export function CreateBasicInfoScreen() {
     setImages((prev) => [...prev, ...newItems]);
 
     newItems.forEach((item) => {
+      console.log('[BasicInfo] uploading image id:', item.id);
       uploadImage(item.localUri)
         .then(({ url }) => {
-          setImages((prev) => {
-            const updated = prev.map((img) =>
-              img.id === item.id ? { ...img, cdnUrl: url, uploading: false } : img
-            );
-            updateDraft({ imageUrls: updated.filter((img) => img.cdnUrl).map((img) => img.cdnUrl!) });
-            return updated;
-          });
-        })
-        .catch(() => {
+          console.log('[BasicInfo] image uploaded OK, cdnUrl:', url, 'id:', item.id);
           setImages((prev) =>
             prev.map((img) =>
-              img.id === item.id ? { ...img, uploading: false, error: 'Upload failed' } : img
-            )
+              img.id === item.id
+                ? { ...img, cdnUrl: url, uploading: false }
+                : img,
+            ),
+          );
+        })
+        .catch((err) => {
+          console.error('[BasicInfo] image upload error for id:', item.id, err);
+          setImages((prev) =>
+            prev.map((img) =>
+              img.id === item.id
+                ? { ...img, uploading: false, error: "Upload failed" }
+                : img,
+            ),
           );
         });
     });
   };
 
   const handleRemoveImage = (id: string) => {
-    setImages((prev) => {
-      const updated = prev.filter((img) => img.id !== id);
-      updateDraft({ imageUrls: updated.filter((img) => img.cdnUrl).map((img) => img.cdnUrl!) });
-      return updated;
-    });
+    setImages((prev) => prev.filter((img) => img.id !== id));
   };
 
   // ─── Validation & navigation ──────────────────────────────────────────────────
 
   const validate = (): boolean => {
-    const newErrors = validateBasicInfo(title, country, genreId, varietyId, servingSize);
+    const newErrors = validateBasicInfo(
+      title,
+      country,
+      genreId,
+      varietyId,
+      servingSize,
+    );
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -200,7 +233,7 @@ export function CreateBasicInfoScreen() {
         .map((o) => o.label);
       updateDraft({
         title,
-        type: 'COMMUNITY',
+        type: "COMMUNITY",
         originCountry: country,
         originCity: city,
         originDistrict: district,
@@ -214,35 +247,35 @@ export function CreateBasicInfoScreen() {
         servingSize: servingSize ? parseInt(servingSize, 10) : undefined,
         imageUrls: images.filter((img) => img.cdnUrl).map((img) => img.cdnUrl!),
       });
-      navigation.navigate('CreateIngredientsTools');
+      navigation.navigate("CreateIngredientsTools");
     }
   };
 
   const handleSaveDraft = () => {
-    Alert.alert('Draft Saved', 'Your recipe draft has been saved.');
+    Alert.alert("Draft Saved", "Your recipe draft has been saved.");
   };
 
   const handleClose = () => {
-    Alert.alert('Discard Recipe?', 'Your changes will be lost.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert("Discard Recipe?", "Your changes will be lost.", [
+      { text: "Cancel", style: "cancel" },
       {
-        text: 'Discard',
-        style: 'destructive',
+        text: "Discard",
+        style: "destructive",
         onPress: () => {
           resetDraft();
-          setTitle('');
-          setCountry('');
-          setCity('');
-          setDistrict('');
+          setTitle("");
+          setCountry("");
+          setCity("");
+          setDistrict("");
           setGenreId(null);
           setVarietyId(null);
-          setServingSize('');
+          setServingSize("");
           setSelectedDietaryIds([]);
           setSelectedAllergenIds([]);
-          setStory('');
+          setStory("");
           setImages([]);
           setErrors({});
-          navigation.getParent()?.navigate('HomeTab' as never);
+          navigation.getParent()?.navigate("HomeTab" as never);
         },
       },
     ]);
@@ -280,11 +313,11 @@ export function CreateBasicInfoScreen() {
           value={title}
           onChangeText={(text) => {
             setTitle(text);
-            if (errors.title) setErrors((prev) => ({ ...prev, title: '' }));
+            if (errors.title) setErrors((prev) => ({ ...prev, title: "" }));
           }}
           placeholder="e.g., Nonna's Sunday Ragu"
           inputFont="serif"
-          inputFontSize={fontSizes['2xl']}
+          inputFontSize={fontSizes["2xl"]}
           error={errors.title}
         />
 
@@ -292,7 +325,10 @@ export function CreateBasicInfoScreen() {
           country={country}
           city={city}
           district={district}
-          onCountryChange={(v) => { setCountry(v); if (errors.country) setErrors((p) => ({ ...p, country: '' })); }}
+          onCountryChange={(v) => {
+            setCountry(v);
+            if (errors.country) setErrors((p) => ({ ...p, country: "" }));
+          }}
           onCityChange={setCity}
           onDistrictChange={setDistrict}
           countryError={errors.country}
@@ -300,9 +336,12 @@ export function CreateBasicInfoScreen() {
 
         <FormDropdown
           label="Genre"
-          value={genreId !== null ? String(genreId) : ''}
+          value={genreId !== null ? String(genreId) : ""}
           options={genreOptions}
-          onSelect={(v) => { handleGenreChange(v); if (errors.genre) setErrors((p) => ({ ...p, genre: '' })); }}
+          onSelect={(v) => {
+            handleGenreChange(v);
+            if (errors.genre) setErrors((p) => ({ ...p, genre: "" }));
+          }}
           placeholder="Select genre"
           searchable
           error={errors.genre}
@@ -310,10 +349,15 @@ export function CreateBasicInfoScreen() {
 
         <FormDropdown
           label="Variety"
-          value={varietyId !== null ? String(varietyId) : ''}
+          value={varietyId !== null ? String(varietyId) : ""}
           options={varietyOptions}
-          onSelect={(id) => { setVarietyId(Number(id)); if (errors.variety) setErrors((p) => ({ ...p, variety: '' })); }}
-          placeholder={genreId !== null ? 'Select variety' : 'Select a genre first'}
+          onSelect={(id) => {
+            setVarietyId(Number(id));
+            if (errors.variety) setErrors((p) => ({ ...p, variety: "" }));
+          }}
+          placeholder={
+            genreId !== null ? "Select variety" : "Select a genre first"
+          }
           searchable
           error={errors.variety}
         />
@@ -321,28 +365,41 @@ export function CreateBasicInfoScreen() {
         <View style={styles.servingSizeRow}>
           <Text style={styles.servingSizeLabel}>Serving Size</Text>
           <TextInput
-            style={[styles.servingSizeInput, errors.servingSize ? styles.servingSizeInputError : null]}
+            style={[
+              styles.servingSizeInput,
+              errors.servingSize ? styles.servingSizeInputError : null,
+            ]}
             value={servingSize}
-            onChangeText={(v) => { setServingSize(v); if (errors.servingSize) setErrors((p) => ({ ...p, servingSize: '' })); }}
+            onChangeText={(v) => {
+              setServingSize(v);
+              if (errors.servingSize)
+                setErrors((p) => ({ ...p, servingSize: "" }));
+            }}
             placeholder="e.g. 4"
             placeholderTextColor={colors.outline}
             keyboardType="number-pad"
           />
         </View>
-        {errors.servingSize && <Text style={styles.servingSizeError}>{errors.servingSize}</Text>}
+        {errors.servingSize && (
+          <Text style={styles.servingSizeError}>{errors.servingSize}</Text>
+        )}
 
         <ChipSelector
           label="Dietary Tags"
           options={dietaryChipOptions}
           selected={selectedDietaryIds}
-          onToggle={(id) => setSelectedDietaryIds(toggleString(selectedDietaryIds, id))}
+          onToggle={(id) =>
+            setSelectedDietaryIds(toggleString(selectedDietaryIds, id))
+          }
         />
 
         <ChipSelector
           label="Allergen Tags"
           options={allergenChipOptions}
           selected={selectedAllergenIds}
-          onToggle={(id) => setSelectedAllergenIds(toggleString(selectedAllergenIds, id))}
+          onToggle={(id) =>
+            setSelectedAllergenIds(toggleString(selectedAllergenIds, id))
+          }
         />
 
         <FormTextInput
@@ -377,7 +434,11 @@ export function CreateBasicInfoScreen() {
                 )}
                 {!!img.error && !img.uploading && (
                   <View style={styles.imageOverlay}>
-                    <MaterialCommunityIcons name="alert-circle" size={20} color={colors.negative} />
+                    <MaterialCommunityIcons
+                      name="alert-circle"
+                      size={20}
+                      color={colors.negative}
+                    />
                   </View>
                 )}
                 {!img.uploading && (
@@ -386,7 +447,11 @@ export function CreateBasicInfoScreen() {
                     onPress={() => handleRemoveImage(img.id)}
                     hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                   >
-                    <MaterialCommunityIcons name="close-circle" size={22} color={colors.white} />
+                    <MaterialCommunityIcons
+                      name="close-circle"
+                      size={22}
+                      color={colors.white}
+                    />
                   </TouchableOpacity>
                 )}
               </View>
@@ -397,18 +462,34 @@ export function CreateBasicInfoScreen() {
               onPress={handleAddImages}
               activeOpacity={0.7}
             >
-              <MaterialCommunityIcons name="camera-plus-outline" size={28} color={colors.primary} />
-              <Text style={styles.addImageText}>Add{'\n'}Photo</Text>
+              <MaterialCommunityIcons
+                name="camera-plus-outline"
+                size={28}
+                color={colors.primary}
+              />
+              <Text style={styles.addImageText}>Add{"\n"}Photo</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
 
-        <TouchableOpacity style={styles.nextButton} onPress={handleNext} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.nextButton}
+          onPress={handleNext}
+          activeOpacity={0.8}
+        >
           <Text style={styles.nextButtonText}>Next: Ingredients</Text>
-          <MaterialCommunityIcons name="arrow-right" size={20} color={colors.white} />
+          <MaterialCommunityIcons
+            name="arrow-right"
+            size={20}
+            color={colors.white}
+          />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.saveDraftButton} onPress={handleSaveDraft} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.saveDraftButton}
+          onPress={handleSaveDraft}
+          activeOpacity={0.7}
+        >
           <Text style={styles.saveDraftText}>Save Draft</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -422,8 +503,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
   },
@@ -432,19 +513,19 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifBold,
     fontSize: fontSizes.xl,
     color: colors.primary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   topBarSpacer: {
     width: 40,
   },
   content: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing['4xl'],
+    paddingBottom: spacing["4xl"],
   },
   nextButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: colors.primary,
     borderRadius: 24,
     paddingVertical: spacing.lg,
@@ -457,7 +538,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   saveDraftButton: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: spacing.lg,
     marginTop: spacing.sm,
   },
@@ -506,7 +587,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   imageStrip: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.sm,
     paddingBottom: spacing.xs,
   },
@@ -514,7 +595,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   imageThumbnail: {
     width: 80,
@@ -522,12 +603,12 @@ const styles = StyleSheet.create({
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(0,0,0,0.45)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   imageRemoveButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 2,
     right: 2,
   },
@@ -536,10 +617,10 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
     borderColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: colors.surfaceContainer,
     gap: 2,
   },
@@ -547,6 +628,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansMedium,
     fontSize: fontSizes.xs,
     color: colors.primary,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
