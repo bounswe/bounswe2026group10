@@ -8,13 +8,7 @@ import { CommentsRatingsScreen } from '../components/comments-ratings/CommentsRa
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
-function HomeScreen() {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>Home feed coming soon</Text>
-    </View>
-  );
-}
+
 
 export function HomeStack() {
   return (
