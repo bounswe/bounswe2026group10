@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from './types';
 import { HomeScreen } from '../screens/HomeScreen';
 import { RecipeDetailScreen } from '../components/recipe-detail/RecipeDetailScreen';
+import { CommentsRatingsScreen } from '../components/comments-ratings/CommentsRatingsScreen';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
@@ -21,6 +22,9 @@ export function HomeStack() {
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="RecipeDetail">
         {({ route }) => <RecipeDetailScreen recipeId={route.params.recipeId} />}
+      </Stack.Screen>
+      <Stack.Screen name="CommentsRatings">
+        {({ route }) => <CommentsRatingsScreen {...route.params} />}
       </Stack.Screen>
     </Stack.Navigator>
   );

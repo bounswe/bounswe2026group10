@@ -15,6 +15,7 @@ export type RootTabParamList = {
 export type HomeStackParamList = {
   Home: undefined;
   RecipeDetail: { recipeId: string };
+  CommentsRatings: { recipeId: string; recipeTitle: string; rating: number; ratingCount: number; creatorUsername?: string };
 };
 
 export type SearchStackParamList = {
