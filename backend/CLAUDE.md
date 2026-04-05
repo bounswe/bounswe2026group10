@@ -1,7 +1,6 @@
 # Roots & Recipes — Backend API
 
 > **IMPORTANT:** Always update this file after adding or changing anything in the backend. CLAUDE.md must stay in sync with the actual codebase at all times.
-
 ## Project Overview
 
 Backend API for **Roots & Recipes**, a cross-generational recipe and food heritage platform that preserves culinary traditions by collecting recipes, cooking techniques, and food stories from experienced home cooks and communities. Built as a university project (CMPE354 — bounswe2026group10).
@@ -126,6 +125,7 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - `POST /auth/logout` — Logout (auth required)
 - `POST /auth/refresh` — Refresh access token
 - `GET /auth/me` — Current user info (auth required)
+- `PATCH /auth/profile` — Update profile fields (auth required, all fields optional: `username`, `bio`, `avatar_url`, `preferred_language`, `region`); returns 409 if username taken
 
 ### Recipes (`/recipes`)
 - `GET /recipes/:id` — Recipe detail (public if published, creator-only if draft)
