@@ -131,7 +131,17 @@
   "home": {
     "featured": "Featured Recipe",
     "communityPicks": "Community Picks",
+    "communityPicksSubtitle": "Highest-rated community recipes right now.",
     "browseByGenre": "Browse by Genre",
+    "browseByGenreSubtitle": "Start from a cuisine type and jump into the matching dishes.",
+    "heroKicker": "Discover what’s cooking",
+    "heroTitle": "Top recipes, genres, and community favorites in one place.",
+    "heroSubtitle": "Browse the highest-rated recipes, jump into a genre, or open discovery to keep exploring.",
+    "exploreDiscovery": "Open Discovery",
+    "searchRecipes": "Search Recipes",
+    "heroGenres": "Genres",
+    "heroRecipes": "Recipes",
+    "heroPicks": "Top picks",
     "noRecipes": "No recipes yet. Check back soon!"
   },
   "search": {
@@ -149,12 +159,17 @@
     "title": "Discover Recipes",
     "subtitle": "Explore recipes by genre, region, allergen restrictions, and dietary preferences.",
     "searchLabel": "Search genres and dish varieties",
-    "searchPlaceholder": "Try dessert, börek, soup...",
+    "searchPlaceholder": "Search genres, dishes, ingredients...",
     "clearSearch": "Clear search",
     "searchGenresTitle": "Matching Genres",
     "searchGenresHint": "Genres matching \"{{query}}\"",
     "searchVarietiesTitle": "Matching Varieties",
     "searchVarietiesHint": "Dish varieties matching \"{{query}}\"",
+    "quickSearchesLabel": "Quick search suggestions",
+    "quickChipQuick": "Quick",
+    "quickChipVegetarian": "Vegetarian",
+    "quickChipGlutenFree": "Gluten-Free",
+    "quickChipBaklava": "Baklava",
     "noSearchMatches": "No genres or dish varieties match your search.",
     "noGenreLabel": "No genre",
     "selectGenrePrompt": "Select a genre to list dish varieties.",
@@ -181,7 +196,10 @@
     "pagination": "Page {{page}} of {{total}}",
     "previousPage": "Previous",
     "nextPage": "Next",
-    "loading": "Loading recipes…"
+    "loading": "Loading recipes…",
+    "genresTitle": "Genres",
+    "recipesTitle": "Recipes",
+    "recipesSearchHint": "Recipe titles matching \"{{query}}\""
   },
   "common": {
     "retry": "Try again",
@@ -233,7 +251,15 @@
   "dishVariety": {
     "notFound": "Dish variety not found.",
     "recipes": "{{count}} Recipes",
-    "noRecipes": "No published recipes for this dish variety yet."
+    "noRecipes": "No published recipes for this dish variety yet.",
+    "culturalSpotlight": "Cultural Recipe Spotlight",
+    "otherRecipes": "Other Recipes",
+    "noOtherRecipes": "No other recipes listed yet.",
+    "communityRecipes": "Community Recipes",
+    "noCommunityRecipes": "No community recipes listed yet.",
+    "openRecipe": "Open recipe",
+    "publishedOn": "Published: {{date}}",
+    "noDescription": "No recipe description available yet."
   },
   "create": {
     "title": "Create Recipe",

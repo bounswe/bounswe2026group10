@@ -33,25 +33,30 @@ export function MainLayout() {
 
           {isAuthenticated && (
             <div className="app-header__trailing">
-              <LanguageSwitcher variant="compact" />
-              <HeaderUser
-                username={profile.username}
-                role={profile.role}
-                loading={profileLoading}
-                failed={profile.status === 'failed'}
-                errorMessage={profile.error}
-                roleLabel={roleLabel}
-              />
-              <button
-                type="button"
-                className="app-header__logout"
-                onClick={() => void logout()}
-                disabled={isLoggingOut}
-                aria-busy={isLoggingOut}
-                aria-label={t('app.logout')}
-              >
-                {isLoggingOut ? <span className="ui-spinner" aria-hidden /> : t('app.logout')}
-              </button>
+              <div className="app-header__meta">
+                <HeaderUser
+                  username={profile.username}
+                  role={profile.role}
+                  loading={profileLoading}
+                  failed={profile.status === 'failed'}
+                  errorMessage={profile.error}
+                  roleLabel={roleLabel}
+                />
+              </div>
+
+              <div className="app-header__actions">
+                <LanguageSwitcher variant="compact" />
+                <button
+                  type="button"
+                  className="app-header__logout"
+                  onClick={() => void logout()}
+                  disabled={isLoggingOut}
+                  aria-busy={isLoggingOut}
+                  aria-label={t('app.logout')}
+                >
+                  {isLoggingOut ? <span className="ui-spinner" aria-hidden /> : t('app.logout')}
+                </button>
+              </div>
             </div>
           )}
 
