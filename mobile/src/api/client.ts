@@ -189,6 +189,11 @@ export async function fetchApi<T>(
     }
   }
 
+  if (response.status === 204) {
+    console.log(`[API] ← ${method} ${url} 204 No Content`);
+    return undefined as T;
+  }
+
   const json: ApiResponse<T> = await response.json();
   console.log(`[API] ← ${method} ${url} ${response.status}`, JSON.stringify(json).slice(0, 300));
 
