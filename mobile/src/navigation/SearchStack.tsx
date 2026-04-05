@@ -1,13 +1,9 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { SearchStackParamList } from './types';
-import { PlaceholderScreen } from '../screens/PlaceholderScreen';
+import { SearchScreen } from '../screens/SearchScreen';
 
 const Stack = createNativeStackNavigator<SearchStackParamList>();
-
-function SearchScreen() {
-  return <PlaceholderScreen name="Search" />;
-}
 
 export function SearchStack() {
   return (

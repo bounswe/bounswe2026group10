@@ -2,13 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Project
 
-**Roots & Recipes** — A cross-generational recipe and food heritage platform (CMPE354 Group 10, BounSWE 2026). The workspace contains three independent apps sharing one backend:
+**Roots & Recipes** — A cross-generational recipe & food heritage platform. CMPE354 Software Engineering course project at Bogazici University (bounswe2026group10).
 
+**Workspace structure:** Three independent apps sharing one backend:
 - `backend/` — Node.js/Express REST API (TypeScript, Supabase/PostgreSQL)
 - `frontend/` — React web app (TypeScript, Vite, Redux Toolkit)
 - `mobile/` — React Native app (TypeScript, Expo SDK 54)
+
+Wiki: https://github.com/bounswe/bounswe2026group10/wiki
+
+---
+
+## Tech Stack
+
+- **TypeScript everywhere** — shared types across all layers
+- **Backend:** Node.js + Express 5, Supabase (PostgreSQL, Auth, Storage, Edge Functions), Zod validation
+- **Frontend:** React + Tailwind CSS, Vite, Redux Toolkit, Vercel deployment
+- **Mobile:** React Native + Expo SDK 54 + NativeWind (Tailwind for RN)
 
 ---
 
@@ -73,30 +85,38 @@ npx jest path/to/test.ts   # run a single test file
 
 ---
 
-## Domain Glossary
+## Domain Model
+
+### Glossary
 - **Dish Genre** — broad food category (e.g. Pastries, Stews, Soups)
 - **Dish Variety** — specific dish within a genre (e.g. Börek, Baklava) — `genreId` FK
 - **Recipe** — user-created content referencing a Dish Variety; type is `'cultural'` or `'community'`
 
----
+Dish hierarchy: **DishGenre** → **DishVariety** → **Recipe**. Each recipe has RecipeIngredient, Step, Tool, Story, Video (with Annotations), and Media components.
 
-## User Roles
+### User Roles
 | Role | Can do |
 |------|--------|
 | `learner` | Browse, discover, rate recipes |
 | `cook` | + Create **community** recipes, upload media |
-| `expert` | + Create **cultural** recipes |
+| `expert` | + Create **cultural** recipes (requires cultural story) |
 
 Role is set at registration and stored in `profiles.role`. The `requireRole()` middleware enforces this.
 
-## API Response Envelope
+**Role inheritance:** Learner → Cook → Expert (each level includes previous permissions).
+
+---
+
+## API Standards
+
+### Response Envelope
 All backend endpoints return:
 ```json
 { "success": true,  "data": <T>,   "error": null }
 { "success": false, "data": null,  "error": { "code": "ERROR_CODE", "message": "..." } }
 ```
 
-## Backend API Shape (key normalizations for frontend)
+### API Shape (Frontend Normalization)
 Backend uses `snake_case`; frontend normalizes to `camelCase` in service modules:
 - `image_url` → `imageUrl`, `average_rating` → `averageRating`, `created_at` → `createdAt`
 - `dish_variety.dish_genre` nests the genre on variety objects
@@ -105,21 +125,40 @@ Backend uses `snake_case`; frontend normalizes to `camelCase` in service modules
 ---
 
 ## Git Conventions
-- Conventional Commits: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`
+
+**Branches:** `<area>/<type>_<short-description>` (e.g., `frontend/feature_user-auth`, `backend/fix_payment-crash`). `docs` branches skip the area prefix. Always branch off `main`, delete after merge.
+
+**Commits:** Conventional Commits — `<type>(<scope>): <message> (#issue)`. 
+- Types: `feat`, `fix`, `refactor`, `test`, `docs`, `style`
 - Scope by area: `feat(auth):`, `feat(frontend/search):`, `feat(backend/discovery):`
-- One coherent change per commit
-- Branch names: `<area>/<type>_<short-description>` — e.g. `mobile/feature_login-screen`, `backend/fix_rating-delete`
-- Areas: `mobile`, `frontend`, `backend`, `docs` — always branch from `main`
+- Imperative mood, under 72 chars, always link an issue
 
-## PR Checklist
+**PRs:** `[Area/Type] Description` (e.g., `[Frontend/Feature] Add auth flow`). Squash on merge, 1+ reviewer required. Use the PR template (What/How to test/Related issue).
 
-### Frontend
+**Issues:** `[AREA/TYPE] Description` in uppercase. Areas: FRONTEND, BACKEND, DOCS, DESIGN. Types: FEATURE, FIX, REFACTOR, TASK.
+
+---
+
+## Frontend PR Checklist
+
 - No API calls in components directly (go through store/services)
 - All user-visible strings in `locales/{en,tr}/common.json`
 - Styles use CSS design tokens
-- `npm run build` passes (runs TypeScript + Vite)
+- `npm run build` passes
+- Follow data flow: pages → store/slices → services → HTTP client
 
-### Mobile
-- No raw `fetch` calls outside of `fetchApi` helper
-- Auth-gated screens check `useAuth()` before rendering
-- `npm test` passes
+---
+
+## Custom Agents
+
+- **architect** — Project decision-making, requirement→implementation mapping, dependency analysis. Read-only, Opus model.
+- **frontend-mobile** — React Native screen/component development. Can delegate to architect.
+- **mobile-api-requirements** — Generate backend API requirements from completed mobile screens. For mobile team to hand off to backend.
+
+---
+
+## Documentation
+
+- **Design docs:** `docs/design/{web,mobile}/` — Figma extracts and guidelines
+- **Backend detailed docs:** `backend/CLAUDE.md` — full DB schema, all endpoint signatures, error codes, testing patterns
+- **Mobile detailed docs:** `mobile/CLAUDE.md` — screen inventory, domain glossary, scenario mapping
