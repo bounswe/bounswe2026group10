@@ -32,6 +32,9 @@ const recipeSchema = z.object({
     message: "Type must be 'community' or 'cultural'",
   }),
   isPublished: z.boolean().optional().default(false),
+  country: z.string().trim().optional(),
+  city: z.string().trim().optional(),
+  district: z.string().trim().optional(),
   ingredients: z
     .array(
       z.object({
@@ -153,7 +156,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
   const { data, error } = await supabase
     .from("recipes")
     .select(
-      `id, title, story, video_url, serving_size, type, is_published, average_rating, rating_count, created_at, updated_at,
+      `id, title, story, video_url, serving_size, type, is_published, average_rating, rating_count, country, city, district, created_at, updated_at,
        creator:profiles!recipes_creator_id_fkey(id, username),
        dish_variety:dish_varieties(id, name, dish_genre:dish_genres(id, name)),
        recipe_ingredients(id, quantity, unit, ingredient:ingredients(id, name, ingredient_allergens(allergen:allergens(name)))),
@@ -236,6 +239,9 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       servingSize: (data as any).serving_size ?? null,
       type: data.type,
       isPublished: (data as any).is_published,
+      country: (data as any).country ?? null,
+      city: (data as any).city ?? null,
+      district: (data as any).district ?? null,
       averageRating: (data as any).average_rating ?? null,
       ratingCount: (data as any).rating_count ?? 0,
       ingredients: (data.recipe_ingredients ?? []).map((ri: any) => ({
@@ -374,6 +380,9 @@ router.post(
         serving_size: body.servingSize ?? null,
         type: body.type,
         is_published: body.isPublished,
+        country: body.country ?? null,
+        city: body.city ?? null,
+        district: body.district ?? null,
       })
       .select("id, created_at")
       .single();
@@ -460,6 +469,9 @@ router.post(
         servingSize: body.servingSize ?? null,
         type: body.type,
         isPublished: body.isPublished,
+        country: body.country ?? null,
+        city: body.city ?? null,
+        district: body.district ?? null,
         ingredients: body.ingredients,
         steps: body.steps,
         tools: body.tools,
@@ -525,6 +537,9 @@ router.patch(
     if (body.servingSize !== undefined) updateData.serving_size = body.servingSize;
     if (body.type !== undefined) updateData.type = body.type;
     if (body.dishVarietyId !== undefined) updateData.dish_variety_id = body.dishVarietyId;
+    if (body.country !== undefined) updateData.country = body.country;
+    if (body.city !== undefined) updateData.city = body.city;
+    if (body.district !== undefined) updateData.district = body.district;
 
     if (Object.keys(updateData).length > 0) {
       const { error: updateError } = await userClient

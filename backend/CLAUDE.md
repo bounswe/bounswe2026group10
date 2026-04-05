@@ -130,8 +130,8 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 
 ### Recipes (`/recipes`)
 - `GET /recipes/:id` — Recipe detail (public if published, creator-only if draft)
-- `POST /recipes` — Create recipe (cook/expert only, accepts `tagIds`)
-- `PATCH /recipes/:id` — Update draft (creator only, cook/expert, accepts `tagIds`)
+- `POST /recipes` — Create recipe (cook/expert only, accepts `tagIds`, optional `country`, `city`, `district`)
+- `PATCH /recipes/:id` — Update draft (creator only, cook/expert, accepts `tagIds`, optional `country`, `city`, `district`)
 - `POST /recipes/:id/publish` — Publish draft (validates completeness)
 - `POST /recipes/:id/ratings` — Rate recipe 1-5 (cannot self-rate, upsert)
 - `GET /recipes/:id/ratings/me` — Get own rating
@@ -167,7 +167,8 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 
 ### Discovery (`/discovery`)
 - `GET /discovery/recipes` — Filtered recipe discovery
-  - Query params: `region`, `genreId`, `varietyId`, `excludeAllergens` (comma-separated IDs), `tagIds` (comma-separated dietary tag IDs — only recipes with ALL specified tags), `page`, `limit`
+  - Query params: `region`, `genreId`, `varietyId`, `excludeAllergens` (comma-separated IDs), `tagIds` (comma-separated dietary tag IDs — only recipes with ALL specified tags), `search` (case-insensitive partial match on recipe title), `country`, `city`, `district` (exact match on recipe location fields), `page`, `limit`
+  - Response recipe objects include `country`, `city`, `district` fields (nullable)
 - `GET /discovery/recipes/by-ingredients` — Recipes fully makeable with provided ingredients
   - Query params: `ingredientIds` (comma-separated IDs, required), `page`, `limit`
   - Only returns recipes whose every ingredient is in the provided list; partial matches excluded

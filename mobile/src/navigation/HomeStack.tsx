@@ -2,6 +2,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from './types';
+import { HomeScreen } from '../screens/HomeScreen';
 import { RecipeDetailScreen } from '../components/recipe-detail/RecipeDetailScreen';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();

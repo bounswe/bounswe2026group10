@@ -493,6 +493,184 @@ describe("GET /discovery/recipes", () => {
     expect(res.status).toBe(500);
     expect(res.body.error.code).toBe("DB_ERROR");
   });
+
+  it("filters recipes by partial title match (search param)", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRecipes, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?search=adana");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(res.body.data.recipes[0].title).toBe("Adana Kebap");
+  });
+
+  it("returns empty when search matches no recipes", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: [], error: null, count: 0 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?search=xqzwnotarecipe");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(0);
+    expect(res.body.data.pagination.total).toBe(0);
+  });
+
+  it("treats empty search string as no filter", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRecipes, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?search=");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+  });
+
+  it("trims whitespace-only search and applies no filter", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRecipes, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?search=   ");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+  });
+
+  it("combines search with genreId filter", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_varieties") return chainable({ data: [{ id: 1 }], error: null });
+      if (table === "recipes") return chainable({ data: mockRecipes, error: null, count: 1 });
+    });
+
+    const res = await request(app).get("/discovery/recipes?search=adana&genreId=1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(res.body.data.recipes[0].title).toBe("Adana Kebap");
+  });
+
+  it("combines search with region filter", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRecipes, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?search=adana&region=Turkey");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+  });
+
+  it("filters by country", async () => {
+    const mockWithLocation = [{ ...mockRecipes[0], country: "Turkey", city: null, district: null }];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockWithLocation, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?country=Turkey");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(res.body.data.recipes[0].country).toBe("Turkey");
+  });
+
+  it("filters by city", async () => {
+    const mockWithLocation = [{ ...mockRecipes[0], country: "Turkey", city: "Adana", district: null }];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockWithLocation, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?city=Adana");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(res.body.data.recipes[0].city).toBe("Adana");
+  });
+
+  it("filters by district", async () => {
+    const mockWithLocation = [{ ...mockRecipes[0], country: "Turkey", city: "Adana", district: "Seyhan" }];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockWithLocation, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?district=Seyhan");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(res.body.data.recipes[0].district).toBe("Seyhan");
+  });
+
+  it("filters by country, city, and district combined", async () => {
+    const mockWithLocation = [{ ...mockRecipes[0], country: "Turkey", city: "Adana", district: "Seyhan" }];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockWithLocation, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?country=Turkey&city=Adana&district=Seyhan");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(res.body.data.recipes[0].country).toBe("Turkey");
+    expect(res.body.data.recipes[0].city).toBe("Adana");
+    expect(res.body.data.recipes[0].district).toBe("Seyhan");
+  });
+
+  it("returns empty when country filter matches nothing", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: [], error: null, count: 0 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?country=Narnia");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(0);
+    expect(res.body.data.pagination.total).toBe(0);
+  });
+
+  it("combines country filter with genreId", async () => {
+    const mockWithLocation = [{ ...mockRecipes[0], country: "Turkey", city: null, district: null }];
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_varieties") return chainable({ data: [{ id: 1 }], error: null });
+      if (table === "recipes") return chainable({ data: mockWithLocation, error: null, count: 1 });
+    });
+
+    const res = await request(app).get("/discovery/recipes?country=Turkey&genreId=1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(res.body.data.recipes[0].country).toBe("Turkey");
+  });
+
+  it("combines country filter with search", async () => {
+    const mockWithLocation = [{ ...mockRecipes[0], country: "Turkey", city: null, district: null }];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockWithLocation, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?country=Turkey&search=adana");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+  });
+
+  it("response includes country, city, district fields", async () => {
+    const mockWithLocation = [{ ...mockRecipes[0], country: "Turkey", city: "Adana", district: null }];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockWithLocation, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes");
+
+    expect(res.status).toBe(200);
+    const recipe = res.body.data.recipes[0];
+    expect(recipe).toHaveProperty("country");
+    expect(recipe).toHaveProperty("city");
+    expect(recipe).toHaveProperty("district");
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
