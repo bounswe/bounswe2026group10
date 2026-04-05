@@ -171,6 +171,12 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - `GET /discovery/recipes/by-ingredients` — Recipes fully makeable with provided ingredients
   - Query params: `ingredientIds` (comma-separated IDs, required), `page`, `limit`
   - Only returns recipes whose every ingredient is in the provided list; partial matches excluded
+- `GET /discovery/locations` — Distinct location values with at least one published recipe (#323)
+  - No params → distinct countries
+  - `?country=Turkey` → distinct cities in Turkey
+  - `?country=Turkey&city=Istanbul` → distinct districts in Istanbul
+  - Returns `{ results: string[] }` sorted alphabetically
+  - Returns 400 if `city` is provided without `country`; null/empty fields excluded
 
 ### Media (`/media`)
 - `POST /media/upload` — Upload file (cook/expert only, multipart/form-data)

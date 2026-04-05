@@ -375,4 +375,63 @@ router.get("/recipes/by-ingredients", async (req, res) => {
   }
 );
 
+// ─── GET /discovery/locations ────────────────────────────────────────────────
+// Returns distinct location values that have at least one published recipe.
+// Hierarchical — each level scoped by its parent:
+//   (no params)              → distinct countries
+//   ?country=Turkey          → distinct cities in Turkey
+//   ?country=Turkey&city=X   → distinct districts in that city
+const locationsQuerySchema = z.object({
+  country: z.string().trim().optional(),
+  city: z.string().trim().optional(),
+});
+
+router.get("/locations", async (req, res) => {
+  const parsed = locationsQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    const message = parsed.error.issues
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join("; ");
+    return res.status(400).json(errorResponse("VALIDATION_ERROR", message));
+  }
+
+  const { country, city } = parsed.data;
+
+  if (city && !country) {
+    return res.status(400).json(
+      errorResponse("VALIDATION_ERROR", "city requires country to be specified")
+    );
+  }
+
+  let field: string;
+  let query = supabase.from("recipes").select("country, city, district").eq("is_published", true);
+
+  if (country && city) {
+    field = "district";
+    query = query.eq("country", country).eq("city", city).not("district", "is", null);
+  } else if (country) {
+    field = "city";
+    query = query.eq("country", country).not("city", "is", null);
+  } else {
+    field = "country";
+    query = query.not("country", "is", null);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    return res.status(500).json(errorResponse("DB_ERROR", error.message));
+  }
+
+  const results = [
+    ...new Set(
+      (data ?? [])
+        .map((r: any) => r[field])
+        .filter((v: any) => typeof v === "string" && v.trim() !== "")
+    ),
+  ].sort();
+
+  return res.status(200).json(successResponse({ results }));
+});
+
 export default router;

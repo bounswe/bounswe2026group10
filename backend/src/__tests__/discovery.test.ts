@@ -841,3 +841,105 @@ describe("GET /discovery/recipes/by-ingredients", () => {
     expect(res.body.data.recipes).toHaveLength(1);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("GET /discovery/locations", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("returns distinct countries sorted alphabetically", async () => {
+    const mockRows = [
+      { country: "Turkey", city: null, district: null },
+      { country: "Italy", city: null, district: null },
+      { country: "Turkey", city: null, district: null },
+    ];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRows, error: null })
+    );
+
+    const res = await request(app).get("/discovery/locations");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.results).toEqual(["Italy", "Turkey"]);
+  });
+
+  it("returns distinct cities scoped to a country", async () => {
+    const mockRows = [
+      { country: "Turkey", city: "Istanbul", district: null },
+      { country: "Turkey", city: "Gaziantep", district: null },
+      { country: "Turkey", city: "Istanbul", district: null },
+    ];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRows, error: null })
+    );
+
+    const res = await request(app).get("/discovery/locations?country=Turkey");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.results).toEqual(["Gaziantep", "Istanbul"]);
+  });
+
+  it("returns distinct districts scoped to country and city", async () => {
+    const mockRows = [
+      { country: "Turkey", city: "Istanbul", district: "Kadıköy" },
+      { country: "Turkey", city: "Istanbul", district: "Şişli" },
+      { country: "Turkey", city: "Istanbul", district: "Kadıköy" },
+    ];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRows, error: null })
+    );
+
+    const res = await request(app).get("/discovery/locations?country=Turkey&city=Istanbul");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.results).toEqual(["Kadıköy", "Şişli"]);
+  });
+
+  it("returns 400 when city is provided without country", async () => {
+    const res = await request(app).get("/discovery/locations?city=Istanbul");
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("returns empty array when no published recipes exist for the location", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: [], error: null })
+    );
+
+    const res = await request(app).get("/discovery/locations?country=Japan");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.results).toEqual([]);
+  });
+
+  it("excludes null and empty string location values", async () => {
+    const mockRows = [
+      { country: "Turkey", city: null, district: null },
+      { country: "", city: null, district: null },
+      { country: "Italy", city: null, district: null },
+    ];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRows, error: null })
+    );
+
+    const res = await request(app).get("/discovery/locations");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.results).toEqual(["Italy", "Turkey"]);
+  });
+
+  it("returns 500 on database error", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: null, error: { message: "DB connection failed" } })
+    );
+
+    const res = await request(app).get("/discovery/locations");
+
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error.code).toBe("DB_ERROR");
+  });
+});
