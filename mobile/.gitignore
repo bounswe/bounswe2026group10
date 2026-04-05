@@ -42,6 +42,3 @@ CLAUDE.local.md
 # generated native folders
 /ios
 /android
-
-# apple files
-.DS_Store
