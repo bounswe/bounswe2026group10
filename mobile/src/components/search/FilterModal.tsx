@@ -8,12 +8,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { fetchDietaryTags, fetchRegions, type DietaryTag } from '../../api/search';
+import { fetchDietaryTags, type DietaryTag } from '../../api/search';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
 export interface FilterState {
-  country?: string;
   excludeAllergenIds: number[];
   excludeAllergenNames: string[];
   dietaryTagIds: number[];
@@ -38,11 +38,9 @@ export const EMPTY_FILTERS: FilterState = {
 
 export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters }: FilterModalProps) {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    country: false,
     allergens: false,
     dietary: false,
   });
-  const [countries, setCountries] = useState<string[]>([]);
   const [tags, setTags] = useState<DietaryTag[]>([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
@@ -59,13 +57,12 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
     setFilters(appliedFilters ?? EMPTY_FILTERS);
   }, [appliedFilters]);
 
-  // Load countries and dietary tags when modal opens
+  // Load dietary tags when modal opens
   useEffect(() => {
     if (!visible) return;
     setLoading(true);
-    Promise.all([fetchRegions(), fetchDietaryTags()])
-      .then(([c, t]) => {
-        setCountries(c);
+    fetchDietaryTags()
+      .then((t) => {
         setTags(t);
       })
       .finally(() => setLoading(false));
@@ -112,11 +109,16 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false}>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={styles.header} pointerEvents="box-none">
           <Text style={styles.title}>Filters</Text>
-          <TouchableOpacity onPress={onClose}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.closeButton}
+            hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+            activeOpacity={0.5}
+          >
             <MaterialCommunityIcons name="close" size={24} color={colors.onSurface} />
           </TouchableOpacity>
         </View>
@@ -125,51 +127,6 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
           <ActivityIndicator color={colors.primary} size="large" style={styles.loader} />
         ) : (
           <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
-
-            {/* ── Country Section ── */}
-            <View style={styles.filterSection}>
-              <TouchableOpacity
-                style={styles.sectionHeader}
-                onPress={() => toggleSection('country')}
-              >
-                <Text style={styles.filterTitle}>Country</Text>
-                <MaterialCommunityIcons
-                  name={expandedSections.country ? 'chevron-up' : 'chevron-down'}
-                  size={20}
-                  color={colors.onSurfaceVariant}
-                />
-              </TouchableOpacity>
-
-              {expandedSections.country && (
-                <View style={styles.sectionContent}>
-                  {countries.map((country) => (
-                    <TouchableOpacity
-                      key={country}
-                      style={styles.checkboxRow}
-                      onPress={() =>
-                        setFilters((prev) => ({
-                          ...prev,
-                          country: prev.country === country ? undefined : country,
-                        }))
-                      }
-                    >
-                      <View
-                        style={[
-                          styles.checkbox,
-                          filters.country === country && styles.checkboxChecked,
-                        ]}
-                      >
-                        {filters.country === country && (
-                          <MaterialCommunityIcons name="check" size={16} color={colors.white} />
-                        )}
-                      </View>
-                      <Text style={styles.checkboxLabel}>{country}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-
 
             {/* ── Exclude Allergens ── */}
             {allergenTags.length > 0 && (
@@ -266,7 +223,7 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
             <Text style={styles.buttonPrimaryText}>Apply Filters</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -281,7 +238,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingTop: spacing['2xl'],
     paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.outline,
@@ -290,6 +247,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifBold,
     fontSize: fontSizes['2xl'],
     color: colors.onSurface,
+  },
+  closeButton: {
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
   },
   content: {
     flex: 1,
