@@ -8,7 +8,6 @@ const router = Router();
 // ─── Zod Schema ───────────────────────────────────────────────────────────────
 
 const discoveryQuerySchema = z.object({
-  region: z.string().optional(),
   // Comma-separated allergen IDs to exclude (e.g. "1,2,3")
   excludeAllergens: z.string().optional(),
   // Comma-separated dietary tag IDs to require (e.g. "1,3" for Halal + Vegan)
@@ -27,7 +26,6 @@ const discoveryQuerySchema = z.object({
 
 // ─── GET /discovery/recipes ───────────────────────────────────────────────────
 // Returns published recipes with composable filters:
-//   ?region=Turkey
 //   ?excludeAllergens=1,2,3   (allergen IDs)
 //   ?genreId=1
 //   ?varietyId=1
@@ -42,7 +40,7 @@ router.get("/recipes", async (req, res) => {
         .join("; ");
       return res.status(400).json(errorResponse("VALIDATION_ERROR", message));
     }
-    const { region, excludeAllergens, tagIds, genreId, varietyId, search, country, city, district, page, limit } = parsed.data;
+    const { excludeAllergens, tagIds, genreId, varietyId, search, country, city, district, page, limit } = parsed.data;
 
     // ── Step 0: Resolve tag filter ───────────────────────────────────────────
     let tagFilteredRecipeIds: string[] | null = null;
@@ -177,7 +175,7 @@ router.get("/recipes", async (req, res) => {
          country, city, district,
          created_at, updated_at,
          dish_variety:dish_varieties!recipes_dish_variety_id_fkey(
-           id, name, region,
+           id, name,
            dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name)
          ),
          profile:profiles!recipes_creator_id_fkey(id, username),
@@ -185,10 +183,6 @@ router.get("/recipes", async (req, res) => {
         { count: "exact" }
       )
       .eq("is_published", true);
-
-    if (region) {
-      query = query.eq("dish_varieties.region", region);
-    }
 
     if (search) {
       query = query.ilike("title", `%${search}%`);
@@ -338,9 +332,10 @@ router.get("/recipes/by-ingredients", async (req, res) => {
       .from("recipes")
       .select(
         `id, title, type, average_rating, rating_count,
+         country, city, district,
          created_at, updated_at,
          dish_variety:dish_varieties!recipes_dish_variety_id_fkey(
-           id, name, region,
+           id, name,
            dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name)
          ),
          profile:profiles!recipes_creator_id_fkey(id, username),

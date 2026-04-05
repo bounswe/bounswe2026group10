@@ -197,7 +197,7 @@ describe("GET /dish-varieties/:id", () => {
       dish_genre: { id: 1, name: "Kebap" },
     };
     const mockRecipes = [
-      { id: 10, title: "Classic Adana", type: "community", average_rating: 4.5, rating_count: 12, region: "Turkey", created_at: "2024-01-01", updated_at: "2024-01-01" },
+      { id: 10, title: "Classic Adana", type: "community", average_rating: 4.5, rating_count: 12, created_at: "2024-01-01", updated_at: "2024-01-01" },
     ];
 
     (supabase.from as jest.Mock).mockImplementation((table) => {
@@ -381,7 +381,7 @@ describe("GET /discovery/recipes", () => {
 
   const mockRecipes = [
     {
-      id: 1, title: "Adana Kebap", type: "community", region: "Turkey",
+      id: 1, title: "Adana Kebap", type: "community",
       average_rating: 4.8, rating_count: 20, created_at: "2024-01-01", updated_at: "2024-01-01",
       dish_variety: { id: 1, name: "Adana Kebap", dish_genre: { id: 1, name: "Kebap" } },
       profile: { id: "p1", username: "cook1" },
@@ -399,17 +399,6 @@ describe("GET /discovery/recipes", () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.recipes).toHaveLength(1);
     expect(res.body.data.pagination).toMatchObject({ page: 1, limit: 20, total: 1 });
-  });
-
-  it("filters by region", async () => {
-    (supabase.from as jest.Mock).mockReturnValue(
-      chainable({ data: mockRecipes, error: null, count: 1 })
-    );
-
-    const res = await request(app).get("/discovery/recipes?region=Turkey");
-
-    expect(res.status).toBe(200);
-    expect(res.body.data.recipes[0].region).toBe("Turkey");
   });
 
   it("excludes recipes with specified allergens", async () => {
@@ -552,17 +541,6 @@ describe("GET /discovery/recipes", () => {
     expect(res.status).toBe(200);
     expect(res.body.data.recipes).toHaveLength(1);
     expect(res.body.data.recipes[0].title).toBe("Adana Kebap");
-  });
-
-  it("combines search with region filter", async () => {
-    (supabase.from as jest.Mock).mockReturnValue(
-      chainable({ data: mockRecipes, error: null, count: 1 })
-    );
-
-    const res = await request(app).get("/discovery/recipes?search=adana&region=Turkey");
-
-    expect(res.status).toBe(200);
-    expect(res.body.data.recipes).toHaveLength(1);
   });
 
   it("filters by country", async () => {

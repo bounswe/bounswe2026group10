@@ -109,7 +109,7 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - **ingredient_substitutions** — `id`, `ingredient_id` (FK ingredients), `substitute_id` (FK ingredients), `source_amount` NUMERIC(10,3), `source_unit` TEXT, `sub_amount` NUMERIC(10,3), `sub_unit` TEXT, `confidence` NUMERIC(3,2), `description` TEXT — unique on (ingredient_id, substitute_id), no self-substitution
 - **dietary_tags** — `id`, `name` (unique), `category` (dietary|allergen)
 - **dish_genres** — `id`, `name`, `description`
-- **dish_varieties** — `id`, `name`, `description`, `genre_id` (FK dish_genres), `region`
+- **dish_varieties** — `id`, `name`, `description`, `genre_id` (FK dish_genres)
 
 ### Database Triggers
 
@@ -119,7 +119,6 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 
 ### Health & Meta
 - `GET /health` — Health check
-- `GET /meta/regions` — Supported regions list (Turkey, Greece, Italy, Mexico, India, Japan)
 
 ### Auth (`/auth`)
 - `POST /auth/register` — Register (email, password, username, role)
@@ -167,7 +166,7 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 
 ### Discovery (`/discovery`)
 - `GET /discovery/recipes` — Filtered recipe discovery
-  - Query params: `region`, `genreId`, `varietyId`, `excludeAllergens` (comma-separated IDs), `tagIds` (comma-separated dietary tag IDs — only recipes with ALL specified tags), `search` (case-insensitive partial match on recipe title), `country`, `city`, `district` (exact match on recipe location fields), `page`, `limit`
+  - Query params: `genreId`, `varietyId`, `excludeAllergens` (comma-separated IDs), `tagIds` (comma-separated dietary tag IDs — only recipes with ALL specified tags), `search` (case-insensitive partial match on recipe title), `country`, `city`, `district` (exact match on recipe location fields), `page`, `limit`
   - Response recipe objects include `country`, `city`, `district` fields (nullable)
 - `GET /discovery/recipes/by-ingredients` — Recipes fully makeable with provided ingredients
   - Query params: `ingredientIds` (comma-separated IDs, required), `page`, `limit`
