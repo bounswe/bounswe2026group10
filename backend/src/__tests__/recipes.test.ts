@@ -168,6 +168,113 @@ describe("GET /recipes/:id", () => {
   });
 });
 
+// ─── GET /recipes/mine ───────────────────────────────────────────────────────
+
+describe("GET /recipes/mine", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  const setupMineMock = (data: any) => {
+    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "auth-user-1", email: "test@example.com" } },
+      error: null,
+    });
+
+    const recipeChain: any = {};
+    recipeChain.select = jest.fn().mockReturnValue(recipeChain);
+    recipeChain.eq = jest.fn().mockReturnValue(recipeChain);
+    recipeChain.order = jest.fn().mockResolvedValue({ data, error: null });
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") {
+        const mockSingle = jest.fn().mockResolvedValue({
+          data: { id: "profile-1", username: "cook1", role: "cook" },
+          error: null,
+        });
+        return { select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ single: mockSingle }) }) };
+      }
+      if (table === "recipes") return recipeChain;
+      return {};
+    });
+  };
+
+  it("returns 401 if no token provided", async () => {
+    const res = await request(app).get("/recipes/mine");
+    expect(res.status).toBe(401);
+  });
+
+  it("returns all recipes (draft + published) for authenticated user", async () => {
+    const mockRecipes = [
+      { id: "r1", title: "Published Recipe", type: "community", is_published: true, average_rating: 4.5, rating_count: 10, country: "Turkey", city: null, district: null, created_at: "2024-02-01", updated_at: "2024-02-01", recipe_media: [{ id: 1, url: "https://example.com/img.jpg", type: "image" }] },
+      { id: "r2", title: "Draft Recipe", type: "community", is_published: false, average_rating: null, rating_count: 0, country: null, city: null, district: null, created_at: "2024-01-01", updated_at: "2024-01-01", recipe_media: [] },
+    ];
+    setupMineMock(mockRecipes);
+
+    const res = await request(app).get("/recipes/mine").set("Authorization", "Bearer valid-token");
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.data[0].isPublished).toBe(true);
+    expect(res.body.data[1].isPublished).toBe(false);
+  });
+
+  it("returns empty array when user has no recipes", async () => {
+    setupMineMock([]);
+
+    const res = await request(app).get("/recipes/mine").set("Authorization", "Bearer valid-token");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(0);
+  });
+
+  it("returns correct response shape", async () => {
+    const mockRecipes = [
+      { id: "r1", title: "My Recipe", type: "community", is_published: true, average_rating: 4.0, rating_count: 5, country: "Turkey", city: "Adana", district: null, created_at: "2024-01-01", updated_at: "2024-01-01", recipe_media: [{ id: 1, url: "https://example.com/img.jpg", type: "image" }] },
+    ];
+    setupMineMock(mockRecipes);
+
+    const res = await request(app).get("/recipes/mine").set("Authorization", "Bearer valid-token");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0]).toMatchObject({
+      id: "r1",
+      title: "My Recipe",
+      type: "community",
+      isPublished: true,
+      averageRating: 4.0,
+      ratingCount: 5,
+      country: "Turkey",
+      city: "Adana",
+      district: null,
+      coverImageUrl: "https://example.com/img.jpg",
+    });
+  });
+
+  it("filters by status=published", async () => {
+    const mockPublished = [
+      { id: "r1", title: "Published", type: "community", is_published: true, average_rating: 4.0, rating_count: 5, country: null, city: null, district: null, created_at: "2024-01-01", updated_at: "2024-01-01", recipe_media: [] },
+    ];
+    setupMineMock(mockPublished);
+
+    const res = await request(app).get("/recipes/mine?status=published").set("Authorization", "Bearer valid-token");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0].isPublished).toBe(true);
+  });
+
+  it("filters by status=draft", async () => {
+    const mockDrafts = [
+      { id: "r2", title: "Draft", type: "community", is_published: false, average_rating: null, rating_count: 0, country: null, city: null, district: null, created_at: "2024-01-01", updated_at: "2024-01-01", recipe_media: [] },
+    ];
+    setupMineMock(mockDrafts);
+
+    const res = await request(app).get("/recipes/mine?status=draft").set("Authorization", "Bearer valid-token");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0].isPublished).toBe(false);
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("Recipe Endpoints (Creation & Publishing)", () => {

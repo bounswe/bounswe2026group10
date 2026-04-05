@@ -140,6 +140,59 @@ router.get("/:id/scale", async (req: Request, res: Response): Promise<void> => {
   );
 });
 
+// ─── GET /recipes/mine ───────────────────────────────────────────────────────
+
+/**
+ * List all recipes (draft + published) belonging to the authenticated user.
+ * Ordered by created_at descending.
+ */
+router.get("/mine", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const user = (req as AuthenticatedRequest).user;
+  const userClient = createUserClient(user.accessToken);
+
+  const statusParam = req.query["status"];
+  const validStatus = statusParam === "published" || statusParam === "draft" ? statusParam : null;
+
+  let query = userClient
+    .from("recipes")
+    .select(
+      `id, title, type, is_published, average_rating, rating_count,
+       country, city, district, created_at, updated_at,
+       recipe_media(id, url, type)`
+    )
+    .eq("creator_id", user.profileId);
+
+  if (validStatus === "published") query = query.eq("is_published", true);
+  if (validStatus === "draft") query = query.eq("is_published", false);
+
+  const { data, error } = await query.order("created_at", { ascending: false });
+
+  if (error) {
+    res.status(500).json(errorResponse("DB_ERROR", error.message));
+    return;
+  }
+
+  const recipes = (data ?? []).map((r: any) => {
+    const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
+    return {
+      id: r.id,
+      title: r.title,
+      type: r.type,
+      isPublished: r.is_published,
+      averageRating: r.average_rating ?? null,
+      ratingCount: r.rating_count ?? 0,
+      country: r.country ?? null,
+      city: r.city ?? null,
+      district: r.district ?? null,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      coverImageUrl: firstImage?.url ?? null,
+    };
+  });
+
+  res.status(200).json(successResponse(recipes));
+});
+
 // ─── GET /recipes/:id ────────────────────────────────────────────────────────
 
 /**
