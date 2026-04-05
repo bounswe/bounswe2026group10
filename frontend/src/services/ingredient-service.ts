@@ -21,4 +21,17 @@ export const ingredientService = {
       }
     })
   },
+
+  /**
+   * POST /ingredients — create a new ingredient (cook/expert only).
+   * Throws with code CONFLICT (409) if name already exists.
+   */
+  create: async (name: string): Promise<IngredientOption> => {
+    const res = await httpClient.post('/ingredients', { name })
+    const data = res.data?.data as { id?: unknown; name?: unknown }
+    return {
+      id: Number(data.id),
+      name: String(data.name ?? ''),
+    }
+  },
 }

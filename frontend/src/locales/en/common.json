@@ -318,13 +318,29 @@
       "infoNote": "Pick each ingredient from the catalog. Enter a positive amount and a unit (e.g. g, ml, tbsp).",
       "selectedFromCatalog": "Selected from catalog",
       "continueHint": "Select each ingredient from the search results, and fill quantity and unit. You can continue when at least one row is complete and no row is incomplete.",
-      "needAtLeastOne": "Add at least one ingredient: choose from search results, then enter quantity and unit."
+      "needAtLeastOne": "Add at least one ingredient: choose from search results, then enter quantity and unit.",
+      "unitSearchEmpty": "No units found.",
+      "unitSearchError": "Could not load units.",
+      "addNew": "Add \"{{name}}\"?",
+      "addNewModal": {
+        "title": "Add New Ingredient",
+        "label": "Ingredient name",
+        "confirm": "Add",
+        "cancel": "Cancel",
+        "adding": "Adding…",
+        "error": "Could not add ingredient.",
+        "errorConflict": "This ingredient already exists. Try searching for it."
+      }
     },
     "tools": {
       "title": "Tools Needed",
       "placeholder": "Tool name (e.g. Mixing bowl)",
       "add": "Add",
-      "removeAria": "Remove tool"
+      "removeAria": "Remove tool",
+      "searchPlaceholder": "Tool name (e.g. Mixing bowl)",
+      "searchLoading": "Searching…",
+      "searchEmpty": "No tools found.",
+      "searchError": "Could not load tools."
     },
     "instructions": {
       "title": "Instructions",
@@ -361,6 +377,12 @@
       "errorMediaAfterCreate": "Recipe saved, but uploading media failed. You can try adding files again later.",
       "uploading": "Uploading media…",
       "chooseAria": "Select photos or MP4 video files from your device"
+    },
+    "standardize": {
+      "button": "Standardize Units",
+      "loading": "Standardizing…",
+      "error": "Could not standardize units.",
+      "applied": "Units standardized."
     }
   }
 }

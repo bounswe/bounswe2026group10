@@ -64,6 +64,40 @@ function normalizeTool(raw: unknown): string | null {
   return name || null
 }
 
+// ── standardize-units types ───────────────────────────────────────────────────
+
+export interface StandardizeUnitsIngredientInput {
+  name: string
+  quantity: number
+  unit: string
+}
+
+export interface StandardizeUnitsStepInput {
+  stepOrder: number
+  description: string
+}
+
+export interface StandardizedIngredient {
+  name: string
+  originalQuantity: number
+  originalUnit: string
+  standardQuantity: number
+  standardUnit: string
+}
+
+export interface StandardizedStep {
+  stepOrder: number
+  originalDescription: string
+  standardDescription: string
+}
+
+export interface StandardizeUnitsOutput {
+  ingredients: StandardizedIngredient[]
+  steps: StandardizedStep[]
+}
+
+// ── service ───────────────────────────────────────────────────────────────────
+
 export const parseService = {
   parseRecipeText: async (text: string): Promise<ParsedRecipeOutput> => {
     const res = await httpClient.post('/parse/recipe-text', { text })
@@ -94,5 +128,47 @@ export const parseService = {
       steps,
       tools,
     }
+  },
+
+  /**
+   * POST /parse/standardize-units — convert informal units and step descriptions
+   * to standard forms via Gemini AI. Auth required: cook or expert.
+   */
+  standardizeUnits: async (
+    ingredients: StandardizeUnitsIngredientInput[],
+    steps?: StandardizeUnitsStepInput[],
+    region?: string,
+  ): Promise<StandardizeUnitsOutput> => {
+    const body: Record<string, unknown> = { ingredients }
+    if (steps && steps.length > 0) body.steps = steps
+    if (region) body.region = region
+
+    const res = await httpClient.post('/parse/standardize-units', body)
+    const payload = (res.data?.data ?? {}) as Record<string, unknown>
+
+    const rawIngredients = Array.isArray(payload.ingredients) ? payload.ingredients : []
+    const rawSteps = Array.isArray(payload.steps) ? payload.steps : []
+
+    const outIngredients: StandardizedIngredient[] = rawIngredients.map((item) => {
+      const r = item as Record<string, unknown>
+      return {
+        name: String(r.name ?? ''),
+        originalQuantity: Number(r.originalQuantity) || 0,
+        originalUnit: String(r.originalUnit ?? ''),
+        standardQuantity: Number(r.standardQuantity) || 0,
+        standardUnit: String(r.standardUnit ?? ''),
+      }
+    })
+
+    const outSteps: StandardizedStep[] = rawSteps.map((item) => {
+      const r = item as Record<string, unknown>
+      return {
+        stepOrder: Number(r.stepOrder) || 0,
+        originalDescription: String(r.originalDescription ?? ''),
+        standardDescription: String(r.standardDescription ?? ''),
+      }
+    })
+
+    return { ingredients: outIngredients, steps: outSteps }
   },
 }

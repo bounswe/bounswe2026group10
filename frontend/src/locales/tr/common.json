@@ -318,13 +318,29 @@
       "infoNote": "Her malzemeyi listeden seçin. Miktar pozitif bir sayı, birim ise g, ml, yk. gibi olmalıdır.",
       "selectedFromCatalog": "Katalogdan seçildi",
       "continueHint": "Malzemeyi arama sonuçlarından seçin; miktar ve birimi doldurun. En az bir satır eksiksiz olmalı, eksik veya yazılmış ama seçilmemiş satır olmamalı.",
-      "needAtLeastOne": "En az bir malzeme ekleyin: listeden seçin, ardından miktar ve birimi girin."
+      "needAtLeastOne": "En az bir malzeme ekleyin: listeden seçin, ardından miktar ve birimi girin.",
+      "unitSearchEmpty": "Birim bulunamadı.",
+      "unitSearchError": "Birimler yüklenemedi.",
+      "addNew": "\"{{name}}\" ekle?",
+      "addNewModal": {
+        "title": "Yeni Malzeme Ekle",
+        "label": "Malzeme adı",
+        "confirm": "Ekle",
+        "cancel": "İptal",
+        "adding": "Ekleniyor…",
+        "error": "Malzeme eklenemedi.",
+        "errorConflict": "Bu malzeme zaten mevcut. Aramayı deneyin."
+      }
     },
     "tools": {
       "title": "Gerekli Araçlar",
       "placeholder": "Araç adı (örn. Karıştırma kabı)",
       "add": "Ekle",
-      "removeAria": "Aracı kaldır"
+      "removeAria": "Aracı kaldır",
+      "searchPlaceholder": "Araç adı (örn. Karıştırma kabı)",
+      "searchLoading": "Aranıyor…",
+      "searchEmpty": "Araç bulunamadı.",
+      "searchError": "Araçlar yüklenemedi."
     },
     "instructions": {
       "title": "Talimatlar",
@@ -361,6 +377,12 @@
       "errorMediaAfterCreate": "Tarif kaydedildi ancak medya yüklenemedi. Daha sonra tekrar deneyebilirsiniz.",
       "uploading": "Medyalar yükleniyor…",
       "chooseAria": "Cihazınızdan fotoğraf veya MP4 video dosyası seçin"
+    },
+    "standardize": {
+      "button": "Birimleri Standartlaştır",
+      "loading": "Standartlaştırılıyor…",
+      "error": "Birimler standartlaştırılamadı.",
+      "applied": "Birimler standartlaştırıldı."
     }
   }
 }

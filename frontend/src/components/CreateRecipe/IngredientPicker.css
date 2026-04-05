@@ -71,3 +71,72 @@
   align-items: center;
   justify-content: center;
 }
+
+/* "Add new ingredient" CTA inside the dropdown */
+.cr-ingredient-picker__add-btn {
+  display: block;
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-top: 1px solid rgba(134, 69, 42, 0.12);
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--color-primary, #86452a);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.cr-ingredient-picker__add-btn:hover,
+.cr-ingredient-picker__add-btn:focus-visible {
+  background: rgba(134, 69, 42, 0.06);
+  outline: none;
+}
+
+/* UnitPicker: wrapper takes unit column width */
+.cr-unit-picker {
+  flex: none;
+  width: 5.5rem;
+}
+
+/* Add-ingredient modal overlay */
+.cr-ing-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cr-ing-modal {
+  background: var(--surface-card);
+  border-radius: var(--radius-md, 0.75rem);
+  padding: var(--space-lg, 1.5rem);
+  width: min(22rem, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 1rem);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.14);
+}
+
+.cr-ing-modal__title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cr-ing-modal__error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-negative);
+}
+
+.cr-ing-modal__actions {
+  display: flex;
+  gap: var(--space-sm, 0.5rem);
+  justify-content: flex-end;
+}
