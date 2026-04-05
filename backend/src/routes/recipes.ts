@@ -987,6 +987,50 @@ router.get("/:id/media", async (req: Request, res: Response): Promise<void> => {
   res.status(200).json(successResponse(data));
 });
 
+// ─── DELETE /recipes/:id ─────────────────────────────────────────────────────
+
+/**
+ * Delete a recipe and all its related data (cascaded by DB).
+ * Auth required: Yes. Must be the recipe creator.
+ */
+router.delete("/:id", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const user = (req as AuthenticatedRequest).user;
+  const recipeId = req.params["id"] ?? "";
+  const userClient = createUserClient(user.accessToken);
+
+  const { data: recipe, error: fetchError } = await userClient
+    .from("recipes")
+    .select("id, creator_id")
+    .eq("id", recipeId)
+    .single();
+
+  if (fetchError) {
+    if (fetchError.code === "PGRST116") {
+      res.status(404).json(errorResponse("NOT_FOUND", "Recipe not found."));
+      return;
+    }
+    res.status(500).json(errorResponse("DB_ERROR", fetchError.message));
+    return;
+  }
+
+  if ((recipe as any).creator_id !== user.profileId) {
+    res.status(403).json(errorResponse("FORBIDDEN", "You are not the creator of this recipe."));
+    return;
+  }
+
+  const { error: deleteError } = await userClient
+    .from("recipes")
+    .delete()
+    .eq("id", recipeId);
+
+  if (deleteError) {
+    res.status(500).json(errorResponse("DB_ERROR", deleteError.message));
+    return;
+  }
+
+  res.status(204).send();
+});
+
 // ─── DELETE /recipes/:id/media/:mediaId ──────────────────────────────────────
 
 /**
