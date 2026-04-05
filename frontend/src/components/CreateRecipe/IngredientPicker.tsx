@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { isAxiosError } from 'axios'
 import { ingredientService, type IngredientOption } from '@/services/ingredient-service'
 import './IngredientPicker.css'
 
@@ -10,7 +11,7 @@ export interface IngredientPickerProps {
   ingredientId: number | null
   name: string
   onChange: (ingredientId: number | null, name: string) => void
-  /** Called on every keystroke so the parent can validate “typed but not selected from API”. */
+  /** Called on every keystroke so the parent can validate "typed but not selected from API". */
   onSearchInputChange?: (text: string) => void
   disabled?: boolean
 }
@@ -27,6 +28,12 @@ export function IngredientPicker({ ingredientId, name, onChange, onSearchInputCh
   const [loading, setLoading] = useState(false)
   const [options, setOptions] = useState<IngredientOption[]>([])
   const [error, setError] = useState<string | null>(null)
+
+  // Add-ingredient modal state
+  const [addModalOpen, setAddModalOpen] = useState(false)
+  const [addIngredientName, setAddIngredientName] = useState('')
+  const [adding, setAdding] = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
 
   useEffect(() => {
     setInputValue(ingredientId !== null ? name : '')
@@ -93,51 +100,142 @@ export function IngredientPicker({ ingredientId, name, onChange, onSearchInputCh
     if (inputValue.trim().length >= MIN_SEARCH_LEN) void runSearch(inputValue)
   }
 
+  const openAddModal = () => {
+    setAddIngredientName(inputValue.trim())
+    setAddError(null)
+    setOpen(false)
+    setAddModalOpen(true)
+  }
+
+  const handleCreateIngredient = async () => {
+    const trimmed = addIngredientName.trim()
+    if (!trimmed || adding) return
+    setAdding(true)
+    setAddError(null)
+    try {
+      const created = await ingredientService.create(trimmed)
+      onSearchInputChange?.('')
+      onChange(created.id, created.name)
+      setInputValue(created.name)
+      setAddModalOpen(false)
+    } catch (err) {
+      if (isAxiosError(err) && err.response?.status === 409) {
+        setAddError(t('create.ingredients.addNewModal.errorConflict'))
+      } else {
+        setAddError(t('create.ingredients.addNewModal.error'))
+      }
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  const showAddCta =
+    !loading &&
+    options.length === 0 &&
+    inputValue.trim().length >= MIN_SEARCH_LEN
+
   return (
-    <div ref={containerRef} className="cr-ingredient-picker">
-      <input
-        type="text"
-        className="cr-input cr-input--flex"
-        autoComplete="off"
-        role="combobox"
-        aria-expanded={open}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        disabled={disabled}
-        value={inputValue}
-        placeholder={t('create.ingredients.searchPlaceholder')}
-        onChange={(e) => onInputChange(e.target.value)}
-        onFocus={onFocus}
-      />
-      {error && <p className="cr-ingredient-picker__error">{error}</p>}
-      {open && (loading || options.length > 0 || (!loading && inputValue.trim().length >= MIN_SEARCH_LEN)) && (
-        <ul id={listId} className="cr-ingredient-picker__list" role="listbox">
-          {loading && (
-            <li className="cr-ingredient-picker__hint">{t('create.ingredients.searchLoading')}</li>
-          )}
-          {!loading &&
-            options.map((opt) => (
-              <li key={opt.id} role="option">
+    <>
+      <div ref={containerRef} className="cr-ingredient-picker">
+        <input
+          type="text"
+          className="cr-input cr-input--flex"
+          autoComplete="off"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          disabled={disabled}
+          value={inputValue}
+          placeholder={t('create.ingredients.searchPlaceholder')}
+          onChange={(e) => onInputChange(e.target.value)}
+          onFocus={onFocus}
+        />
+        {error && <p className="cr-ingredient-picker__error">{error}</p>}
+        {open && (loading || options.length > 0 || showAddCta) && (
+          <ul id={listId} className="cr-ingredient-picker__list" role="listbox">
+            {loading && (
+              <li className="cr-ingredient-picker__hint">{t('create.ingredients.searchLoading')}</li>
+            )}
+            {!loading &&
+              options.map((opt) => (
+                <li key={opt.id} role="option">
+                  <button
+                    type="button"
+                    className="cr-ingredient-picker__option"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => pick(opt)}
+                  >
+                    {opt.name}
+                  </button>
+                </li>
+              ))}
+            {showAddCta && (
+              <li role="option">
                 <button
                   type="button"
-                  className="cr-ingredient-picker__option"
+                  className="cr-ingredient-picker__add-btn"
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => pick(opt)}
+                  onClick={openAddModal}
                 >
-                  {opt.name}
+                  {t('create.ingredients.addNew', { name: inputValue.trim() })}
                 </button>
               </li>
-            ))}
-          {!loading && options.length === 0 && inputValue.trim().length >= MIN_SEARCH_LEN && (
-            <li className="cr-ingredient-picker__hint">{t('create.ingredients.searchEmpty')}</li>
-          )}
-        </ul>
+            )}
+          </ul>
+        )}
+        {ingredientId !== null && (
+          <span className="cr-ingredient-picker__badge" title={t('create.ingredients.selectedFromCatalog')}>
+            ✓
+          </span>
+        )}
+      </div>
+
+      {addModalOpen && (
+        <div
+          className="cr-ing-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={`${baseId}-modal-title`}
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setAddModalOpen(false) }}
+        >
+          <div className="cr-ing-modal">
+            <h4 id={`${baseId}-modal-title`} className="cr-ing-modal__title">
+              {t('create.ingredients.addNewModal.title')}
+            </h4>
+            <input
+              type="text"
+              className="cr-input"
+              value={addIngredientName}
+              onChange={(e) => { setAddIngredientName(e.target.value); setAddError(null) }}
+              placeholder={t('create.ingredients.addNewModal.label')}
+              maxLength={100}
+              autoFocus
+            />
+            {addError && <p className="cr-ing-modal__error">{addError}</p>}
+            <div className="cr-ing-modal__actions">
+              <button
+                type="button"
+                className="cr-btn"
+                onClick={() => setAddModalOpen(false)}
+                disabled={adding}
+              >
+                {t('create.ingredients.addNewModal.cancel')}
+              </button>
+              <button
+                type="button"
+                className="cr-btn cr-btn--primary"
+                onClick={handleCreateIngredient}
+                disabled={adding || !addIngredientName.trim()}
+              >
+                {adding
+                  ? t('create.ingredients.addNewModal.adding')
+                  : t('create.ingredients.addNewModal.confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-      {ingredientId !== null && (
-        <span className="cr-ingredient-picker__badge" title={t('create.ingredients.selectedFromCatalog')}>
-          ✓
-        </span>
-      )}
-    </div>
+    </>
   )
 }

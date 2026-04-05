@@ -11,6 +11,15 @@ export interface RecipeIngredient {
   allergens: string[]
 }
 
+export interface ScaledRecipeIngredient {
+  id: string
+  ingredientId: string | null
+  ingredientName: string | null
+  quantity: number
+  unit: string
+  allergens: string[]
+}
+
 export interface RecipeStep {
   id: string
   stepOrder: number
@@ -43,12 +52,29 @@ export interface RecipeDetail {
   dishVarietyId: string | null
   dishVarietyName: string | null
   genreName: string | null
+  country: string | null
+  city: string | null
+  district: string | null
   ingredients: RecipeIngredient[]
   steps: RecipeStep[]
   tools: RecipeTool[]
   media: RecipeMedia[]
   createdAt: string
   updatedAt: string
+}
+
+export interface UpdateRecipePayload {
+  title?: string
+  story?: string
+  type?: 'community' | 'cultural'
+  dishVarietyId?: number
+  servingSize?: number
+  country?: string
+  city?: string
+  district?: string
+  ingredients?: CreateRecipeIngredient[]
+  steps?: { stepOrder: number; description: string }[]
+  tools?: { name: string }[]
 }
 
 export interface CreateRecipeIngredient {
@@ -76,6 +102,9 @@ export interface CreateRecipePayload {
    * here bypasses that check when needed for draft flows.
    */
   isPublished: boolean
+  country?: string
+  city?: string
+  district?: string
 }
 
 export interface CreatedRecipe {
@@ -84,6 +113,21 @@ export interface CreatedRecipe {
   type: 'community' | 'cultural'
   isPublished: boolean
   createdAt: string
+}
+
+export interface MyRecipeSummary {
+  id: string
+  title: string
+  type: 'community' | 'cultural'
+  isPublished: boolean
+  averageRating: number | null
+  ratingCount: number
+  country: string | null
+  city: string | null
+  district: string | null
+  createdAt: string
+  updatedAt: string
+  coverImageUrl: string | null
 }
 
 // ── Service ───────────────────────────────────────────────────────────────────
@@ -133,9 +177,59 @@ export const recipeService = {
         url: m.url,
         type: m.type,
       })),
+      country: d.country ?? null,
+      city: d.city ?? null,
+      district: d.district ?? null,
       createdAt: d.createdAt ?? '',
       updatedAt: d.updatedAt ?? '',
     }
+  },
+
+  /**
+   * GET /recipes/:id/scale?servings=N — returns ingredient quantities scaled to the desired serving count.
+   */
+  scale: async (id: string, servings: number): Promise<ScaledRecipeIngredient[]> => {
+    const res = await httpClient.get(`/recipes/${id}/scale`, { params: { servings } })
+    const d = res.data?.data
+    return (d.ingredients ?? []).map((i: any) => ({
+      id: String(i.id),
+      ingredientId: i.ingredientId ? String(i.ingredientId) : null,
+      ingredientName: i.ingredientName ?? null,
+      quantity: Number(i.quantity),
+      unit: String(i.unit ?? ''),
+      allergens: i.allergens ?? [],
+    }))
+  },
+
+  /**
+   * PATCH /recipes/:id — update an existing recipe (draft or published, creator only).
+   */
+  update: async (id: string, payload: UpdateRecipePayload): Promise<void> => {
+    await httpClient.patch(`/recipes/${id}`, payload)
+  },
+
+  /**
+   * GET /recipes/mine — list all recipes belonging to the authenticated user.
+   * Optional status filter: 'published' | 'draft'
+   */
+  getMyRecipes: async (status?: 'published' | 'draft'): Promise<MyRecipeSummary[]> => {
+    const params = status ? { status } : undefined
+    const res = await httpClient.get('/recipes/mine', { params })
+    const raw: unknown[] = Array.isArray(res.data?.data) ? res.data.data : []
+    return raw.map((r: any) => ({
+      id: String(r.id),
+      title: r.title ?? '',
+      type: r.type === 'cultural' ? 'cultural' : 'community',
+      isPublished: r.isPublished ?? false,
+      averageRating: r.averageRating ?? null,
+      ratingCount: r.ratingCount ?? 0,
+      country: r.country ?? null,
+      city: r.city ?? null,
+      district: r.district ?? null,
+      createdAt: r.createdAt ?? '',
+      updatedAt: r.updatedAt ?? '',
+      coverImageUrl: r.coverImageUrl ?? null,
+    }))
   },
 
   /**

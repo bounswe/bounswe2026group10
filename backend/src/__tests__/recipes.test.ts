@@ -970,4 +970,87 @@ describe("Recipe Rating Endpoints", () => {
       expect(res.body.error.code).toBe("DB_ERROR");
     });
   });
+
+  // ─── DELETE /recipes/:id ───────────────────────────────────────────────────
+
+  describe("DELETE /recipes/:id", () => {
+    it("returns 401 when unauthenticated", async () => {
+      const res = await request(app).delete("/recipes/recipe-1");
+      expect(res.status).toBe(401);
+    });
+
+    it("returns 404 when recipe does not exist", async () => {
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes")
+          return chainable({ data: null, error: { code: "PGRST116", message: "Not found" } });
+      });
+
+      const res = await request(app)
+        .delete("/recipes/recipe-1")
+        .set("Authorization", "Bearer valid_token");
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe("NOT_FOUND");
+    });
+
+    it("returns 403 when user is not the creator", async () => {
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes")
+          return chainable({ data: { id: "recipe-1", creator_id: "other-profile" }, error: null });
+      });
+
+      const res = await request(app)
+        .delete("/recipes/recipe-1")
+        .set("Authorization", "Bearer valid_token");
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe("FORBIDDEN");
+    });
+
+    it("returns 204 on successful delete", async () => {
+      let callCount = 0;
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes") {
+          callCount++;
+          if (callCount === 1)
+            return chainable({ data: { id: "recipe-1", creator_id: "profile-123" }, error: null });
+          return chainable({ data: null, error: null });
+        }
+      });
+
+      const res = await request(app)
+        .delete("/recipes/recipe-1")
+        .set("Authorization", "Bearer valid_token");
+      expect(res.status).toBe(204);
+    });
+
+    it("returns 500 on db error during fetch", async () => {
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes")
+          return chainable({ data: null, error: { message: "DB timeout" } });
+      });
+
+      const res = await request(app)
+        .delete("/recipes/recipe-1")
+        .set("Authorization", "Bearer valid_token");
+      expect(res.status).toBe(500);
+      expect(res.body.error.code).toBe("DB_ERROR");
+    });
+
+    it("returns 500 on db error during delete", async () => {
+      let callCount = 0;
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes") {
+          callCount++;
+          if (callCount === 1)
+            return chainable({ data: { id: "recipe-1", creator_id: "profile-123" }, error: null });
+          return chainable({ data: null, error: { message: "DB timeout" } });
+        }
+      });
+
+      const res = await request(app)
+        .delete("/recipes/recipe-1")
+        .set("Authorization", "Bearer valid_token");
+      expect(res.status).toBe(500);
+      expect(res.body.error.code).toBe("DB_ERROR");
+    });
+  });
 });

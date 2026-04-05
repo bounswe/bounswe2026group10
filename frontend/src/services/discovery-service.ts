@@ -42,6 +42,8 @@ export interface RecipeSummary {
   title: string
   recipeType: 'community' | 'cultural'
   region?: string
+  country?: string
+  city?: string
   averageRating?: number
   ratingCount?: number
   createdAt?: string
@@ -49,6 +51,11 @@ export interface RecipeSummary {
   author: { username: string; role?: string }
   variety?: { id: string; name: string }
   genre?: { id: string; name: string }
+}
+
+export interface LocationOptions {
+  countries: string[]
+  citiesByCountry: Record<string, string[]>
 }
 
 export interface DiscoveryParams {
@@ -59,6 +66,8 @@ export interface DiscoveryParams {
   varietyId?: number
   /** Case-insensitive partial match on recipe title (GET /discovery/recipes) */
   search?: string
+  country?: string
+  city?: string
   page?: number
   limit?: number
 }
@@ -89,6 +98,8 @@ function normalizeRecipe(r: any): RecipeSummary {
     title: r.title ?? '',
     recipeType: r.type === 'cultural' ? 'cultural' : 'community',
     region: r.dish_variety?.region ?? undefined,
+    country: r.country ?? undefined,
+    city: r.city ?? undefined,
     averageRating: r.average_rating ?? undefined,
     ratingCount: r.rating_count ?? undefined,
     createdAt: r.created_at ?? undefined,
@@ -218,6 +229,41 @@ export const discoveryService = {
         region: r.region ?? null,
         createdAt: r.created_at ?? '',
       })),
+    }
+  },
+
+  /**
+   * Fetch unique country/city values across all recipes for use in filter dropdowns.
+   * Calls /discovery/recipes with a high limit and no filters.
+   */
+  getLocations: async (): Promise<LocationOptions> => {
+    try {
+      const res = await httpClient.get('/discovery/recipes', { params: { limit: 100, page: 1 } })
+      const payload = res.data?.data
+      const raw: any[] = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.recipes)
+          ? payload.recipes
+          : []
+
+      const citiesByCountry: Record<string, Set<string>> = {}
+      for (const r of raw) {
+        const country: string | undefined = r.country ?? undefined
+        const city: string | undefined = r.city ?? undefined
+        if (country) {
+          if (!citiesByCountry[country]) citiesByCountry[country] = new Set()
+          if (city) citiesByCountry[country].add(city)
+        }
+      }
+
+      const countries = Object.keys(citiesByCountry).sort()
+      const result: Record<string, string[]> = {}
+      for (const c of countries) {
+        result[c] = [...citiesByCountry[c]].sort()
+      }
+      return { countries, citiesByCountry: result }
+    } catch {
+      return { countries: [], citiesByCountry: {} }
     }
   },
 

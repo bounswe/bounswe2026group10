@@ -11,6 +11,7 @@ import { LoginPage } from '@/pages/Login/LoginPage'
 import { RegisterPage } from '@/pages/Register/RegisterPage'
 import { WelcomePage } from '@/pages/Welcome/WelcomePage'
 import { LibraryPage } from '@/pages/Library/LibraryPage'
+import { EditRecipePage } from '@/pages/EditRecipe/EditRecipePage'
 import { ProfilePage } from '@/pages/Profile/ProfilePage'
 import { RouteError } from '@/router/RouteError'
 
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
       { path: '/library', element: <LibraryPage /> },
       { path: '/profile', element: <ProfilePage /> },
       { path: '/recipes/:id', element: <RecipeDetailPage /> },
+      { path: '/recipes/:id/edit', element: <EditRecipePage /> },
       { path: '/dish-variety/:id', element: <DishVarietyPage /> },
       {
         path: '/create-recipe',

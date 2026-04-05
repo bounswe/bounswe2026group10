@@ -12,9 +12,293 @@
   margin: 0;
 }
 
-.library-page__placeholder {
-  margin: 0;
+/* ── Tabs ──────────────────────────────────────────────────────────────────── */
+
+.library-page__tabs {
+  display: flex;
+  gap: var(--space-xs);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 0;
+}
+
+.library-page__tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: var(--space-xs) var(--space-sm);
+  margin-bottom: -1px;
+  font-size: 0.875rem;
+  font-weight: 500;
   color: var(--text-secondary);
-  line-height: 1.6;
-  max-width: 36rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.library-page__tab:hover {
+  color: var(--text-primary);
+}
+
+.library-page__tab--active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+/* ── Toolbar (sort) ──────────────────────────────────────────────────────────── */
+
+.library-page__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.library-page__sort-label {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.library-page__sort-select {
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.library-page__sort-select:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* ── States ─────────────────────────────────────────────────────────────────── */
+
+.library-page__error {
+  color: var(--color-error, #c0392b);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.library-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xl) 0;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  text-align: center;
+}
+
+.library-page__empty-action {
+  background: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-md);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.library-page__empty-action:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+/* ── Loading ─────────────────────────────────────────────────────────────────── */
+
+.library-page__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xl) 0;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+}
+
+.library-page__spinner {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--color-neutral-darker, #d9cfc7);
+  border-top-color: var(--color-main);
+  border-radius: 50%;
+  animation: library-spin 0.75s linear infinite;
+}
+
+@keyframes library-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Recipe list ─────────────────────────────────────────────────────────────── */
+
+.library-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.library-page__card {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-sm);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  width: 100%;
+}
+
+.library-page__card:hover {
+  box-shadow: var(--shadow-card);
+  border-color: var(--border-hover, var(--border-subtle));
+}
+
+.library-page__card-thumb {
+  width: 72px;
+  min-width: 72px;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-muted, #f0ede8);
+  flex-shrink: 0;
+}
+
+.library-page__card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.library-page__card-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--surface-muted, #f0ede8);
+}
+
+.library-page__card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-xs);
+}
+
+.library-page__card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.library-page__card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.library-page__card-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Status badge ───────────────────────────────────────────────────────────── */
+
+.library-page__status {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.library-page__status--published {
+  background: var(--color-success-subtle, #d4edda);
+  color: var(--color-success, #1a7a3c);
+}
+
+.library-page__status--draft {
+  background: var(--surface-muted, #f0ede8);
+  color: var(--text-secondary);
+}
+
+/* ── Edit button ─────────────────────────────────────────────────────────────── */
+
+.library-page__edit-btn {
+  background: var(--color-main);
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 3px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.library-page__edit-btn:hover {
+  opacity: 0.85;
+}
+
+/* ── Meta row ────────────────────────────────────────────────────────────────── */
+
+.library-page__card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.library-page__type {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.library-page__type--cultural {
+  background: var(--color-accent-subtle, #fdf3e3);
+  color: var(--color-accent);
+}
+
+.library-page__type--community {
+  background: var(--surface-muted, #f0ede8);
+  color: var(--text-secondary);
+}
+
+.library-page__rating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.8125rem;
+  color: var(--color-accent);
+}
+
+.library-page__rating-count {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.library-page__location {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

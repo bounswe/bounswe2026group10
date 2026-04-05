@@ -59,7 +59,7 @@ npx jest path/to/test.ts   # run a single test file
 ### Backend
 - **Framework:** Express 5 + TypeScript, Supabase (PostgreSQL + Auth)
 - **Validation:** Zod on all routes
-- **Routes:** `/auth`, `/recipes`, `/media`, `/dish-genres`, `/dish-varieties`, `/discovery`, `/dietary-tags`; also `GET /meta/regions`
+- **Routes:** `/auth`, `/recipes`, `/media`, `/dish-genres`, `/dish-varieties`, `/discovery`, `/dietary-tags`, `/ingredients`, `/substitutions`, `/tools`, `/units`, `/parse`
 - **Key dirs:** `src/routes/`, `src/middleware/` (auth, validate), `src/config/`
 - **Docker:** Multi-stage Dockerfile in `backend/`, no docker-compose
 - **Detailed docs:** `backend/CLAUDE.md` — full DB schema, all endpoint signatures, error codes, testing patterns
@@ -76,7 +76,12 @@ npx jest path/to/test.ts   # run a single test file
 - **Mock fallback pattern:** services fall back to mock data (in `src/mocks/`) when the API returns empty or errors — remove mocks once backend endpoints are stable
 
 ### Mobile
-See `mobile/CLAUDE.md` for detailed screen inventory, domain glossary, and scenario mapping.
+- **Navigation:** React Navigation v7; `AuthStack` (Welcome/Register/Login) vs. `TabNavigator` (Home, Search, Create, Library, Profile) each with their own nested stack
+- **Auth state:** `AuthContext` (`mobile/src/context/AuthContext.tsx`) — wraps the app, provides `user`, `login`, `logout`; consumed via `useAuth()`
+- **Recipe creation:** 4-step wizard driven by `RecipeFormContext` (`mobile/src/context/RecipeFormContext.tsx`) — shared state across CreateBasicInfo → CreateIngredientsTools → CreateSteps → CreateReview screens
+- **Components:** screen-specific pieces in `mobile/src/components/<screen>/`; shared primitives (Badge, StarRating, RecipeCardSmall, etc.) in `mobile/src/components/shared/`
+- **API calls:** made directly in screens/contexts via `fetchApi` helper (no Redux); base URL set in `mobile/src/api/`
+- **Detailed docs:** `mobile/CLAUDE.md` — full screen inventory, scenario mapping, branch/PR/commit conventions
 
 ---
 
