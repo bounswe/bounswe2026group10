@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { isAxiosError } from 'axios'
-import { recipeService, type RecipeDetail, type RecipeIngredient } from '@/services/recipe-service'
+import { recipeService, type RecipeDetail, type RecipeIngredient, type ScaledRecipeIngredient } from '@/services/recipe-service'
+import { ingredientService, type IngredientSubstitution } from '@/services/ingredient-service'
 import { ratingService } from '@/services/rating-service'
 import { RecipeRating } from '@/components/RecipeRating/RecipeRating'
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal'
@@ -77,15 +78,6 @@ function IconRefresh() {
   )
 }
 
-function scaledAmount(ing: RecipeIngredient, baseServings: number, servings: number): string {
-  const q = ing.quantity
-  const u = ing.unit
-  if (baseServings <= 0) return `${q} ${u}`
-  const v = (q * servings) / baseServings
-  const rounded = Number.isInteger(v) ? v : Math.round(v * 100) / 100
-  return `${rounded} ${u}`
-}
-
 export function RecipeDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -100,6 +92,22 @@ export function RecipeDetailPage() {
   const [ratingBusy, setRatingBusy] = useState(false)
   const [ratingError, setRatingError] = useState<string | null>(null)
   const [showRemoveRatingModal, setShowRemoveRatingModal] = useState(false)
+
+  // Serving scaling
+  const [scaledIngredients, setScaledIngredients] = useState<ScaledRecipeIngredient[] | null>(null)
+  const [scaling, setScaling] = useState(false)
+
+  // Substitution modal
+  const [subsModal, setSubsModal] = useState<{
+    open: boolean
+    loading: boolean
+    error: string | null
+    ingredientId: string
+    ingredientName: string
+    quantity: number
+    unit: string
+    subs: IngredientSubstitution[]
+  } | null>(null)
 
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated)
   const profile = useAppSelector((s) => s.profile)
@@ -157,7 +165,42 @@ export function RecipeDetailPage() {
     if (!recipe) return
     const b = recipe.servingSize && recipe.servingSize > 0 ? recipe.servingSize : 4
     setServings(b)
+    setScaledIngredients(null)
   }, [recipe])
+
+  // When servings changes, call the scale API (skip if same as base or no base serving size)
+  useEffect(() => {
+    if (!id || !recipe) return
+    const base = recipe.servingSize && recipe.servingSize > 0 ? recipe.servingSize : null
+    if (!base || servings === base) {
+      setScaledIngredients(null)
+      return
+    }
+    let cancelled = false
+    setScaling(true)
+    recipeService
+      .scale(id, servings)
+      .then((result) => { if (!cancelled) setScaledIngredients(result) })
+      .catch(() => { if (!cancelled) setScaledIngredients(null) })
+      .finally(() => { if (!cancelled) setScaling(false) })
+    return () => { cancelled = true }
+  }, [id, recipe, servings])
+
+  const openSubsModal = useCallback((ing: RecipeIngredient | ScaledRecipeIngredient) => {
+    if (!ing.ingredientId) return
+    setSubsModal({
+      open: true, loading: true, error: null,
+      ingredientId: ing.ingredientId,
+      ingredientName: ing.ingredientName ?? '',
+      quantity: ing.quantity,
+      unit: ing.unit,
+      subs: [],
+    })
+    ingredientService
+      .getSubstitutions(ing.ingredientId, ing.quantity, ing.unit)
+      .then((subs) => setSubsModal((prev) => prev ? { ...prev, loading: false, subs } : null))
+      .catch(() => setSubsModal((prev) => prev ? { ...prev, loading: false, error: t('recipeDetail.substituteLoadError') } : null))
+  }, [t])
 
   const handleRecipeRatingChange = useCallback(
     async (score: number) => {
@@ -248,8 +291,8 @@ export function RecipeDetailPage() {
   const extraGalleryImages = imageMedia.slice(1)
   const uploadedVideos = recipe.media.filter((m) => m.type === 'video')
   const rating = recipe.averageRating
-  const baseServings = recipe.servingSize && recipe.servingSize > 0 ? recipe.servingSize : 4
   const regionLine = recipe.dishVarietyName ?? recipe.genreName ?? ''
+  const displayIngredients = scaledIngredients ?? recipe.ingredients
   const authorInitial = (recipe.creatorUsername ?? '?').slice(0, 1).toUpperCase()
   const badgeLabel = recipe.type === 'cultural' ? t('recipeDetail.cultural') : t('recipeDetail.community')
 
@@ -421,27 +464,28 @@ export function RecipeDetailPage() {
           </div>
         </div>
 
-        {recipe.ingredients.length > 0 && (
+        {displayIngredients.length > 0 && (
           <section className="recipe-detail__block">
             <h2 className="recipe-detail__h2">{t('recipeDetail.ingredients')}</h2>
+            {scaling && <p className="recipe-detail__scaling-hint">{t('recipeDetail.scaling')}</p>}
             <ul className="recipe-detail__ingredient-list">
-              {recipe.ingredients.map((ing) => (
+              {displayIngredients.map((ing) => (
                 <li key={ing.id} className="recipe-detail__ingredient-card">
                   <div className="recipe-detail__ingredient-row">
                     <span className="recipe-detail__ingredient-name">{ing.ingredientName ?? t('recipeDetail.unknownIngredient')}</span>
                     <div className="recipe-detail__ingredient-right">
-                      <span className="recipe-detail__ingredient-amt">{scaledAmount(ing, baseServings, servings)}</span>
-                      <button
-                        type="button"
-                        className="recipe-detail__substitute-btn"
-                        aria-label={t('recipeDetail.substituteAria', { name: ing.ingredientName ?? '' })}
-                        title={t('recipeDetail.substituteAria', { name: ing.ingredientName ?? '' })}
-                        onClick={() => {
-                          /* placeholder — backend / modal later */
-                        }}
-                      >
-                        <IconRefresh />
-                      </button>
+                      <span className="recipe-detail__ingredient-amt">{ing.quantity} {ing.unit}</span>
+                      {ing.ingredientId !== null && (
+                        <button
+                          type="button"
+                          className="recipe-detail__substitute-btn"
+                          aria-label={t('recipeDetail.substituteAria', { name: ing.ingredientName ?? '' })}
+                          title={t('recipeDetail.substituteAria', { name: ing.ingredientName ?? '' })}
+                          onClick={() => openSubsModal(ing)}
+                        >
+                          <IconRefresh />
+                        </button>
+                      )}
                     </div>
                   </div>
                   {ing.allergens.length > 0 && (
@@ -534,6 +578,55 @@ export function RecipeDetailPage() {
           })()
         }}
       />
+
+      {subsModal?.open && (
+        <div
+          className="rd-subs-overlay"
+          role="dialog"
+          aria-modal="true"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setSubsModal(null) }}
+        >
+          <div className="rd-subs-modal">
+            <h3 className="rd-subs-modal__title">
+              {t('recipeDetail.substituteModalTitle', { name: subsModal.ingredientName })}
+            </h3>
+            {subsModal.loading && (
+              <p className="rd-subs-modal__hint">{t('recipeDetail.substituteLoading')}</p>
+            )}
+            {!subsModal.loading && subsModal.error && (
+              <p className="rd-subs-modal__error">{subsModal.error}</p>
+            )}
+            {!subsModal.loading && !subsModal.error && subsModal.subs.length === 0 && (
+              <p className="rd-subs-modal__hint">{t('recipeDetail.substituteNoResults')}</p>
+            )}
+            {!subsModal.loading && subsModal.subs.length > 0 && (
+              <ul className="rd-subs-modal__list">
+                {subsModal.subs.map((sub, i) => (
+                  <li key={i} className="rd-subs-modal__item">
+                    <div className="rd-subs-modal__item-row">
+                      <span className="rd-subs-modal__item-name">{sub.ingredient.name}</span>
+                      <span className="rd-subs-modal__item-amt">{sub.amount} {sub.unit}</span>
+                    </div>
+                    <div className="rd-subs-modal__item-meta">
+                      {t('recipeDetail.substituteConfidence', { pct: Math.round(sub.confidence * 100) })}
+                    </div>
+                    {sub.description && (
+                      <p className="rd-subs-modal__item-desc">{sub.description}</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button
+              type="button"
+              className="rd-subs-modal__close"
+              onClick={() => setSubsModal(null)}
+            >
+              {t('recipeDetail.substituteClose')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -119,14 +119,40 @@
   },
   "library": {
     "title": "Kütüphanem",
-    "placeholder": "Favoriler, taslaklar ve yayınladığınız tarifler burada görünecek."
+    "placeholder": "Favoriler, taslaklar ve yayınladığınız tarifler burada görünecek.",
+    "loading": "Tarifleriniz yükleniyor…",
+    "edit": "Düzenle",
+    "tabAll": "Tümü",
+    "tabPublished": "Yayınlananlar",
+    "tabDraft": "Taslaklar",
+    "empty": "Henüz tarif yok.",
+    "showAll": "Tümünü göster",
+    "statusPublished": "Yayınlandı",
+    "statusDraft": "Taslak",
+    "typeCultural": "Kültürel",
+    "typeCommunity": "Topluluk",
+    "sortLabel": "Sırala",
+    "sortDateDesc": "En yeni",
+    "sortDateAsc": "En eski",
+    "sortRatingDesc": "En yüksek puanlı",
+    "sortRatingAsc": "En düşük puanlı",
+    "filterCountry": "Ülkeye göre filtrele",
+    "filterCountryAll": "Tüm ülkeler",
+    "filterCity": "Şehre göre filtrele",
+    "filterCityAll": "Tüm şehirler"
   },
   "profileScreen": {
     "title": "Profil",
     "loading": "Profil yükleniyor…",
     "username": "Kullanıcı adı",
     "email": "E-posta",
-    "role": "Rol"
+    "role": "Rol",
+    "statTotal": "Toplam",
+    "statPublished": "Yayında",
+    "statDraft": "Taslak",
+    "recentRecipes": "Son Tarifler",
+    "seeAll": "Tüm {{count}} tarifi gör",
+    "noRecipes": "Henüz tarif yok. Oluşturmaya başla!"
   },
   "home": {
     "featured": "Öne Çıkan Tarif",
@@ -199,7 +225,20 @@
     "loading": "Tarifler yükleniyor…",
     "genresTitle": "Türler",
     "recipesTitle": "Tarifler",
-    "recipesSearchHint": "\"{{query}}\" ile eşleşen tarif başlıkları"
+    "recipesSearchHint": "\"{{query}}\" ile eşleşen tarif başlıkları",
+    "location": "Konum",
+    "countryPlaceholder": "Ülke",
+    "cityPlaceholder": "Şehir"
+  },
+  "edit": {
+    "title": "Tarifi Düzenle",
+    "sectionBasic": "Temel Bilgiler",
+    "loading": "Tarif yükleniyor…",
+    "save": "Değişiklikleri Kaydet",
+    "saving": "Kaydediliyor…",
+    "saveSuccess": "Değişiklikler kaydedildi.",
+    "saveError": "Değişiklikler kaydedilemedi. Lütfen tekrar deneyin.",
+    "cancel": "İptal"
   },
   "common": {
     "retry": "Tekrar dene",
@@ -246,7 +285,15 @@
     "ratingRemoveModalTitle": "Puanınızı kaldırmak istiyor musunuz?",
     "ratingRemoveModalMessage": "Bu tarif için verdiğiniz yıldız puanı silinecek. İsterseniz sonra yeniden puan verebilirsiniz.",
     "ratingRemoveModalConfirm": "Kaldır",
-    "ratingRemoveModalCancel": "Vazgeç"
+    "ratingRemoveModalCancel": "Vazgeç",
+    "scaling": "Malzemeler ölçeklendiriliyor...",
+    "scaleError": "Malzeme miktarları ölçeklendirilemedi",
+    "substituteModalTitle": "{{name}} için alternatifler",
+    "substituteLoading": "Alternatifler yükleniyor...",
+    "substituteNoResults": "Bu malzeme için alternatif bulunamadı.",
+    "substituteLoadError": "Alternatifler yüklenemedi.",
+    "substituteClose": "Kapat",
+    "substituteConfidence": "Güven: %{{pct}}"
   },
   "dishVariety": {
     "notFound": "Yemek çeşidi bulunamadı.",
@@ -290,7 +337,11 @@
       "communityDesc": "Kişisel koleksiyonunuzdan bir tarif",
       "cultural": "Kültürel Tarif",
       "culturalDesc": "Tarihi önemi olan geleneksel tarif",
-      "expertOnly": "Uzman rolü gereklidir"
+      "expertOnly": "Uzman rolü gereklidir",
+      "location": "Konum (isteğe bağlı)",
+      "countryPlaceholder": "Ülke",
+      "cityPlaceholder": "Şehir",
+      "districtPlaceholder": "İlçe"
     },
     "parse": {
       "label": "Serbest metin tarif girişi",
@@ -318,13 +369,29 @@
       "infoNote": "Her malzemeyi listeden seçin. Miktar pozitif bir sayı, birim ise g, ml, yk. gibi olmalıdır.",
       "selectedFromCatalog": "Katalogdan seçildi",
       "continueHint": "Malzemeyi arama sonuçlarından seçin; miktar ve birimi doldurun. En az bir satır eksiksiz olmalı, eksik veya yazılmış ama seçilmemiş satır olmamalı.",
-      "needAtLeastOne": "En az bir malzeme ekleyin: listeden seçin, ardından miktar ve birimi girin."
+      "needAtLeastOne": "En az bir malzeme ekleyin: listeden seçin, ardından miktar ve birimi girin.",
+      "unitSearchEmpty": "Birim bulunamadı.",
+      "unitSearchError": "Birimler yüklenemedi.",
+      "addNew": "\"{{name}}\" ekle?",
+      "addNewModal": {
+        "title": "Yeni Malzeme Ekle",
+        "label": "Malzeme adı",
+        "confirm": "Ekle",
+        "cancel": "İptal",
+        "adding": "Ekleniyor…",
+        "error": "Malzeme eklenemedi.",
+        "errorConflict": "Bu malzeme zaten mevcut. Aramayı deneyin."
+      }
     },
     "tools": {
       "title": "Gerekli Araçlar",
       "placeholder": "Araç adı (örn. Karıştırma kabı)",
       "add": "Ekle",
-      "removeAria": "Aracı kaldır"
+      "removeAria": "Aracı kaldır",
+      "searchPlaceholder": "Araç adı (örn. Karıştırma kabı)",
+      "searchLoading": "Aranıyor…",
+      "searchEmpty": "Araç bulunamadı.",
+      "searchError": "Araçlar yüklenemedi."
     },
     "instructions": {
       "title": "Talimatlar",
@@ -361,6 +428,12 @@
       "errorMediaAfterCreate": "Tarif kaydedildi ancak medya yüklenemedi. Daha sonra tekrar deneyebilirsiniz.",
       "uploading": "Medyalar yükleniyor…",
       "chooseAria": "Cihazınızdan fotoğraf veya MP4 video dosyası seçin"
+    },
+    "standardize": {
+      "button": "Birimleri Standartlaştır",
+      "loading": "Standartlaştırılıyor…",
+      "error": "Birimler standartlaştırılamadı.",
+      "applied": "Birimler standartlaştırıldı."
     }
   }
 }

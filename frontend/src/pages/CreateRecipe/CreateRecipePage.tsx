@@ -5,8 +5,10 @@ import { isAxiosError } from 'axios'
 import { discoveryService, type DishVariety, type Genre } from '@/services/discovery-service'
 import { recipeService, type CreateRecipeIngredient } from '@/services/recipe-service'
 import { ingredientService, type IngredientOption } from '@/services/ingredient-service'
-import { parseService, type ParsedRecipeOutput } from '@/services/parse-service'
+import { parseService, type ParsedRecipeOutput, type StandardizeUnitsIngredientInput, type StandardizeUnitsStepInput } from '@/services/parse-service'
 import { IngredientPicker } from '@/components/CreateRecipe/IngredientPicker'
+import { ToolPicker } from '@/components/CreateRecipe/ToolPicker'
+import { UnitPicker } from '@/components/CreateRecipe/UnitPicker'
 import { mediaService } from '@/services/media-service'
 import { useUserRole } from '@/hooks/useUserRole'
 import './CreateRecipePage.css'
@@ -113,6 +115,9 @@ interface RecipeDraft {
   genreId: string
   dishVarietyId: string
   servingSize: string
+  country: string
+  city: string
+  district: string
   ingredients: IngredientRow[]
   tools: string[]
   steps: StepItem[]
@@ -125,6 +130,9 @@ const INITIAL_DRAFT: RecipeDraft = {
   genreId: '',
   dishVarietyId: '',
   servingSize: '',
+  country: '',
+  city: '',
+  district: '',
   ingredients: [{ ingredientId: null, name: '', searchQuery: '', quantity: '', unit: '' }],
   tools: [''],
   steps: [{ text: '' }],
@@ -207,6 +215,9 @@ export function CreateRecipePage() {
   const [parseError, setParseError] = useState<string | null>(null)
   const [parsedOutput, setParsedOutput] = useState<ParsedRecipeOutput | null>(null)
   const [unmatchedParsedIngredients, setUnmatchedParsedIngredients] = useState<string[]>([])
+  const [standardizing, setStandardizing] = useState(false)
+  const [standardizeError, setStandardizeError] = useState<string | null>(null)
+  const [standardizeApplied, setStandardizeApplied] = useState(false)
 
   // Cook can only create community; expert can create both
   const canCreateCultural = role === 'expert'
@@ -331,6 +342,9 @@ export function CreateRecipePage() {
         type: draft.type,
         dishVarietyId: draft.dishVarietyId ? Number(draft.dishVarietyId) : undefined,
         servingSize: draft.servingSize ? Number(draft.servingSize) : undefined,
+        country: draft.country.trim() || undefined,
+        city: draft.city.trim() || undefined,
+        district: draft.district.trim() || undefined,
         ingredients: ingredientsPayload,
         steps: draft.steps
           .filter((s) => s.text.trim())
@@ -444,10 +458,70 @@ export function CreateRecipePage() {
     }
   }
 
+  const handleStandardize = async () => {
+    if (standardizing) return
+    setStandardizing(true)
+    setStandardizeError(null)
+    setStandardizeApplied(false)
+
+    const completeRows = draft.ingredients
+      .map((row, idx) => ({ row, idx }))
+      .filter(({ row }) => row.ingredientId !== null && parseQuantityValue(row.quantity) !== null && row.unit.trim())
+
+    const ingredientsPayload: StandardizeUnitsIngredientInput[] = completeRows.map(({ row }) => ({
+      name: row.name,
+      quantity: parseQuantityValue(row.quantity)!,
+      unit: row.unit.trim(),
+    }))
+
+    const stepsPayload: StandardizeUnitsStepInput[] = draft.steps
+      .filter((s) => s.text.trim())
+      .map((s, i) => ({ stepOrder: i + 1, description: s.text.trim() }))
+
+    try {
+      const result = await parseService.standardizeUnits(
+        ingredientsPayload,
+        stepsPayload.length > 0 ? stepsPayload : undefined,
+      )
+
+      setDraft((d) => {
+        const ingredients = [...d.ingredients]
+        completeRows.forEach(({ idx }, i) => {
+          const std = result.ingredients[i]
+          if (std && std.standardQuantity > 0 && std.standardUnit) {
+            ingredients[idx] = {
+              ...ingredients[idx],
+              quantity: String(std.standardQuantity),
+              unit: std.standardUnit,
+            }
+          }
+        })
+        const steps = d.steps.map((s, i) => {
+          const std = result.steps[i]
+          return std?.standardDescription ? { text: std.standardDescription } : s
+        })
+        return { ...d, ingredients, steps }
+      })
+      setStandardizeApplied(true)
+    } catch (err: unknown) {
+      if (isAxiosError(err)) {
+        const msg = (err.response?.data as { error?: { message?: string } } | undefined)?.error?.message
+        setStandardizeError(msg || t('create.standardize.error'))
+      } else {
+        setStandardizeError(t('create.standardize.error'))
+      }
+    } finally {
+      setStandardizing(false)
+    }
+  }
+
   // ── Navigation guards ────────────────────────────────────────────────────────
 
   const canContinueStep1 = draft.title.trim().length >= 3
   const canContinueStep2 = ingredientsStepValid(draft.ingredients)
+  const canStandardize = draft.ingredients.some(
+    (r) => r.ingredientId !== null && parseQuantityValue(r.quantity) !== null && r.unit.trim(),
+  )
   const canContinueStep3 = draft.steps.some((s) => s.text.trim().length > 0)
 
   const goNext = () => {
@@ -657,6 +731,34 @@ export function CreateRecipePage() {
               />
             </div>
 
+            {/* Location */}
+            <div className="cr-field">
+              <label className="cr-label">{t('create.fields.location')}</label>
+              <div className="cr-location-row">
+                <input
+                  type="text"
+                  className="cr-input"
+                  value={draft.country}
+                  onChange={(e) => set('country', e.target.value)}
+                  placeholder={t('create.fields.countryPlaceholder')}
+                />
+                <input
+                  type="text"
+                  className="cr-input"
+                  value={draft.city}
+                  onChange={(e) => set('city', e.target.value)}
+                  placeholder={t('create.fields.cityPlaceholder')}
+                />
+                <input
+                  type="text"
+                  className="cr-input"
+                  value={draft.district}
+                  onChange={(e) => set('district', e.target.value)}
+                  placeholder={t('create.fields.districtPlaceholder')}
+                />
+              </div>
+            </div>
+
             {/* Recipe Type */}
             <div className="cr-field">
               <label className="cr-label">{t('create.fields.recipeType')}</label>
@@ -774,14 +876,10 @@ export function CreateRecipePage() {
                       disabled={submitting}
                       aria-label={t('create.ingredients.quantityAria')}
                     />
-                    <input
-                      type="text"
-                      className="cr-input cr-input--unit"
+                    <UnitPicker
                       value={ing.unit}
-                      onChange={(e) => updateIngredient(idx, { unit: e.target.value })}
-                      placeholder={t('create.ingredients.unitPlaceholder')}
+                      onChange={(unit) => updateIngredient(idx, { unit })}
                       disabled={submitting}
-                      aria-label={t('create.ingredients.unitAria')}
                     />
                     {draft.ingredients.length > 1 && (
                       <button
@@ -798,6 +896,26 @@ export function CreateRecipePage() {
               </div>
             </div>
 
+            {/* Standardize units */}
+            {canStandardize && (
+              <div className="cr-standardize">
+                <button
+                  type="button"
+                  className="cr-add-btn"
+                  onClick={handleStandardize}
+                  disabled={standardizing || submitting}
+                >
+                  {standardizing ? t('create.standardize.loading') : t('create.standardize.button')}
+                </button>
+                {standardizeError && (
+                  <p className="cr-error cr-error--inline">{standardizeError}</p>
+                )}
+                {standardizeApplied && !standardizeError && (
+                  <p className="cr-info-note">{t('create.standardize.applied')}</p>
+                )}
+              </div>
+            )}
+
             {/* Tools */}
             <div className="cr-block">
               <div className="cr-block__header">
@@ -809,12 +927,10 @@ export function CreateRecipePage() {
               <div className="cr-list">
                 {draft.tools.map((tool, idx) => (
                   <div key={idx} className="cr-row">
-                    <input
-                      type="text"
-                      className="cr-input cr-input--flex"
+                    <ToolPicker
                       value={tool}
-                      onChange={(e) => updateTool(idx, e.target.value)}
-                      placeholder={t('create.tools.placeholder')}
+                      onChange={(name) => updateTool(idx, name)}
+                      disabled={submitting}
                     />
                     {draft.tools.length > 1 && (
                       <button
@@ -900,6 +1016,11 @@ export function CreateRecipePage() {
                 {draft.servingSize && (
                   <span className="cr-review-card__servings">
                     {t('create.review.servings', { count: Number(draft.servingSize) })}
+                  </span>
+                )}
+                {(draft.country || draft.city) && (
+                  <span className="cr-review-card__location">
+                    {[draft.district, draft.city, draft.country].filter(Boolean).join(', ')}
                   </span>
                 )}
               </div>

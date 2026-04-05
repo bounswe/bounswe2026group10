@@ -1,46 +1,290 @@
-.profile-screen {
+.profile-page {
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
 }
 
-.profile-screen__title {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 1.75rem;
-  color: var(--text-primary);
-  margin: 0;
+/* ── Loading ───────────────────────────────────────────────────────────────── */
+
+.profile-page__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl) 0;
 }
 
-.profile-screen__muted {
+.profile-page__spinner {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--color-neutral-darker, #d9cfc7);
+  border-top-color: var(--color-main);
+  border-radius: 50%;
+  animation: profile-spin 0.75s linear infinite;
+}
+
+@keyframes profile-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── User card ─────────────────────────────────────────────────────────────── */
+
+.profile-page__card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.profile-page__avatar {
+  flex-shrink: 0;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: var(--color-main);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.profile-page__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.profile-page__username {
   margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-page__email {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-page__role-badge {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.profile-page__role-badge--learner {
+  background: var(--surface-muted, #f0ede8);
   color: var(--text-secondary);
 }
 
-.profile-screen__dl {
-  margin: 0;
+.profile-page__role-badge--cook {
+  background: var(--color-accent-subtle, #fdf3e3);
+  color: var(--color-accent);
+}
+
+.profile-page__role-badge--expert {
+  background: var(--color-main);
+  color: #fff;
+}
+
+/* ── Stats ─────────────────────────────────────────────────────────────────── */
+
+.profile-page__stats {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.profile-page__stat {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
-  max-width: 24rem;
+  align-items: center;
+  gap: 0.15rem;
+  padding: var(--space-md) var(--space-sm);
 }
 
-.profile-screen__row {
-  display: grid;
-  grid-template-columns: 6rem 1fr;
+.profile-page__stat-val {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-main-dark);
+  line-height: 1;
+}
+
+.profile-page__stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.profile-page__stat-divider {
+  width: 1px;
+  background: var(--border-subtle);
+  align-self: stretch;
+}
+
+/* ── Recent recipes section ────────────────────────────────────────────────── */
+
+.profile-page__section {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-sm);
-  align-items: baseline;
 }
 
-.profile-screen__dt {
+.profile-page__section-title {
   margin: 0;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.profile-screen__dd {
-  margin: 0;
-  font-size: 0.95rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.2rem;
   color: var(--text-primary);
+}
+
+.profile-page__recipe-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.profile-page__recipe-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  width: 100%;
+}
+
+.profile-page__recipe-card:hover {
+  box-shadow: var(--shadow-card);
+  border-color: var(--color-main-light, #b5816a);
+}
+
+.profile-page__recipe-thumb {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-muted, #f0ede8);
+}
+
+.profile-page__recipe-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-page__recipe-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--surface-muted, #f0ede8);
+}
+
+.profile-page__recipe-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.profile-page__recipe-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-page__recipe-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.profile-page__type {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.profile-page__type--cultural {
+  background: var(--color-accent-subtle, #fdf3e3);
+  color: var(--color-accent);
+}
+
+.profile-page__type--community {
+  background: var(--surface-muted, #f0ede8);
+  color: var(--text-secondary);
+}
+
+.profile-page__rating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.8125rem;
+  color: var(--color-accent);
+}
+
+/* ── See all ───────────────────────────────────────────────────────────────── */
+
+.profile-page__see-all {
+  align-self: flex-start;
+  padding: 0.35rem 1rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.profile-page__see-all:hover {
+  color: var(--color-main);
+  border-color: var(--color-main);
+}
+
+/* ── Empty ─────────────────────────────────────────────────────────────────── */
+
+.profile-page__empty {
+  margin: 0;
+  padding: var(--space-lg);
+  text-align: center;
+  color: var(--text-secondary);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
 }

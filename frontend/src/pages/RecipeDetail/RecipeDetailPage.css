@@ -658,3 +658,118 @@
     opacity: 0.45;
   }
 }
+
+/* Scaling hint */
+.recipe-detail__scaling-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--rd-muted);
+}
+
+/* Substitution modal */
+.rd-subs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rd-subs-modal {
+  background: var(--surface-card);
+  border-radius: var(--radius-md, 0.75rem);
+  padding: var(--space-lg, 1.5rem);
+  width: min(24rem, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md, 1rem);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.14);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.rd-subs-modal__title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.rd-subs-modal__hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--rd-muted);
+}
+
+.rd-subs-modal__error {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-negative);
+}
+
+.rd-subs-modal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.rd-subs-modal__item {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  background: var(--surface-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.rd-subs-modal__item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.rd-subs-modal__item-name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.rd-subs-modal__item-amt {
+  font-size: 0.875rem;
+  color: var(--rd-muted);
+  flex-shrink: 0;
+}
+
+.rd-subs-modal__item-meta {
+  font-size: 0.75rem;
+  color: var(--color-main);
+}
+
+.rd-subs-modal__item-desc {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--rd-muted);
+}
+
+.rd-subs-modal__close {
+  align-self: flex-end;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid rgba(134, 69, 42, 0.3);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-main);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.rd-subs-modal__close:hover {
+  background: rgba(134, 69, 42, 0.06);
+}
