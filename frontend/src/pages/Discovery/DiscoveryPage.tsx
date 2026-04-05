@@ -6,6 +6,7 @@ import { RecipeCard } from '@/components/UiComponents/RecipeCard'
 import { PaginationControl } from '@/components/UiComponents/PaginationControl'
 import {
   discoveryService,
+  type DietaryTag,
   type DishVariety,
   type Genre,
   type RecipeSummary,
@@ -37,6 +38,12 @@ export function DiscoveryPage() {
   const [recipePage, setRecipePage] = useState(1)
   const [recipeTotal, setRecipeTotal] = useState(0)
 
+  // Recipe filters (only apply to recipe section)
+  const [allTags, setAllTags] = useState<DietaryTag[]>([])
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
+  const [excludedAllergenIds, setExcludedAllergenIds] = useState<string[]>([])
+  const [filtersOpen, setFiltersOpen] = useState(false)
+
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       setDebouncedSearch(searchInput)
@@ -48,11 +55,12 @@ export function DiscoveryPage() {
     let cancelled = false
     setError(null)
 
-    Promise.all([discoveryService.getGenres(), discoveryService.getVarieties()])
-      .then(([genreData, varietyData]) => {
+    Promise.all([discoveryService.getGenres(), discoveryService.getVarieties(), discoveryService.getDietaryTags()])
+      .then(([genreData, varietyData, tagData]) => {
         if (!cancelled) {
           setGenres(genreData)
           setAllVarieties(varietyData)
+          setAllTags(tagData)
         }
       })
       .catch(() => {
@@ -70,10 +78,10 @@ export function DiscoveryPage() {
     }
   }, [t])
 
-  /** Arama metni değişince sayfa 1'e dönsün; layout effect ile fetch'ten önce uygulanır. */
+  /** Arama metni veya filtreler değişince sayfa 1'e dönsün. */
   useLayoutEffect(() => {
     setRecipePage(1)
-  }, [debouncedSearch])
+  }, [debouncedSearch, selectedTagIds, excludedAllergenIds])
 
   const recipeSearchQuery = debouncedSearch.trim() || undefined
 
@@ -85,6 +93,8 @@ export function DiscoveryPage() {
       .getRecipeResults({
         genreId: selectedGenreId ?? undefined,
         search: recipeSearchQuery,
+        tagIds: selectedTagIds.length > 0 ? selectedTagIds.join(',') : undefined,
+        excludeAllergens: excludedAllergenIds.length > 0 ? excludedAllergenIds.join(',') : undefined,
         page: recipePage,
         limit: RECIPES_PER_PAGE,
       })
@@ -107,7 +117,7 @@ export function DiscoveryPage() {
     return () => {
       cancelled = true
     }
-  }, [selectedGenreId, recipePage, recipeSearchQuery])
+  }, [selectedGenreId, recipePage, recipeSearchQuery, selectedTagIds, excludedAllergenIds])
 
   const normalizedSearch = debouncedSearch.trim().toLowerCase()
 
@@ -151,10 +161,24 @@ export function DiscoveryPage() {
     setRecipePage(1)
   }
 
+  const dietaryTags = useMemo(() => allTags.filter((t) => t.category === 'dietary'), [allTags])
+  const allergenTags = useMemo(() => allTags.filter((t) => t.category === 'allergen'), [allTags])
+  const activeFilterCount = selectedTagIds.length + excludedAllergenIds.length
+
+  function toggleTag(id: string) {
+    setSelectedTagIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id])
+  }
+
+  function toggleAllergen(id: string) {
+    setExcludedAllergenIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id])
+  }
+
   function handleClearFilters() {
     setSelectedGenreId(null)
     setSearchInput('')
     setDebouncedSearch('')
+    setSelectedTagIds([])
+    setExcludedAllergenIds([])
     setRecipePage(1)
   }
 
@@ -302,7 +326,66 @@ export function DiscoveryPage() {
               )
             )}
           </div>
+          <button
+            type="button"
+            className={`discovery-page__filter-btn${filtersOpen ? ' discovery-page__filter-btn--open' : ''}`}
+            onClick={() => setFiltersOpen((o) => !o)}
+            aria-expanded={filtersOpen}
+          >
+            {t('discovery.filters')}
+            {activeFilterCount > 0 && (
+              <span className="discovery-page__filter-badge">{activeFilterCount}</span>
+            )}
+          </button>
         </div>
+
+        {filtersOpen && (
+          <div className="discovery-page__filter-panel">
+            {dietaryTags.length > 0 && (
+              <div className="discovery-page__filter-group">
+                <p className="discovery-page__filter-group-label">{t('discovery.dietaryTags')}</p>
+                <div className="discovery-page__filter-chips">
+                  {dietaryTags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      className={`discovery-page__filter-chip${selectedTagIds.includes(tag.id) ? ' discovery-page__filter-chip--active' : ''}`}
+                      onClick={() => toggleTag(tag.id)}
+                    >
+                      {tag.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {allergenTags.length > 0 && (
+              <div className="discovery-page__filter-group">
+                <p className="discovery-page__filter-group-label">{t('discovery.allergens')}</p>
+                <div className="discovery-page__filter-chips">
+                  {allergenTags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      className={`discovery-page__filter-chip${excludedAllergenIds.includes(tag.id) ? ' discovery-page__filter-chip--active' : ''}`}
+                      onClick={() => toggleAllergen(tag.id)}
+                    >
+                      {tag.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {activeFilterCount > 0 && (
+              <button
+                type="button"
+                className="discovery-page__filter-clear"
+                onClick={() => { setSelectedTagIds([]); setExcludedAllergenIds([]) }}
+              >
+                {t('discovery.clearFilters')}
+              </button>
+            )}
+          </div>
+        )}
 
         {recipeLoading ? (
           <div className="discovery-page__recipe-grid">

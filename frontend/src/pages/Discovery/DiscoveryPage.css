@@ -358,3 +358,120 @@
     min-height: 8.5rem;
   }
 }
+
+/* ── Recipe filter panel ────────────────────────────────────────────────────── */
+
+.discovery-page__filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-neutral-darker);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.discovery-page__filter-btn:hover,
+.discovery-page__filter-btn--open {
+  border-color: var(--color-main);
+  color: var(--color-main);
+}
+
+.discovery-page__filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-main);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.discovery-page__filter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  border: 1px solid var(--color-neutral-darker);
+}
+
+.discovery-page__filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.discovery-page__filter-group-label {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.discovery-page__filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.discovery-page__filter-chip {
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-neutral-darker);
+  background: var(--surface-bg);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+
+.discovery-page__filter-chip:hover {
+  border-color: var(--color-main);
+  color: var(--color-main);
+}
+
+.discovery-page__filter-chip--active {
+  background: var(--color-main);
+  border-color: var(--color-main);
+  color: #fff;
+}
+
+.discovery-page__filter-chip--active:hover {
+  background: var(--color-main-dark);
+  border-color: var(--color-main-dark);
+  color: #fff;
+}
+
+.discovery-page__filter-clear {
+  align-self: flex-start;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(134, 69, 42, 0.3);
+  background: transparent;
+  color: var(--color-main);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.discovery-page__filter-clear:hover {
+  background: rgba(134, 69, 42, 0.06);
+}
