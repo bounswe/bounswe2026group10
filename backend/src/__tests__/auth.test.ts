@@ -97,6 +97,13 @@ describe("Auth Routes", () => {
         error: null,
       });
 
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { username: "testuser", role: "cook" },
+        error: null,
+      });
+      const mockEq = jest.fn().mockReturnValue({ single: mockSingle });
+      (supabase.from as jest.Mock).mockReturnValue({ select: jest.fn().mockReturnValue({ eq: mockEq }) });
+
       const response = await request(app).post("/auth/login").send({
         email: "test@example.com",
         password: "password123",
