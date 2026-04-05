@@ -36,8 +36,8 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
   const [error, setError] = useState<string | null>(null);
   const [showVideoGuide, setShowVideoGuide] = useState(false);
 
-  const fetchRecipe = useCallback(() => {
-    setLoading(true);
+  const fetchRecipe = useCallback((showSpinner = false) => {
+    if (showSpinner) setLoading(true);
     setError(null);
     getRecipeById(recipeId)
       .then((data) => {
@@ -50,7 +50,7 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
   }, [recipeId]);
 
   useEffect(() => {
-    fetchRecipe();
+    fetchRecipe(true);
   }, [fetchRecipe]);
 
   const { servings, increment, decrement } = useServingAdjuster(recipe?.servings ?? 1);
