@@ -172,4 +172,154 @@ describe("Auth Routes", () => {
       expect(response.status).toBe(401);
     });
   });
+
+  // ─── PATCH /auth/profile ────────────────────────────────────────────────────
+
+  describe("PATCH /auth/profile", () => {
+    const setupAuthMiddleware = (callCount: { value: number }) => {
+      (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+        data: { user: { id: "user-123", email: "test@example.com" } },
+        error: null,
+      });
+      callCount.value = 0;
+    };
+
+    const authMiddlewareMock = () => {
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { id: "profile-123", username: "testuser", role: "cook" },
+        error: null,
+      });
+      const mockEq = jest.fn().mockReturnValue({ single: mockSingle });
+      return { select: jest.fn().mockReturnValue({ eq: mockEq }) };
+    };
+
+    it("returns 401 when unauthenticated", async () => {
+      const res = await request(app).patch("/auth/profile").send({ bio: "Hello" });
+      expect(res.status).toBe(401);
+    });
+
+    it("returns 400 when body is empty", async () => {
+      (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+        data: { user: { id: "user-123", email: "test@example.com" } },
+        error: null,
+      });
+      (supabase.from as jest.Mock).mockImplementation(() => authMiddlewareMock());
+
+      const res = await request(app)
+        .patch("/auth/profile")
+        .set("Authorization", "Bearer valid_token")
+        .send({});
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("returns 409 if new username is already taken", async () => {
+      const callCount = { value: 0 };
+      setupAuthMiddleware(callCount);
+
+      (supabase.from as jest.Mock).mockImplementation((table) => {
+        if (table === "profiles") {
+          callCount.value++;
+          if (callCount.value === 1) return authMiddlewareMock();
+          // username conflict check — taken
+          const mockMaybeSingle = jest.fn().mockResolvedValue({ data: { id: "other-profile" }, error: null });
+          const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+          return { select: jest.fn().mockReturnValue({ eq: mockEq }) };
+        }
+        return {};
+      });
+
+      const res = await request(app)
+        .patch("/auth/profile")
+        .set("Authorization", "Bearer valid_token")
+        .send({ username: "takenuser" });
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe("CONFLICT");
+    });
+
+    it("returns 200 on success (no username change)", async () => {
+      const callCount = { value: 0 };
+      setupAuthMiddleware(callCount);
+
+      (supabase.from as jest.Mock).mockImplementation((table) => {
+        if (table === "profiles") {
+          callCount.value++;
+          if (callCount.value === 1) return authMiddlewareMock();
+          // update call
+          const mockSingle = jest.fn().mockResolvedValue({
+            data: { id: "profile-123", username: "testuser", bio: "Hello world", avatar_url: null, preferred_language: null, region: null, updated_at: "2024-01-01" },
+            error: null,
+          });
+          const mockEq = jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ single: mockSingle }) });
+          return { update: jest.fn().mockReturnValue({ eq: mockEq }) };
+        }
+        return {};
+      });
+
+      const res = await request(app)
+        .patch("/auth/profile")
+        .set("Authorization", "Bearer valid_token")
+        .send({ bio: "Hello world" });
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.bio).toBe("Hello world");
+    });
+
+    it("returns 200 when updating username (not taken)", async () => {
+      const callCount = { value: 0 };
+      setupAuthMiddleware(callCount);
+
+      (supabase.from as jest.Mock).mockImplementation((table) => {
+        if (table === "profiles") {
+          callCount.value++;
+          if (callCount.value === 1) return authMiddlewareMock();
+          if (callCount.value === 2) {
+            // username conflict check — not taken
+            const mockMaybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
+            const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
+            return { select: jest.fn().mockReturnValue({ eq: mockEq }) };
+          }
+          // update call
+          const mockSingle = jest.fn().mockResolvedValue({
+            data: { id: "profile-123", username: "newusername", bio: null, avatar_url: null, preferred_language: null, region: null, updated_at: "2024-01-01" },
+            error: null,
+          });
+          const mockEq = jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ single: mockSingle }) });
+          return { update: jest.fn().mockReturnValue({ eq: mockEq }) };
+        }
+        return {};
+      });
+
+      const res = await request(app)
+        .patch("/auth/profile")
+        .set("Authorization", "Bearer valid_token")
+        .send({ username: "newusername" });
+      expect(res.status).toBe(200);
+      expect(res.body.data.username).toBe("newusername");
+    });
+
+    it("returns 500 on db error during update", async () => {
+      const callCount = { value: 0 };
+      setupAuthMiddleware(callCount);
+
+      (supabase.from as jest.Mock).mockImplementation((table) => {
+        if (table === "profiles") {
+          callCount.value++;
+          if (callCount.value === 1) return authMiddlewareMock();
+          // update fails
+          const mockSingle = jest.fn().mockResolvedValue({ data: null, error: { message: "DB timeout" } });
+          const mockEq = jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ single: mockSingle }) });
+          return { update: jest.fn().mockReturnValue({ eq: mockEq }) };
+        }
+        return {};
+      });
+
+      const res = await request(app)
+        .patch("/auth/profile")
+        .set("Authorization", "Bearer valid_token")
+        .send({ bio: "Hello" });
+      expect(res.status).toBe(500);
+      expect(res.body.error.code).toBe("DB_ERROR");
+    });
+  });
 });

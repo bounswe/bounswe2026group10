@@ -211,4 +211,61 @@ router.get("/me", requireAuth, (req, res): void => {
   );
 });
 
+// ─── PATCH /auth/profile ──────────────────────────────────────────────────────
+
+const updateProfileSchema = z.object({
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters.")
+    .max(30, "Username must be at most 30 characters.")
+    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores.")
+    .optional(),
+  bio: z.string().max(500, "Bio must be at most 500 characters.").optional(),
+  avatar_url: z.string().url("avatar_url must be a valid URL.").optional(),
+  preferred_language: z.string().max(10).optional(),
+  region: z.string().max(100).optional(),
+});
+
+/**
+ * Update the current authenticated user's profile fields.
+ * All fields are optional — only provided fields are updated.
+ */
+router.patch("/profile", requireAuth, validate(updateProfileSchema), async (req, res): Promise<void> => {
+  const user = (req as AuthenticatedRequest).user;
+  const updates = req.body as z.infer<typeof updateProfileSchema>;
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json(errorResponse("VALIDATION_ERROR", "At least one field must be provided."));
+    return;
+  }
+
+  // Check username uniqueness if being changed
+  if (updates.username && updates.username !== user.username) {
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", updates.username)
+      .maybeSingle();
+
+    if (existing) {
+      res.status(409).json(errorResponse("CONFLICT", "Username is already taken."));
+      return;
+    }
+  }
+
+  const { data: updated, error } = await supabase
+    .from("profiles")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("id", user.profileId)
+    .select("id, username, bio, avatar_url, preferred_language, region, updated_at")
+    .single();
+
+  if (error) {
+    res.status(500).json(errorResponse("DB_ERROR", error.message));
+    return;
+  }
+
+  res.status(200).json(successResponse(updated));
+});
+
 export default router;
