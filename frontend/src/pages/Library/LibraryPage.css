@@ -200,6 +200,8 @@
 .library-page__card-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--space-xs);
   flex-shrink: 0;
 }
@@ -254,6 +256,47 @@
 
 .library-page__edit-btn:hover {
   opacity: 0.85;
+}
+
+.library-page__publish-btn {
+  background: var(--surface-card);
+  border: 1px solid var(--color-main);
+  border-radius: var(--radius-pill);
+  padding: 3px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-main);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.library-page__publish-btn:hover:not(:disabled) {
+  background: var(--color-main);
+  color: #fff;
+}
+
+.library-page__publish-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.library-page__delete-btn {
+  background: transparent;
+  border: 1px solid var(--color-error, #c0392b);
+  border-radius: var(--radius-pill);
+  padding: 3px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-error, #c0392b);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+
+.library-page__delete-btn:hover {
+  background: var(--color-error, #c0392b);
+  color: #fff;
 }
 
 /* ── Meta row ────────────────────────────────────────────────────────────────── */

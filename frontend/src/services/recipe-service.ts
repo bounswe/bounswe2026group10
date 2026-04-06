@@ -247,4 +247,18 @@ export const recipeService = {
       createdAt: d.createdAt ?? new Date().toISOString(),
     }
   },
+
+  /**
+   * POST /recipes/:id/publish — publish a draft (creator only; completeness enforced).
+   */
+  publish: async (id: string): Promise<void> => {
+    await httpClient.post(`/recipes/${id}/publish`)
+  },
+
+  /**
+   * DELETE /recipes/:id — delete recipe and related data (creator only).
+   */
+  delete: async (id: string): Promise<void> => {
+    await httpClient.delete(`/recipes/${id}`)
+  },
 }

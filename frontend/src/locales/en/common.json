@@ -111,7 +111,6 @@
     "closeMenu": "Close menu",
     "home": "Home",
     "discovery": "Discovery",
-    "search": "Search",
     "library": "Library",
     "createRecipe": "Create Recipe",
     "createDisabledHint": "Only cooks and experts can create recipes.",
@@ -139,7 +138,16 @@
     "filterCountry": "Filter by country",
     "filterCountryAll": "All countries",
     "filterCity": "Filter by city",
-    "filterCityAll": "All cities"
+    "filterCityAll": "All cities",
+    "publishing": "Publishing…",
+    "publish": "Publish",
+    "delete": "Delete",
+    "publishError": "Could not publish this recipe. Make sure it is complete (dish variety, servings, ingredients, and steps).",
+    "deleteError": "Could not delete this recipe. Please try again.",
+    "deleteConfirmTitle": "Delete recipe?",
+    "deleteConfirmMessage": "This will permanently remove \"{{title}}\" from your library.",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel"
   },
   "profileScreen": {
     "title": "Profile",
@@ -164,22 +172,10 @@
     "heroTitle": "Top recipes, genres, and community favorites in one place.",
     "heroSubtitle": "Browse the highest-rated recipes, jump into a genre, or open discovery to keep exploring.",
     "exploreDiscovery": "Open Discovery",
-    "searchRecipes": "Search Recipes",
     "heroGenres": "Genres",
     "heroRecipes": "Recipes",
     "heroPicks": "Top picks",
     "noRecipes": "No recipes yet. Check back soon!"
-  },
-  "search": {
-    "placeholder": "Search dishes or regions…",
-    "browseByGenre": "Browse by Genre",
-    "sortLabel": "Sort results",
-    "sortBestRating": "Best Rating",
-    "sortRecent": "Most Recent",
-    "sortByRegion": "By Region",
-    "resultsCount": "{{count}} dish varieties found",
-    "noResults": "No dishes found. Try a different search.",
-    "recipes": "recipes"
   },
   "discovery": {
     "title": "Discover Recipes",
@@ -306,7 +302,7 @@
     "noCommunityRecipes": "No community recipes listed yet.",
     "openRecipe": "Open recipe",
     "publishedOn": "Published: {{date}}",
-    "noDescription": "No recipe description available yet."
+    "noDescription": "No story for this recipe yet."
   },
   "create": {
     "title": "Create Recipe",
@@ -322,8 +318,8 @@
     "fields": {
       "recipeTitle": "Recipe Title",
       "recipeTitlePlaceholder": "Enter recipe name",
-      "description": "Description",
-      "descriptionPlaceholder": "Tell the story behind this recipe...",
+      "story": "Story",
+      "storyPlaceholder": "Tell the story behind this recipe...",
       "genre": "Cuisine genre",
       "genrePlaceholder": "Select a cuisine genre",
       "dishVariety": "Dish variety",
@@ -428,12 +424,6 @@
       "errorMediaAfterCreate": "Recipe saved, but uploading media failed. You can try adding files again later.",
       "uploading": "Uploading media…",
       "chooseAria": "Select photos or MP4 video files from your device"
-    },
-    "standardize": {
-      "button": "Standardize Units",
-      "loading": "Standardizing…",
-      "error": "Could not standardize units.",
-      "applied": "Units standardized."
     }
   }
 }

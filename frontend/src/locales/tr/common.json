@@ -111,7 +111,6 @@
     "closeMenu": "Menüyü kapat",
     "home": "Ana Sayfa",
     "discovery": "Keşfet",
-    "search": "Ara",
     "library": "Kütüphane",
     "createRecipe": "Tarif Oluştur",
     "createDisabledHint": "Tarif oluşturmak yalnızca aşçı ve uzman rolleri içindir.",
@@ -139,7 +138,16 @@
     "filterCountry": "Ülkeye göre filtrele",
     "filterCountryAll": "Tüm ülkeler",
     "filterCity": "Şehre göre filtrele",
-    "filterCityAll": "Tüm şehirler"
+    "filterCityAll": "Tüm şehirler",
+    "publishing": "Yayınlanıyor…",
+    "publish": "Yayınla",
+    "delete": "Sil",
+    "publishError": "Tarif yayınlanamadı. Çeşit, porsiyon, malzeme ve adımların tam olduğundan emin olun.",
+    "deleteError": "Tarif silinemedi. Lütfen tekrar deneyin.",
+    "deleteConfirmTitle": "Tarifi sil?",
+    "deleteConfirmMessage": "\"{{title}}\" kalıcı olarak kütüphanenizden kaldırılacak.",
+    "deleteConfirm": "Sil",
+    "deleteCancel": "Vazgeç"
   },
   "profileScreen": {
     "title": "Profil",
@@ -164,22 +172,10 @@
     "heroTitle": "En iyi tarifler, türler ve topluluk favorileri tek yerde.",
     "heroSubtitle": "En yüksek puanlı tariflere bakın, bir tür seçin ya da keşfet sayfasında devam edin.",
     "exploreDiscovery": "Keşfi Aç",
-    "searchRecipes": "Tarif Ara",
     "heroGenres": "Türler",
     "heroRecipes": "Tarifler",
     "heroPicks": "Öne çıkanlar",
     "noRecipes": "Henüz tarif yok. Yakında tekrar kontrol edin!"
-  },
-  "search": {
-    "placeholder": "Yemek veya bölge ara…",
-    "browseByGenre": "Türe Göre Keşfet",
-    "sortLabel": "Sonuçları sırala",
-    "sortBestRating": "En İyi Puan",
-    "sortRecent": "En Yeni",
-    "sortByRegion": "Bölgeye Göre",
-    "resultsCount": "{{count}} yemek çeşidi bulundu",
-    "noResults": "Yemek bulunamadı. Farklı bir arama deneyin.",
-    "recipes": "tarif"
   },
   "discovery": {
     "title": "Tarif Keşfet",
@@ -306,7 +302,7 @@
     "noCommunityRecipes": "Henüz topluluk tarifi listelenmedi.",
     "openRecipe": "Tarifi aç",
     "publishedOn": "Yayın tarihi: {{date}}",
-    "noDescription": "Bu tarif için henüz açıklama bulunmuyor."
+    "noDescription": "Bu tarif için henüz hikaye yok."
   },
   "create": {
     "title": "Tarif Oluştur",
@@ -322,8 +318,8 @@
     "fields": {
       "recipeTitle": "Tarif Adı",
       "recipeTitlePlaceholder": "Tarif adını girin",
-      "description": "Açıklama",
-      "descriptionPlaceholder": "Bu tarifin arkasındaki hikayeyi anlatın...",
+      "story": "Hikaye",
+      "storyPlaceholder": "Bu tarifin arkasındaki hikayeyi anlatın...",
       "genre": "Mutfak türü",
       "genrePlaceholder": "Bir mutfak türü seçin",
       "dishVariety": "Yemek çeşidi",
@@ -428,12 +424,6 @@
       "errorMediaAfterCreate": "Tarif kaydedildi ancak medya yüklenemedi. Daha sonra tekrar deneyebilirsiniz.",
       "uploading": "Medyalar yükleniyor…",
       "chooseAria": "Cihazınızdan fotoğraf veya MP4 video dosyası seçin"
-    },
-    "standardize": {
-      "button": "Birimleri Standartlaştır",
-      "loading": "Standartlaştırılıyor…",
-      "error": "Birimler standartlaştırılamadı.",
-      "applied": "Birimler standartlaştırıldı."
     }
   }
 }
