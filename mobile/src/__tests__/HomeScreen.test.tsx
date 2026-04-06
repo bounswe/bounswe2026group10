@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, act } from '@testing-library/react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
 import { HomeScreen } from '../screens/HomeScreen';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
@@ -10,6 +10,12 @@ jest.mock('@expo/vector-icons', () => ({
 
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+const mockNavigate = jest.fn();
+
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ navigate: mockNavigate }),
 }));
 
 const mockCommunityPicks = [
@@ -144,6 +150,34 @@ describe('HomeScreen', () => {
       await renderAndFlush();
       expect(mockFetchCommunityPicks).toHaveBeenCalledTimes(1);
       expect(mockFetchGenres).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ─── Navigation ────────────────────────────────────────────────────────────
+
+  describe('navigation', () => {
+    it('navigates to RecipeDetail when a community pick is pressed', async () => {
+      const { getByText } = await renderAndFlush();
+      fireEvent.press(getByText('Test Recipe'));
+      expect(mockNavigate).toHaveBeenCalledWith('RecipeDetail', { recipeId: 'pick-001' });
+    });
+
+    it('navigates to SearchTab with initialQuery when a genre is pressed', async () => {
+      const { getByText } = await renderAndFlush();
+      fireEvent.press(getByText('Soups'));
+      expect(mockNavigate).toHaveBeenCalledWith('SearchTab', {
+        screen: 'Search',
+        params: { initialQuery: 'Soups' },
+      });
+    });
+
+    it('navigates to SearchTab with correct genre name when Kebabs is pressed', async () => {
+      const { getByText } = await renderAndFlush();
+      fireEvent.press(getByText('Kebabs'));
+      expect(mockNavigate).toHaveBeenCalledWith('SearchTab', {
+        screen: 'Search',
+        params: { initialQuery: 'Kebabs' },
+      });
     });
   });
 });
