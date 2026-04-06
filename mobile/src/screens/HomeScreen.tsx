@@ -8,6 +8,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
   fetchCommunityPicks,
   fetchGenres,
@@ -21,6 +23,7 @@ import { useAuth } from '../context/AuthContext';
 import { colors, fonts, fontSizes, spacing } from '../theme';
 
 export function HomeScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const { authState } = useAuth();
   const [communityPicks, setCommunityPicks] = useState<RecipeListItem[]>([]);
   const [genres, setGenres] = useState<DishGenre[]>([]);
@@ -92,7 +95,11 @@ export function HomeScreen() {
               contentContainerStyle={styles.horizontalList}
             >
               {communityPicks.map((item) => (
-                <CommunityPickCard key={item.id} recipe={item} />
+                <CommunityPickCard
+                  key={item.id}
+                  recipe={item}
+                  onPress={() => navigation.navigate('RecipeDetail', { recipeId: item.id })}
+                />
               ))}
             </ScrollView>
           ) : (
@@ -112,7 +119,17 @@ export function HomeScreen() {
               contentContainerStyle={styles.horizontalList}
             >
               {genres.map((item) => (
-                <GenreCard key={item.id} id={item.id} name={item.name} />
+                <GenreCard
+                  key={item.id}
+                  id={item.id}
+                  name={item.name}
+                  onPress={() =>
+                    navigation.navigate('SearchTab', {
+                      screen: 'Search',
+                      params: { initialQuery: item.name },
+                    })
+                  }
+                />
               ))}
             </ScrollView>
           ) : (
