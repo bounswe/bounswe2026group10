@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal'
 import { recipeService, type MyRecipeSummary } from '@/services/recipe-service'
 import './LibraryPage.css'
 
@@ -40,6 +41,20 @@ export function LibraryPage() {
   const [recipes, setRecipes] = useState<MyRecipeSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [publishBusyId, setPublishBusyId] = useState<string | null>(null)
+
+  const silentRefresh = useCallback(async () => {
+    const statusParam = filter === 'all' ? undefined : filter
+    try {
+      const data = await recipeService.getMyRecipes(statusParam)
+      setRecipes(data)
+    } catch {
+      setError(t('common.errorRetry'))
+    }
+  }, [filter, t])
 
   useEffect(() => {
     let cancelled = false
@@ -89,6 +104,35 @@ export function LibraryPage() {
   }, [recipes, selectedCountry, selectedCity, sort])
 
   const hasLocationData = countries.length > 0
+
+  async function handlePublish(e: MouseEvent<HTMLButtonElement>, id: string) {
+    e.stopPropagation()
+    setActionError(null)
+    setPublishBusyId(id)
+    try {
+      await recipeService.publish(id)
+      await silentRefresh()
+    } catch {
+      setActionError(t('library.publishError'))
+    } finally {
+      setPublishBusyId(null)
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    setActionError(null)
+    setDeleteBusy(true)
+    try {
+      await recipeService.delete(deleteTarget.id)
+      setDeleteTarget(null)
+      await silentRefresh()
+    } catch {
+      setActionError(t('library.deleteError'))
+    } finally {
+      setDeleteBusy(false)
+    }
+  }
 
   return (
     <div className="library-page">
@@ -161,6 +205,7 @@ export function LibraryPage() {
         </div>
       )}
 
+      {actionError && <p className="library-page__error">{actionError}</p>}
       {error && <p className="library-page__error">{error}</p>}
 
       {loading ? (
@@ -168,7 +213,7 @@ export function LibraryPage() {
           <span className="library-page__spinner" aria-hidden />
           <p>{t('library.loading')}</p>
         </div>
-      ) :displayedRecipes.length === 0 ? (
+      ) : displayedRecipes.length === 0 ? (
         <div className="library-page__empty">
           <p>{t('library.empty')}</p>
           {(filter !== 'all' || selectedCountry || selectedCity) && (
@@ -208,12 +253,33 @@ export function LibraryPage() {
                       >
                         {t(recipe.isPublished ? 'library.statusPublished' : 'library.statusDraft')}
                       </span>
+                      {!recipe.isPublished && (
+                        <button
+                          type="button"
+                          className="library-page__publish-btn"
+                          disabled={publishBusyId === recipe.id}
+                          onClick={(e) => void handlePublish(e, recipe.id)}
+                        >
+                          {publishBusyId === recipe.id ? t('library.publishing') : t('library.publish')}
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="library-page__edit-btn"
                         onClick={(e) => { e.stopPropagation(); navigate(`/recipes/${recipe.id}/edit`) }}
                       >
                         {t('library.edit')}
+                      </button>
+                      <button
+                        type="button"
+                        className="library-page__delete-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setActionError(null)
+                          setDeleteTarget({ id: recipe.id, title: recipe.title })
+                        }}
+                      >
+                        {t('library.delete')}
                       </button>
                     </div>
                   </div>
@@ -238,6 +304,24 @@ export function LibraryPage() {
           })}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        title={t('library.deleteConfirmTitle')}
+        message={
+          deleteTarget
+            ? t('library.deleteConfirmMessage', { title: deleteTarget.title })
+            : ''
+        }
+        confirmLabel={t('library.deleteConfirm')}
+        cancelLabel={t('library.deleteCancel')}
+        confirmVariant="danger"
+        busy={deleteBusy}
+        onCancel={() => {
+          if (!deleteBusy) setDeleteTarget(null)
+        }}
+        onConfirm={() => void confirmDelete()}
+      />
     </div>
   )
 }

@@ -62,7 +62,6 @@ export function EditRecipePage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
 
   // Form fields
   const [title, setTitle] = useState('')
@@ -156,7 +155,6 @@ export function EditRecipePage() {
   async function handleSave() {
     if (!id) return
     setSaveError(null)
-    setSaved(false)
     setSaving(true)
 
     const ingredientPayload: CreateRecipeIngredient[] = ingredients
@@ -185,7 +183,7 @@ export function EditRecipePage() {
         steps: stepsPayload,
         tools: toolsPayload,
       })
-      setSaved(true)
+      navigate('/library')
     } catch {
       setSaveError(t('edit.saveError'))
     } finally {
@@ -241,7 +239,7 @@ export function EditRecipePage() {
 
         <div className="edit-recipe__field">
           <label className="edit-recipe__label" htmlFor="er-story">
-            {t('create.fields.description')}
+            {t('create.fields.story')}
           </label>
           <textarea
             id="er-story"
@@ -504,7 +502,6 @@ export function EditRecipePage() {
       {/* Save bar */}
       <div className="edit-recipe__save-bar">
         {saveError && <p className="edit-recipe__save-error">{saveError}</p>}
-        {saved && <p className="edit-recipe__save-success">{t('edit.saveSuccess')}</p>}
         <div className="edit-recipe__save-actions">
           <button
             type="button"

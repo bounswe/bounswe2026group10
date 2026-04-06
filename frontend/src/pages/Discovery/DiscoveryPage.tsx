@@ -181,6 +181,11 @@ export function DiscoveryPage() {
     (selectedCountry ? 1 : 0) +
     (selectedCity ? 1 : 0)
 
+  const hasAnyFilters =
+    selectedGenreId !== null ||
+    debouncedSearch.trim().length > 0 ||
+    activeFilterCount > 0
+
   function toggleTag(id: string) {
     setSelectedTagIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id])
   }
@@ -235,6 +240,16 @@ export function DiscoveryPage() {
             </button>
           </span>
         </label>
+
+        {hasAnyFilters && (
+          <button
+            type="button"
+            className="discovery-page__clear-genre"
+            onClick={handleClearFilters}
+          >
+            {t('discovery.clearFilters')}
+          </button>
+        )}
       </section>
 
       {/* Genres — horizontal scroll */}

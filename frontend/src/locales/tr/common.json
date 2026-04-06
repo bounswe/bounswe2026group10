@@ -139,7 +139,16 @@
     "filterCountry": "Ülkeye göre filtrele",
     "filterCountryAll": "Tüm ülkeler",
     "filterCity": "Şehre göre filtrele",
-    "filterCityAll": "Tüm şehirler"
+    "filterCityAll": "Tüm şehirler",
+    "publishing": "Yayınlanıyor…",
+    "publish": "Yayınla",
+    "delete": "Sil",
+    "publishError": "Tarif yayınlanamadı. Çeşit, porsiyon, malzeme ve adımların tam olduğundan emin olun.",
+    "deleteError": "Tarif silinemedi. Lütfen tekrar deneyin.",
+    "deleteConfirmTitle": "Tarifi sil?",
+    "deleteConfirmMessage": "\"{{title}}\" kalıcı olarak kütüphanenizden kaldırılacak.",
+    "deleteConfirm": "Sil",
+    "deleteCancel": "Vazgeç"
   },
   "profileScreen": {
     "title": "Profil",
@@ -306,7 +315,7 @@
     "noCommunityRecipes": "Henüz topluluk tarifi listelenmedi.",
     "openRecipe": "Tarifi aç",
     "publishedOn": "Yayın tarihi: {{date}}",
-    "noDescription": "Bu tarif için henüz açıklama bulunmuyor."
+    "noDescription": "Bu tarif için henüz hikaye yok."
   },
   "create": {
     "title": "Tarif Oluştur",
@@ -322,8 +331,8 @@
     "fields": {
       "recipeTitle": "Tarif Adı",
       "recipeTitlePlaceholder": "Tarif adını girin",
-      "description": "Açıklama",
-      "descriptionPlaceholder": "Bu tarifin arkasındaki hikayeyi anlatın...",
+      "story": "Hikaye",
+      "storyPlaceholder": "Bu tarifin arkasındaki hikayeyi anlatın...",
       "genre": "Mutfak türü",
       "genrePlaceholder": "Bir mutfak türü seçin",
       "dishVariety": "Yemek çeşidi",
@@ -428,12 +437,6 @@
       "errorMediaAfterCreate": "Tarif kaydedildi ancak medya yüklenemedi. Daha sonra tekrar deneyebilirsiniz.",
       "uploading": "Medyalar yükleniyor…",
       "chooseAria": "Cihazınızdan fotoğraf veya MP4 video dosyası seçin"
-    },
-    "standardize": {
-      "button": "Birimleri Standartlaştır",
-      "loading": "Standartlaştırılıyor…",
-      "error": "Birimler standartlaştırılamadı.",
-      "applied": "Birimler standartlaştırıldı."
     }
   }
 }

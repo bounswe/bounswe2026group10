@@ -315,14 +315,6 @@
   background: rgba(181, 100, 40, 0.08);
 }
 
-.cr-standardize {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) 0;
-}
-
 .cr-parse {
   padding: var(--space-md);
   border-radius: var(--radius-sm);

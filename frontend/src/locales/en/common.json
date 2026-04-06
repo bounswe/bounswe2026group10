@@ -139,7 +139,16 @@
     "filterCountry": "Filter by country",
     "filterCountryAll": "All countries",
     "filterCity": "Filter by city",
-    "filterCityAll": "All cities"
+    "filterCityAll": "All cities",
+    "publishing": "Publishing…",
+    "publish": "Publish",
+    "delete": "Delete",
+    "publishError": "Could not publish this recipe. Make sure it is complete (dish variety, servings, ingredients, and steps).",
+    "deleteError": "Could not delete this recipe. Please try again.",
+    "deleteConfirmTitle": "Delete recipe?",
+    "deleteConfirmMessage": "This will permanently remove \"{{title}}\" from your library.",
+    "deleteConfirm": "Delete",
+    "deleteCancel": "Cancel"
   },
   "profileScreen": {
     "title": "Profile",
@@ -306,7 +315,7 @@
     "noCommunityRecipes": "No community recipes listed yet.",
     "openRecipe": "Open recipe",
     "publishedOn": "Published: {{date}}",
-    "noDescription": "No recipe description available yet."
+    "noDescription": "No story for this recipe yet."
   },
   "create": {
     "title": "Create Recipe",
@@ -322,8 +331,8 @@
     "fields": {
       "recipeTitle": "Recipe Title",
       "recipeTitlePlaceholder": "Enter recipe name",
-      "description": "Description",
-      "descriptionPlaceholder": "Tell the story behind this recipe...",
+      "story": "Story",
+      "storyPlaceholder": "Tell the story behind this recipe...",
       "genre": "Cuisine genre",
       "genrePlaceholder": "Select a cuisine genre",
       "dishVariety": "Dish variety",
@@ -428,12 +437,6 @@
       "errorMediaAfterCreate": "Recipe saved, but uploading media failed. You can try adding files again later.",
       "uploading": "Uploading media…",
       "chooseAria": "Select photos or MP4 video files from your device"
-    },
-    "standardize": {
-      "button": "Standardize Units",
-      "loading": "Standardizing…",
-      "error": "Could not standardize units.",
-      "applied": "Units standardized."
     }
   }
 }
