@@ -8,6 +8,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { SearchStackParamList } from '../navigation/types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   searchDishVarieties,
@@ -30,8 +33,12 @@ import { colors, fonts, fontSizes, spacing } from '../theme';
 // How many items to preview per section before the "See All" box
 const PREVIEW_COUNT = 3;
 
+type NavigationProp = NativeStackNavigationProp<any>;
+
 export function SearchScreen() {
-  const [query, setQuery] = useState('');
+  const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProp<SearchStackParamList, 'Search'>>();
+  const [query, setQuery] = useState(route.params?.initialQuery ?? '');
   const [allGenres, setAllGenres] = useState<DishGenre[]>([]);
   const [allVarieties, setAllVarieties] = useState<DishVarietyResult[]>([]);
   const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
@@ -153,6 +160,11 @@ export function SearchScreen() {
     setQuery(genre.name);
   };
 
+  const handleVarietyPress = (variety: DishVarietyResult) => {
+    navigation.navigate('DishVarietyDetail', { id: variety.id });
+    setSheetVisible(false);
+  };
+
   const handleSortChange = (newSort: SortOption) => {
     setSort(newSort);
     if (isSearchActive) {
@@ -199,6 +211,7 @@ export function SearchScreen() {
         varieties={activeVarieties}
         recipes={activeRecipes}
         onGenrePress={handleGenrePress}
+        onVarietyPress={handleVarietyPress}
       />
 
       {/* ── Search bar ── */}
@@ -277,7 +290,11 @@ export function SearchScreen() {
                 onSeeAll={() => openSheet('varieties')}
               >
                 {activeVarieties.slice(0, PREVIEW_COUNT).map((v) => (
-                  <DishVarietyCard key={v.id} variety={v} />
+                  <DishVarietyCard
+                    key={v.id}
+                    variety={v}
+                    onPress={() => handleVarietyPress(v)}
+                  />
                 ))}
               </SectionBox>
 
@@ -289,7 +306,11 @@ export function SearchScreen() {
                 onSeeAll={() => openSheet('recipes')}
               >
                 {activeRecipes.slice(0, PREVIEW_COUNT).map((r) => (
-                  <RecipeCard key={r.id} recipe={r} />
+                  <RecipeCard
+                    key={r.id}
+                    recipe={r}
+                    onPress={() => navigation.navigate('RecipeDetail', { recipeId: r.id })}
+                  />
                 ))}
               </SectionBox>
             </>
@@ -318,12 +339,12 @@ function SectionBox({ title, count, query, onSeeAll, children }: SectionBoxProps
     : title;
 
   return (
-    <TouchableOpacity
-      style={styles.sectionBox}
-      onPress={onSeeAll}
-      activeOpacity={0.92}
-    >
-      <View style={styles.sectionBoxHeader}>
+    <View style={styles.sectionBox}>
+      <TouchableOpacity
+        style={styles.sectionBoxHeader}
+        onPress={onSeeAll}
+        activeOpacity={0.92}
+      >
         <Text style={styles.sectionBoxTitle}>{heading}</Text>
         <View style={styles.seeAllRow}>
           <Text style={styles.seeAllText}>See All</Text>
@@ -333,19 +354,19 @@ function SectionBox({ title, count, query, onSeeAll, children }: SectionBoxProps
             color={colors.primary}
           />
         </View>
-      </View>
+      </TouchableOpacity>
 
-      {/* Preview items — not interactive themselves (outer box handles tap) */}
+      {/* Preview items — interactive children (varieties, recipes) */}
       <View style={styles.previewItems}>
         {children}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function sortVarieties(items: DishVarietyResult[], sort: SortOption): DishVarietyResult[] {
+function sortVarieties(items: DishVarietyResult[], _sort: SortOption): DishVarietyResult[] {
   // For varieties, we only support sorting by name (default)
   // Filters are only applied to recipes
   return [...items].sort((a, b) => a.name.localeCompare(b.name));
@@ -447,7 +468,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   previewItems: {
-    pointerEvents: 'none' as const,
+    // Allow pointer events so children (varieties, recipes) are interactive
   },
   bottomSpacer: {
     height: spacing['3xl'],

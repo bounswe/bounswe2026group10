@@ -19,7 +19,9 @@ export type HomeStackParamList = {
 };
 
 export type SearchStackParamList = {
-  Search: undefined;
+  Search: { initialQuery?: string } | undefined;
+  DishVarietyDetail: { id: number };
+  RecipeDetail: { recipeId: string };
 };
 
 export type CreateStackParamList = {

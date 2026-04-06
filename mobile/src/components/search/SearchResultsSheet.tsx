@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { DishGenre } from '../../api/dish-genres';
 import type { DishVarietyResult, Recipe } from '../../api/search';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
@@ -26,6 +28,7 @@ interface SearchResultsSheetProps {
   varieties: DishVarietyResult[];
   recipes: Recipe[];
   onGenrePress: (genre: DishGenre) => void;
+  onVarietyPress: (variety: DishVarietyResult) => void;
 }
 
 const SECTION_LABELS: Record<SheetSection, string> = {
@@ -43,7 +46,9 @@ export function SearchResultsSheet({
   varieties,
   recipes,
   onGenrePress,
+  onVarietyPress,
 }: SearchResultsSheetProps) {
+  const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const isSearchActive = query.trim().length > 0;
   const label = SECTION_LABELS[section];
 
@@ -121,7 +126,9 @@ export function SearchResultsSheet({
               {varieties.length === 0 ? (
                 <EmptyState label={label} />
               ) : (
-                varieties.map((v) => <DishVarietyCard key={v.id} variety={v} />)
+                varieties.map((v) => (
+                  <DishVarietyCard key={v.id} variety={v} onPress={() => onVarietyPress(v)} />
+                ))
               )}
             </>
           )}
@@ -131,7 +138,16 @@ export function SearchResultsSheet({
               {recipes.length === 0 ? (
                 <EmptyState label={label} />
               ) : (
-                recipes.map((r) => <RecipeCard key={r.id} recipe={r} />)
+                recipes.map((r) => (
+                  <RecipeCard
+                    key={r.id}
+                    recipe={r}
+                    onPress={() => {
+                      onClose();
+                      navigation.navigate('RecipeDetail', { recipeId: r.id });
+                    }}
+                  />
+                ))
               )}
             </>
           )}
