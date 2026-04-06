@@ -129,6 +129,9 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 
 ### Recipes (`/recipes`)
 - `GET /recipes/:id` — Recipe detail (public if published, creator-only if draft)
+- `GET /recipes` — List published recipes with pagination
+  - Query params: `creatorId` (optional UUID — filter by creator's profile ID to view a specific user's published recipes), `page`, `limit`
+  - Response recipe objects include `coverImageUrl` (first image from `recipe_media`, or `null`)
 - `POST /recipes` — Create recipe (cook/expert only, accepts `tagIds`, optional `country`, `city`, `district`)
 - `PATCH /recipes/:id` — Update draft (creator only, cook/expert, accepts `tagIds`, optional `country`, `city`, `district`)
 - `POST /recipes/:id/publish` — Publish draft (validates completeness)
