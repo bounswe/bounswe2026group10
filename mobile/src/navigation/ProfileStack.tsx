@@ -6,6 +6,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { ProfileStackParamList } from './types';
 import { useAuth } from '../context/AuthContext';
 import { colors, fonts, fontSizes, spacing } from '../theme';
+import { ProfileScreen } from '../screens/ProfileScreen';
+import { RecipeDetailScreen } from '../components/recipe-detail/RecipeDetailScreen';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
@@ -28,30 +30,6 @@ function LoginPromptScreen() {
   );
 }
 
-function ProfileScreen() {
-  // Placeholder — real Profile screen implemented separately
-  const { authState, logout } = useAuth();
-  const user = authState.status === 'authenticated' ? authState.user : null;
-  return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <View style={styles.container}>
-        <MaterialCommunityIcons name="account-circle" size={80} color={colors.primary} />
-        <Text style={styles.title}>{user?.username ?? 'Profile'}</Text>
-        {user?.email ? <Text style={styles.infoText}>{user.email}</Text> : null}
-        {user?.role ? (
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleBadgeText}>{user.role.toUpperCase()}</Text>
-          </View>
-        ) : null}
-        <Text style={styles.subtitle}>Profile screen coming soon.</Text>
-        <TouchableOpacity style={styles.signInButton} onPress={logout} activeOpacity={0.85}>
-          <Text style={styles.signInButtonText}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
-  );
-}
-
 function ProfileRoot() {
   const { authState } = useAuth();
   if (authState.status !== 'authenticated') {
@@ -64,6 +42,9 @@ export function ProfileStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Profile" component={ProfileRoot} />
+      <Stack.Screen name="RecipeDetail">
+        {({ route }) => <RecipeDetailScreen recipeId={route.params.recipeId} />}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 }
@@ -104,22 +85,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansMedium,
     fontSize: fontSizes.lg,
     color: colors.white,
-  },
-  infoText: {
-    fontFamily: fonts.sans,
-    fontSize: fontSizes.md,
-    color: colors.onSurfaceVariant,
-  },
-  roleBadge: {
-    backgroundColor: colors.surfaceContainer,
-    borderRadius: 20,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.lg,
-  },
-  roleBadgeText: {
-    fontFamily: fonts.sansMedium,
-    fontSize: fontSizes.sm,
-    color: colors.primary,
-    letterSpacing: 1,
   },
 });
