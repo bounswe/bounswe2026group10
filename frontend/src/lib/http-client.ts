@@ -3,7 +3,8 @@ import { session } from '@/auth/session'
 import { refreshSession } from '@/lib/refresh-session'
 
 /**
- * Tek HTTP istemcisi. Geliştirmede `VITE_API_BASE_URL=/api` + Vite proxy ile backend’e yönlendirilir.
+ * Tek HTTP istemcisi. `npm run dev`: `.env.development` → `/api` + Vite proxy (localhost:3000).
+ * `npm run build` / `npm run prod`: `.env.production` → tam backend URL.
  * Bearer token, login/register/refresh hariç isteklere eklenir.
  * 401: refresh token ile yenile, isteği bir kez tekrarla; refresh başarısızsa çıkış + `/login`.
  */
