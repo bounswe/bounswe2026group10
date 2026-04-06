@@ -1,12 +1,6 @@
-import React, { useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
@@ -21,65 +15,26 @@ export function VideoPlayer({
   stepNumber,
   stepDescription,
 }: VideoPlayerProps) {
-  const videoRef = useRef<Video>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const togglePlayPause = async () => {
-    if (!videoRef.current) return;
-    if (isPlaying) {
-      await videoRef.current.pauseAsync();
-    } else {
-      await videoRef.current.playAsync();
-    }
-  };
+  console.log('[VideoPlayer] videoUrl:', videoUrl);
+  const player = useVideoPlayer(videoUrl ?? null, (p) => {
+    p.loop = true;
+  });
 
   return (
     <View style={styles.container}>
       {videoUrl ? (
-        <Video
-          ref={videoRef}
-          source={{ uri: videoUrl }}
+        <VideoView
+          player={player}
           style={styles.video}
-          resizeMode={ResizeMode.CONTAIN}
-          shouldPlay={false}
-          isLooping
-          onPlaybackStatusUpdate={(status) => {
-            if (status.isLoaded) {
-              setIsPlaying(status.isPlaying);
-              setIsLoading(false);
-            }
-          }}
-          onLoadStart={() => setIsLoading(true)}
+          allowsFullscreen
+          allowsPictureInPicture={false}
+          nativeControls
         />
       ) : (
-        <View style={styles.placeholder} />
-      )}
-
-      {isLoading && videoUrl && (
-        <View style={styles.overlay}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={styles.placeholder}>
+          <MaterialCommunityIcons name="video-off-outline" size={48} color={colors.onSurfaceVariant} />
+          <Text style={styles.placeholderText}>No video available</Text>
         </View>
-      )}
-
-      {!isLoading && !isPlaying && (
-        <TouchableOpacity
-          style={styles.overlay}
-          onPress={togglePlayPause}
-          activeOpacity={0.8}
-        >
-          <View style={styles.playButton}>
-            <MaterialCommunityIcons name="play" size={32} color={colors.white} />
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {isPlaying && (
-        <TouchableOpacity
-          style={styles.overlay}
-          onPress={togglePlayPause}
-          activeOpacity={1}
-        />
       )}
 
       <View style={styles.stepInfo}>
@@ -105,20 +60,14 @@ const styles = StyleSheet.create({
   placeholder: {
     flex: 1,
     backgroundColor: '#1a1a1a',
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.md,
   },
-  playButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingLeft: 4,
+  placeholderText: {
+    fontFamily: fonts.sans,
+    fontSize: fontSizes.md,
+    color: colors.onSurfaceVariant,
   },
   stepInfo: {
     position: 'absolute',
