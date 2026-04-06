@@ -38,4 +38,5 @@ export type LibraryStackParamList = {
 
 export type ProfileStackParamList = {
   Profile: undefined;
+  RecipeDetail: { recipeId: string };
 };
