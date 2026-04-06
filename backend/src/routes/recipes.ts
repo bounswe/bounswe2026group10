@@ -336,12 +336,14 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
 // ─── GET /recipes ────────────────────────────────────────────────────────────
 
 const listRecipesQuerySchema = z.object({
+  creatorId: z.string().uuid().optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
 /**
  * List published recipes with pagination.
+ * Optionally filter by creatorId to view a specific user's published recipes.
  * Public — no auth required.
  */
 router.get("/", async (req: Request, res: Response): Promise<void> => {
@@ -352,19 +354,26 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const { page, limit } = parsed.data;
+  const { creatorId, page, limit } = parsed.data;
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  const { data, error, count } = await supabase
+  let query = supabase
     .from("recipes")
     .select(
       `id, title, type, average_rating, rating_count, created_at, updated_at,
        creator:profiles!recipes_creator_id_fkey(id, username),
-       dish_variety:dish_varieties(id, name, dish_genre:dish_genres(id, name))`,
+       dish_variety:dish_varieties(id, name, dish_genre:dish_genres(id, name)),
+       recipe_media(id, url, type)`,
       { count: "exact" }
     )
-    .eq("is_published", true)
+    .eq("is_published", true);
+
+  if (creatorId) {
+    query = query.eq("creator_id", creatorId);
+  }
+
+  const { data, error, count } = await query
     .order("average_rating", { ascending: false })
     .range(from, to);
 
@@ -373,20 +382,24 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const recipes = (data ?? []).map((r: any) => ({
-    id: r.id,
-    title: r.title,
-    type: r.type,
-    averageRating: r.average_rating ?? null,
-    ratingCount: r.rating_count ?? 0,
-    creatorId: r.creator?.id ?? null,
-    creatorUsername: r.creator?.username ?? null,
-    dishVarietyId: r.dish_variety?.id ?? null,
-    dishVarietyName: r.dish_variety?.name ?? null,
-    genreName: r.dish_variety?.dish_genre?.name ?? null,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
-  }));
+  const recipes = (data ?? []).map((r: any) => {
+    const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
+    return {
+      id: r.id,
+      title: r.title,
+      type: r.type,
+      averageRating: r.average_rating ?? null,
+      ratingCount: r.rating_count ?? 0,
+      creatorId: r.creator?.id ?? null,
+      creatorUsername: r.creator?.username ?? null,
+      dishVarietyId: r.dish_variety?.id ?? null,
+      dishVarietyName: r.dish_variety?.name ?? null,
+      genreName: r.dish_variety?.dish_genre?.name ?? null,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      coverImageUrl: firstImage?.url ?? null,
+    };
+  });
 
   res.status(200).json(
     successResponse({

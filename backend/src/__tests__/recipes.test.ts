@@ -275,6 +275,119 @@ describe("GET /recipes/mine", () => {
   });
 });
 
+// ─── GET /recipes (list) ─────────────────────────────────────────────────────
+
+describe("GET /recipes", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  const setupListMock = (data: any, error: any = null, count: number | null = null) => {
+    const chain: any = {};
+    chain.select = jest.fn().mockReturnValue(chain);
+    chain.eq = jest.fn().mockReturnValue(chain);
+    chain.order = jest.fn().mockReturnValue(chain);
+    chain.range = jest.fn().mockResolvedValue({ data, error, count });
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "recipes") return chain;
+      return {};
+    });
+    return chain;
+  };
+
+  const mockRecipeList = [
+    {
+      id: "r1", title: "Adana Kebap", type: "community",
+      average_rating: 4.5, rating_count: 10,
+      created_at: "2024-01-01", updated_at: "2024-01-02",
+      creator: { id: "profile-1", username: "furkan" },
+      dish_variety: { id: 1, name: "Adana Kebap", dish_genre: { id: 1, name: "Kebap" } },
+      recipe_media: [{ id: 1, url: "https://example.com/img1.jpg", type: "image" }],
+    },
+    {
+      id: "r2", title: "Mercimek Çorbası", type: "cultural",
+      average_rating: 4.0, rating_count: 5,
+      created_at: "2024-02-01", updated_at: "2024-02-02",
+      creator: { id: "profile-2", username: "ayse" },
+      dish_variety: { id: 2, name: "Mercimek", dish_genre: { id: 2, name: "Çorba" } },
+      recipe_media: [],
+    },
+  ];
+
+  it("returns published recipes with 200", async () => {
+    setupListMock(mockRecipeList, null, 2);
+    const res = await request(app).get("/recipes");
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.recipes).toHaveLength(2);
+    expect(res.body.data.pagination).toMatchObject({ page: 1, limit: 20, total: 2 });
+  });
+
+  it("returns only recipes from a specific creator when creatorId is provided", async () => {
+    const chain = setupListMock([mockRecipeList[0]], null, 1);
+    const res = await request(app).get("/recipes?creatorId=a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d");
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(res.body.data.recipes[0].creatorId).toBe("profile-1");
+    // Verify eq was called with creator_id filter
+    expect(chain.eq).toHaveBeenCalledWith("creator_id", "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d");
+  });
+
+  it("returns empty array when creatorId has no published recipes", async () => {
+    setupListMock([], null, 0);
+    const res = await request(app).get("/recipes?creatorId=b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e");
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(0);
+    expect(res.body.data.pagination.total).toBe(0);
+  });
+
+  it("returns 400 for invalid creatorId format", async () => {
+    const res = await request(app).get("/recipes?creatorId=not-a-uuid");
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("includes coverImageUrl from recipe_media", async () => {
+    setupListMock(mockRecipeList, null, 2);
+    const res = await request(app).get("/recipes");
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes[0].coverImageUrl).toBe("https://example.com/img1.jpg");
+    expect(res.body.data.recipes[1].coverImageUrl).toBeNull();
+  });
+
+  it("supports pagination query params", async () => {
+    const chain = setupListMock([], null, 0);
+    const res = await request(app).get("/recipes?page=2&limit=5");
+    expect(res.status).toBe(200);
+    // range should be called with (5, 9) for page=2, limit=5
+    expect(chain.range).toHaveBeenCalledWith(5, 9);
+  });
+
+  it("returns correct response shape", async () => {
+    setupListMock([mockRecipeList[0]], null, 1);
+    const res = await request(app).get("/recipes");
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes[0]).toMatchObject({
+      id: "r1",
+      title: "Adana Kebap",
+      type: "community",
+      averageRating: 4.5,
+      ratingCount: 10,
+      creatorId: "profile-1",
+      creatorUsername: "furkan",
+      dishVarietyId: 1,
+      dishVarietyName: "Adana Kebap",
+      genreName: "Kebap",
+      coverImageUrl: "https://example.com/img1.jpg",
+    });
+  });
+
+  it("returns 500 on database error", async () => {
+    setupListMock(null, { message: "DB timeout" });
+    const res = await request(app).get("/recipes");
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("DB_ERROR");
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("Recipe Endpoints (Creation & Publishing)", () => {
