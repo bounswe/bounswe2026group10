@@ -127,13 +127,7 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
           creatorUsername={recipe.creatorUsername}
           onRatingChange={fetchRecipe}
           onNavigateToComments={() =>
-            navigation.navigate('CommentsRatings', {
-              recipeId,
-              recipeTitle: recipe.title,
-              rating: recipe.rating,
-              ratingCount: recipe.ratingCount,
-              creatorUsername: recipe.creatorUsername,
-            })
+            Alert.alert('Comments', 'Comment section coming soon!')
           }
         />
       </ScrollView>
