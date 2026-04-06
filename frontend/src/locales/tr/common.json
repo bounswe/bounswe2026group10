@@ -111,7 +111,6 @@
     "closeMenu": "Menüyü kapat",
     "home": "Ana Sayfa",
     "discovery": "Keşfet",
-    "search": "Ara",
     "library": "Kütüphane",
     "createRecipe": "Tarif Oluştur",
     "createDisabledHint": "Tarif oluşturmak yalnızca aşçı ve uzman rolleri içindir.",
@@ -173,22 +172,10 @@
     "heroTitle": "En iyi tarifler, türler ve topluluk favorileri tek yerde.",
     "heroSubtitle": "En yüksek puanlı tariflere bakın, bir tür seçin ya da keşfet sayfasında devam edin.",
     "exploreDiscovery": "Keşfi Aç",
-    "searchRecipes": "Tarif Ara",
     "heroGenres": "Türler",
     "heroRecipes": "Tarifler",
     "heroPicks": "Öne çıkanlar",
     "noRecipes": "Henüz tarif yok. Yakında tekrar kontrol edin!"
-  },
-  "search": {
-    "placeholder": "Yemek veya bölge ara…",
-    "browseByGenre": "Türe Göre Keşfet",
-    "sortLabel": "Sonuçları sırala",
-    "sortBestRating": "En İyi Puan",
-    "sortRecent": "En Yeni",
-    "sortByRegion": "Bölgeye Göre",
-    "resultsCount": "{{count}} yemek çeşidi bulundu",
-    "noResults": "Yemek bulunamadı. Farklı bir arama deneyin.",
-    "recipes": "tarif"
   },
   "discovery": {
     "title": "Tarif Keşfet",

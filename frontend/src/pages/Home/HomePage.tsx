@@ -48,10 +48,6 @@ export function HomePage() {
     navigate('/discovery')
   }
 
-  const handleSearchRecipes = () => {
-    navigate('/search')
-  }
-
   if (loading) {
     return (
       <div className="home-page">
@@ -86,9 +82,6 @@ export function HomePage() {
           <div className="home-page__hero-actions">
             <button type="button" className="home-page__hero-btn home-page__hero-btn--primary" onClick={handleExploreDiscovery}>
               {t('home.exploreDiscovery')}
-            </button>
-            <button type="button" className="home-page__hero-btn home-page__hero-btn--secondary" onClick={handleSearchRecipes}>
-              {t('home.searchRecipes')}
             </button>
           </div>
           <div className="home-page__hero-stats">

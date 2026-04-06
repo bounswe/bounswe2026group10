@@ -111,7 +111,6 @@
     "closeMenu": "Close menu",
     "home": "Home",
     "discovery": "Discovery",
-    "search": "Search",
     "library": "Library",
     "createRecipe": "Create Recipe",
     "createDisabledHint": "Only cooks and experts can create recipes.",
@@ -173,22 +172,10 @@
     "heroTitle": "Top recipes, genres, and community favorites in one place.",
     "heroSubtitle": "Browse the highest-rated recipes, jump into a genre, or open discovery to keep exploring.",
     "exploreDiscovery": "Open Discovery",
-    "searchRecipes": "Search Recipes",
     "heroGenres": "Genres",
     "heroRecipes": "Recipes",
     "heroPicks": "Top picks",
     "noRecipes": "No recipes yet. Check back soon!"
-  },
-  "search": {
-    "placeholder": "Search dishes or regions…",
-    "browseByGenre": "Browse by Genre",
-    "sortLabel": "Sort results",
-    "sortBestRating": "Best Rating",
-    "sortRecent": "Most Recent",
-    "sortByRegion": "By Region",
-    "resultsCount": "{{count}} dish varieties found",
-    "noResults": "No dishes found. Try a different search.",
-    "recipes": "recipes"
   },
   "discovery": {
     "title": "Discover Recipes",
