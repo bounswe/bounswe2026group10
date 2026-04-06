@@ -3,7 +3,6 @@ import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, View } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { HomeStackParamList } from '../../navigation/types';
 import type { Recipe, RecipeCard } from '../../types/recipe';
 import { colors, spacing } from '../../theme';
 import { useServingAdjuster } from '../../hooks/useServingAdjuster';
@@ -30,7 +29,7 @@ interface RecipeDetailScreenProps {
 const EMPTY_ALTERNATIVES: RecipeCard[] = [];
 
 export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
-  const navigation = useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +75,7 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
       <View style={styles.topBar}>
         <IconButton
           name="arrow-left"
-          onPress={() => Alert.alert('Back', 'Navigation coming soon')}
+          onPress={() => navigation.goBack()}
         />
       </View>
 
