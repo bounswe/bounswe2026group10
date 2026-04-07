@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { fetchDietaryTags, type DietaryTag } from '../../api/search';
+import { fetchDietaryTags, fetchLocations, type DietaryTag } from '../../api/search';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
 export interface FilterState {
@@ -19,6 +19,8 @@ export interface FilterState {
   excludeAllergenNames: string[];
   dietaryTagIds: number[];
   dietaryTagNames: string[];
+  country: string;
+  city: string;
 }
 
 interface FilterModalProps {
@@ -35,6 +37,8 @@ export const EMPTY_FILTERS: FilterState = {
   excludeAllergenNames: [],
   dietaryTagIds: [],
   dietaryTagNames: [],
+  country: '',
+  city: '',
 };
 
 export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters }: FilterModalProps) {
@@ -42,8 +46,11 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     allergens: false,
     dietary: false,
+    location: false,
   });
   const [tags, setTags] = useState<DietaryTag[]>([]);
+  const [countries, setCountries] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
 
@@ -59,16 +66,26 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
     setFilters(appliedFilters ?? EMPTY_FILTERS);
   }, [appliedFilters]);
 
-  // Load dietary tags when modal opens
+  // Load dietary tags + countries when modal opens
   useEffect(() => {
     if (!visible) return;
     setLoading(true);
-    fetchDietaryTags()
-      .then((t) => {
-        setTags(t);
+    Promise.all([fetchDietaryTags(), fetchLocations()])
+      .then(([tagData, countryData]) => {
+        setTags(tagData);
+        setCountries(countryData);
       })
       .finally(() => setLoading(false));
   }, [visible]);
+
+  // Load cities when selected country changes
+  useEffect(() => {
+    if (!filters.country) {
+      setCities([]);
+      return;
+    }
+    fetchLocations(filters.country).then(setCities);
+  }, [filters.country]);
 
   const allergenTags = tags.filter((t) => t.category === 'allergen');
   const dietaryTags = tags.filter((t) => t.category === 'dietary');
@@ -129,6 +146,74 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
           <ActivityIndicator color={colors.primary} size="large" style={styles.loader} />
         ) : (
           <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
+
+            {/* ── Location ── */}
+            {countries.length > 0 && (
+              <View style={styles.filterSection}>
+                <TouchableOpacity
+                  style={styles.sectionHeader}
+                  onPress={() => toggleSection('location')}
+                >
+                  <Text style={styles.filterTitle}>{t('search.location')}</Text>
+                  <MaterialCommunityIcons
+                    name={expandedSections.location ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={colors.onSurfaceVariant}
+                  />
+                </TouchableOpacity>
+
+                {expandedSections.location && (
+                  <View style={styles.sectionContent}>
+                    {/* Country chips */}
+                    <Text style={styles.sublabel}>{t('search.country')}</Text>
+                    <View style={styles.chipRow}>
+                      {countries.map((c) => (
+                        <TouchableOpacity
+                          key={c}
+                          style={[styles.chip, filters.country === c && styles.chipActive]}
+                          onPress={() =>
+                            setFilters((prev) => ({
+                              ...prev,
+                              country: prev.country === c ? '' : c,
+                              city: '',
+                            }))
+                          }
+                        >
+                          <Text style={[styles.chipText, filters.country === c && styles.chipTextActive]}>
+                            {c}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    {/* City chips — only when a country is selected */}
+                    {filters.country !== '' && cities.length > 0 && (
+                      <>
+                        <Text style={[styles.sublabel, { marginTop: spacing.md }]}>{t('search.city')}</Text>
+                        <View style={styles.chipRow}>
+                          {cities.map((c) => (
+                            <TouchableOpacity
+                              key={c}
+                              style={[styles.chip, filters.city === c && styles.chipActive]}
+                              onPress={() =>
+                                setFilters((prev) => ({
+                                  ...prev,
+                                  city: prev.city === c ? '' : c,
+                                }))
+                              }
+                            >
+                              <Text style={[styles.chipText, filters.city === c && styles.chipTextActive]}>
+                                {c}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </>
+                    )}
+                  </View>
+                )}
+              </View>
+            )}
 
             {/* ── Exclude Allergens ── */}
             {allergenTags.length > 0 && (
@@ -319,6 +404,39 @@ const styles = StyleSheet.create({
   },
   spacer: {
     height: spacing['2xl'],
+  },
+  sublabel: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSizes.xs,
+    color: colors.onSurfaceVariant,
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: 50,
+    borderWidth: 1,
+    borderColor: colors.outline,
+    backgroundColor: colors.surface,
+  },
+  chipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  chipText: {
+    fontFamily: fonts.sans,
+    fontSize: fontSizes.sm,
+    color: colors.onSurface,
+  },
+  chipTextActive: {
+    color: colors.white,
   },
   footer: {
     flexDirection: 'row',

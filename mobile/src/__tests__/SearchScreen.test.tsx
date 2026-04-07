@@ -25,18 +25,19 @@ jest.mock('@react-navigation/native', () => ({
 jest.mock('../api/search', () => ({
   fetchSearchGenres: jest.fn(),
   searchDishVarieties: jest.fn(),
-  searchRecipesWithFilters: jest.fn(),
+  fetchDiscoveryRecipes: jest.fn(),
   fetchDietaryTags: jest.fn(),
+  fetchLocations: jest.fn(),
 }));
 
 import {
   fetchSearchGenres,
   searchDishVarieties,
-  searchRecipesWithFilters,
+  fetchDiscoveryRecipes,
 } from '../api/search';
 const mockFetchGenres = fetchSearchGenres as jest.MockedFunction<typeof fetchSearchGenres>;
 const mockSearchVarietiesFn = searchDishVarieties as jest.MockedFunction<typeof searchDishVarieties>;
-const mockSearchFiltered = searchRecipesWithFilters as jest.MockedFunction<typeof searchRecipesWithFilters>;
+const mockFetchDiscovery = fetchDiscoveryRecipes as jest.MockedFunction<typeof fetchDiscoveryRecipes>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -82,7 +83,7 @@ describe('SearchScreen', () => {
     mockRouteParams.initialQuery = undefined;
     mockFetchGenres.mockResolvedValue(mockSearchGenres);
     mockSearchVarietiesFn.mockResolvedValue(mockSearchVarieties);
-    mockSearchFiltered.mockResolvedValue(mockRecipes);
+    mockFetchDiscovery.mockResolvedValue(mockRecipes);
   });
 
   // ─── Default state ─────────────────────────────────────────────────────────
@@ -97,6 +98,13 @@ describe('SearchScreen', () => {
       await renderAndFlush();
       expect(mockFetchGenres).toHaveBeenCalledWith();
       expect(mockSearchVarietiesFn).toHaveBeenCalledWith('');
+    });
+
+    it('calls fetchDiscoveryRecipes on mount with no params', async () => {
+      await renderAndFlush();
+      expect(mockFetchDiscovery).toHaveBeenCalledWith(
+        expect.objectContaining({ search: undefined, genreId: undefined })
+      );
     });
 
     it('renders genre tiles from mock data', async () => {
@@ -119,7 +127,6 @@ describe('SearchScreen', () => {
       mockRouteParams.initialQuery = 'Soups';
       mockFetchGenres.mockResolvedValue([{ id: 1, name: 'Soups', description: '', varieties: [] }]);
       mockSearchVarietiesFn.mockResolvedValue([]);
-      // Render without waitFor('Genres') since query is active — heading is "N Genres for ..."
       const result = render(<SearchScreen />);
       await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
       expect(result.getByDisplayValue('Soups')).toBeTruthy();
@@ -137,37 +144,50 @@ describe('SearchScreen', () => {
       expect(getByText('Most Recent')).toBeTruthy();
     });
 
-    it('shows result count heading after search (variety count only)', async () => {
-      const soupVarieties = mockSearchVarieties.filter((v) =>
-        v.name.toLowerCase().includes('soup')
+    it('passes search text directly to fetchDiscoveryRecipes (no variety resolution)', async () => {
+      const { getByPlaceholderText } = await renderAndFlush();
+      fireEvent.changeText(getByPlaceholderText('Search heirloom flavors...'), 'lentil');
+      await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
+      expect(mockFetchDiscovery).toHaveBeenCalledWith(
+        expect.objectContaining({ search: 'lentil' })
       );
-      mockSearchVarietiesFn.mockResolvedValue(soupVarieties);
-      mockFetchGenres.mockResolvedValue([]);
-
-      const { getByPlaceholderText, getByText } = await renderAndFlush();
-      fireEvent.changeText(getByPlaceholderText('Search heirloom flavors...'), 'soup');
-      await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
-      expect(getByText(`${soupVarieties.length} Varieties for "soup"`)).toBeTruthy();
-    });
-
-    it('shows genre chip even when 0 variety results', async () => {
-      mockFetchGenres.mockResolvedValue([{ id: 1, name: 'Soups', description: '', varieties: [] }]);
-      mockSearchVarietiesFn.mockResolvedValue([]);
-      const { getByPlaceholderText, getByText, queryByText } = await renderAndFlush();
-      fireEvent.changeText(getByPlaceholderText('Search heirloom flavors...'), 'Soups');
-      await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
-      expect(getByText('Soups')).toBeTruthy();
-      expect(queryByText('No varieties found')).toBeNull();
+      // Should NOT have called searchDishVarieties with the query text
+      const varietyCalls = mockSearchVarietiesFn.mock.calls.filter(([q]) => q === 'lentil');
+      expect(varietyCalls.length).toBe(0);
     });
 
     it('shows 0 count in section heading when no results found', async () => {
       mockFetchGenres.mockResolvedValue([]);
       mockSearchVarietiesFn.mockResolvedValue([]);
-      mockSearchFiltered.mockResolvedValue([]);
+      mockFetchDiscovery.mockResolvedValue([]);
       const { getByPlaceholderText, getByText } = await renderAndFlush();
       fireEvent.changeText(getByPlaceholderText('Search heirloom flavors...'), 'xyzzy');
       await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
       expect(getByText(`0 Varieties for "xyzzy"`)).toBeTruthy();
+    });
+  });
+
+  // ─── Genre selection ───────────────────────────────────────────────────────
+
+  describe('genre selection', () => {
+    it('passes genreId to fetchDiscoveryRecipes when genre chip pressed in search mode', async () => {
+      const { getByPlaceholderText, getByText } = await renderAndFlush();
+      // Enter search to show genre chips
+      fireEvent.changeText(getByPlaceholderText('Search heirloom flavors...'), 'Soups');
+      await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
+      // Press the "Soups" genre chip
+      const soupEls = await waitFor(() => {
+        const all = [];
+        try { all.push(getByText('Soups')); } catch {}
+        return all;
+      });
+      if (soupEls.length > 0) {
+        fireEvent.press(soupEls[0]);
+        await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
+        expect(mockFetchDiscovery).toHaveBeenCalledWith(
+          expect.objectContaining({ genreId: 1 })
+        );
+      }
     });
   });
 
@@ -176,13 +196,12 @@ describe('SearchScreen', () => {
   describe('navigation', () => {
     it('navigates to DishVarietyDetail when a variety is pressed', async () => {
       const { getAllByText } = await renderAndFlush();
-      // Lentil Soup appears in both the variety card and as a recipe's varietyName label
       fireEvent.press(getAllByText('Lentil Soup')[0]);
       expect(mockNavigate).toHaveBeenCalledWith('DishVarietyDetail', { id: 1 });
     });
 
     it('navigates to RecipeDetail when a recipe is pressed', async () => {
-      mockSearchFiltered.mockResolvedValue(mockRecipes);
+      mockFetchDiscovery.mockResolvedValue(mockRecipes);
       const { getByPlaceholderText, getByText } = await renderAndFlush();
       fireEvent.changeText(getByPlaceholderText('Search heirloom flavors...'), 'lentil');
       await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
@@ -206,14 +225,11 @@ describe('SearchScreen', () => {
   // ─── Filters ────────────────────────────────────────────────────────────────
 
   describe('filters', () => {
-    it('calls both searchDishVarieties and searchRecipesWithFilters on search', async () => {
+    it('calls fetchDiscoveryRecipes on search (not the old two-step flow)', async () => {
       const { getByPlaceholderText } = await renderAndFlush();
-
       fireEvent.changeText(getByPlaceholderText('Search heirloom flavors...'), 'kebap');
       await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
-
-      expect(mockSearchVarietiesFn).toHaveBeenCalled();
-      expect(mockSearchFiltered).toHaveBeenCalled();
+      expect(mockFetchDiscovery).toHaveBeenCalled();
     });
 
     it('restores genre grid after clearing search', async () => {

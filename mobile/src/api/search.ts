@@ -93,10 +93,63 @@ export async function fetchDietaryTags(): Promise<DietaryTag[]> {
 }
 
 /**
- * Search recipes with filters (region, allergens, dietary tags).
- * Two-step process:
- * 1. If query provided, resolve it to varietyId via searchDishVarieties
- * 2. Call GET /discovery/recipes with varietyId + filters
+ * Fetch distinct countries (and cities within a country) that have published recipes.
+ * GET /discovery/locations
+ * GET /discovery/locations?country=X  → cities in that country
+ */
+export async function fetchLocations(country?: string): Promise<string[]> {
+  try {
+    const params = country ? `?country=${encodeURIComponent(country)}` : '';
+    const raw = await fetchApi<{ results: string[] }>(`/discovery/locations${params}`);
+    return raw.results ?? [];
+  } catch (error) {
+    console.error('fetchLocations error:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch recipes directly from /discovery/recipes with text search + filters.
+ * Passes search text as-is for title matching — no variety resolution step.
+ */
+export async function fetchDiscoveryRecipes(params: {
+  search?: string;
+  genreId?: number;
+  excludeAllergenIds?: number[];
+  dietaryTagIds?: number[];
+  country?: string;
+  city?: string;
+}): Promise<Recipe[]> {
+  try {
+    const qs = new URLSearchParams();
+    if (params.search?.trim()) qs.set('search', params.search.trim());
+    if (params.genreId !== undefined) qs.set('genreId', String(params.genreId));
+    if (params.excludeAllergenIds?.length) qs.set('excludeAllergens', params.excludeAllergenIds.join(','));
+    if (params.dietaryTagIds?.length) qs.set('tagIds', params.dietaryTagIds.join(','));
+    if (params.country) qs.set('country', params.country);
+    if (params.city) qs.set('city', params.city);
+
+    const raw = await fetchApi<{ recipes: any[] }>(`/discovery/recipes?${qs.toString()}`);
+    return (raw.recipes ?? []).map((r) => ({
+      id: r.id,
+      title: r.title,
+      creatorUsername: r.profile?.username ?? 'Unknown',
+      averageRating: r.average_rating ?? 0,
+      ratingCount: r.rating_count ?? 0,
+      dishVarietyId: r.dish_variety?.id ?? r.dish_variety_id ?? 0,
+      varietyName: r.dish_variety?.name ?? 'Unknown Variety',
+      recipeType: (r.type ?? r.recipe_type ?? 'community') as 'cultural' | 'community',
+      imageUrl: r.image_url ?? null,
+    }));
+  } catch (error) {
+    console.error('fetchDiscoveryRecipes error:', error);
+    return [];
+  }
+}
+
+/**
+ * @deprecated Use fetchDiscoveryRecipes instead.
+ * Two-step search: resolves query to varietyId first, then fetches recipes.
  */
 export async function searchRecipesWithFilters(
   query: string,
@@ -104,6 +157,8 @@ export async function searchRecipesWithFilters(
     excludeAllergenIds?: number[];
     dietaryTagIds?: number[];
     genreId?: number;
+    country?: string;
+    city?: string;
   }
 ): Promise<Recipe[]> {
   try {
@@ -125,6 +180,8 @@ export async function searchRecipesWithFilters(
     if (filters.dietaryTagIds?.length) {
       params.set('tagIds', filters.dietaryTagIds.join(','));
     }
+    if (filters.country) params.set('country', filters.country);
+    if (filters.city) params.set('city', filters.city);
 
     const raw = await fetchApi<{ recipes: any[] }>(
       `/discovery/recipes?${params.toString()}`
