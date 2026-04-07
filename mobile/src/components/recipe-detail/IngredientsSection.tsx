@@ -1,5 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { Ingredient } from '../../types/ingredient';
 import { SectionHeader } from '../shared/SectionHeader';
 import { IngredientRow } from './IngredientRow';
@@ -17,10 +18,11 @@ export function IngredientsSection({
   servings,
   servingAdjuster,
 }: IngredientsSectionProps) {
+  const { t } = useTranslation('common');
   const scaleFactor = servings / baseServings;
 
   return (
-    <SectionHeader title="Ingredients" rightElement={servingAdjuster}>
+    <SectionHeader title={t('recipeDetail.ingredients')} rightElement={servingAdjuster}>
       <View>
         {ingredients.map((ingredient) => (
           <IngredientRow

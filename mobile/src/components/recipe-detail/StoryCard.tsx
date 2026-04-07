@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
 interface StoryCardProps {
@@ -8,11 +9,12 @@ interface StoryCardProps {
 }
 
 export function StoryCard({ story }: StoryCardProps) {
+  const { t } = useTranslation('common');
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <MaterialCommunityIcons name="book-open-variant" size={20} color={colors.primary} />
-        <Text style={styles.headerText}>The Legend of the Dish</Text>
+        <Text style={styles.headerText}>{t('recipeDetail.story')}</Text>
       </View>
       <Text style={styles.story}>{story}</Text>
     </View>
