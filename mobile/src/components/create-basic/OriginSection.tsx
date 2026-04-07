@@ -1,5 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { FormDropdown } from '../shared/FormDropdown';
 import { FormTextInput } from '../shared/FormTextInput';
 import { COUNTRIES } from '../../constants/recipeForm';
@@ -23,31 +24,32 @@ export function OriginSection({
   onDistrictChange,
   countryError,
 }: OriginSectionProps) {
+  const { t } = useTranslation('common');
   return (
     <View>
       <FormDropdown
-        label="Country"
+        label={t('create.origin.country')}
         value={country}
         options={COUNTRIES}
         onSelect={onCountryChange}
-        placeholder="Select country"
+        placeholder={t('create.origin.countryPlaceholder')}
         error={countryError}
         searchable
       />
       {country !== '' && (
         <>
           <FormTextInput
-            label="City"
+            label={t('create.origin.city')}
             value={city}
             onChangeText={onCityChange}
-            placeholder="e.g., Istanbul"
+            placeholder={t('create.origin.cityPlaceholder')}
             optional
           />
           <FormTextInput
-            label="District"
+            label={t('create.origin.district')}
             value={district}
             onChangeText={onDistrictChange}
-            placeholder="e.g., Kadikoy"
+            placeholder={t('create.origin.districtPlaceholder')}
             optional
           />
         </>
