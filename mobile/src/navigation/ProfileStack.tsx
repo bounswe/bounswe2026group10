@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import type { ProfileStackParamList } from './types';
 import { useAuth } from '../context/AuthContext';
 import { colors, fonts, fontSizes, spacing } from '../theme';
@@ -13,17 +14,16 @@ const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
 function LoginPromptScreen() {
   const { exitGuest } = useAuth();
+  const { t } = useTranslation('common');
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.container}>
         <MaterialCommunityIcons name="account-circle-outline" size={80} color={colors.outline} />
-        <Text style={styles.title}>Sign in to view your profile</Text>
-        <Text style={styles.subtitle}>
-          Keep track of your recipes, ratings, and heritage collection.
-        </Text>
+        <Text style={styles.title}>{t('profileScreen.loginPrompt.title')}</Text>
+        <Text style={styles.subtitle}>{t('profileScreen.loginPrompt.subtitle')}</Text>
         <TouchableOpacity style={styles.signInButton} onPress={exitGuest} activeOpacity={0.85}>
-          <Text style={styles.signInButtonText}>Sign In</Text>
+          <Text style={styles.signInButtonText}>{t('profileScreen.loginPrompt.signIn')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
