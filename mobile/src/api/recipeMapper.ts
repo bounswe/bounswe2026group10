@@ -45,14 +45,12 @@ export function mapBackendRecipeToMobile(data: BackendRecipeDetail): Recipe {
   const videoMedia = data.media.find((m) => m.type === 'video');
   const recipeVideoUrl = videoMedia?.url ?? data.videoUrl ?? undefined;
 
-  const allergenSet = new Set<AllergenTag>();
   const ingredients = data.ingredients.map((ing) => {
     const ingAllergens: AllergenTag[] = [];
     for (const a of ing.allergens) {
       const tag = toAllergenTag(a);
       if (tag) {
         ingAllergens.push(tag);
-        allergenSet.add(tag);
       }
     }
     return {
@@ -79,11 +77,15 @@ export function mapBackendRecipeToMobile(data: BackendRecipeDetail): Recipe {
 
   const tools = data.tools.map((t) => ({ id: t.id, name: t.name }));
 
-  const tags: DietaryTag[] = [];
+  const tags: string[] = [];
+  const allergens: string[] = [];
   for (const tag of data.tags) {
-    if (tag.category === 'dietary' && tag.name) {
-      const dt = toDietaryTag(tag.name);
-      if (dt) tags.push(dt);
+    if (tag.name) {
+      if (tag.category === 'dietary') {
+        tags.push(tag.name);
+      } else if (tag.category === 'allergen') {
+        allergens.push(tag.name);
+      }
     }
   }
 
@@ -121,12 +123,14 @@ export function mapBackendRecipeToMobile(data: BackendRecipeDetail): Recipe {
     tools,
     steps,
     origin: {
-      country: data.genreName ?? '',
+      country: data.country ?? '',
+      city: data.city ?? undefined,
+      district: data.district ?? undefined,
     },
     dishVarietyId: data.dishVarietyId != null ? String(data.dishVarietyId) : '',
     dishVarietyName: data.dishVarietyName ?? '',
     tags,
-    allergens: Array.from(allergenSet),
+    allergens,
     status: data.isPublished ? 'PUBLISHED' : 'DRAFT',
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,

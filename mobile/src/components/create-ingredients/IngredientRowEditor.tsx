@@ -9,9 +9,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import type { MeasurementUnit } from '../../types/common';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
-import { UNIT_OPTIONS } from '../../constants/ingredientsAndTools';
 import { FormDropdown } from '../shared/FormDropdown';
 import type { IngredientItem } from '../../api/ingredients';
 
@@ -20,12 +18,13 @@ export interface IngredientFormItem {
   ingredientId: number | null; // numeric DB id; null until selected from suggestions
   name: string;
   quantity: string;
-  unit: MeasurementUnit;
+  unit: string;
 }
 
 interface IngredientRowEditorProps {
   ingredient: IngredientFormItem;
   allIngredients: IngredientItem[]; // full list fetched once by the parent screen
+  unitOptions: { label: string; value: string }[];
   onUpdate: (updated: IngredientFormItem) => void;
   onRemove: () => void;
   error?: { name?: string; quantity?: string };
@@ -34,6 +33,7 @@ interface IngredientRowEditorProps {
 export function IngredientRowEditor({
   ingredient,
   allIngredients,
+  unitOptions,
   onUpdate,
   onRemove,
   error,
@@ -120,8 +120,8 @@ export function IngredientRowEditor({
           <FormDropdown
             label=""
             value={ingredient.unit}
-            options={UNIT_OPTIONS}
-            onSelect={(value) => onUpdate({ ...ingredient, unit: value as MeasurementUnit })}
+            options={unitOptions}
+            onSelect={(value) => onUpdate({ ...ingredient, unit: value })}
             placeholder={t('create.ingredients.unitPlaceholder')}
           />
         </View>

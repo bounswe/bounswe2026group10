@@ -123,6 +123,9 @@ export interface BackendRecipeDetail {
   tools: BackendTool[];
   media: BackendMedia[];
   tags: BackendTag[];
+  country: string | null;
+  city: string | null;
+  district: string | null;
   createdAt: string;
   updatedAt: string;
 }

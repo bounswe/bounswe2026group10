@@ -25,8 +25,8 @@ export interface Recipe {
   origin: Origin;
   dishVarietyId: string;
   dishVarietyName: string;
-  tags: DietaryTag[];
-  allergens: AllergenTag[];
+  tags: string[];
+  allergens: string[];
   status: RecipeStatus;
   createdAt: ISODateString;
   updatedAt: ISODateString;

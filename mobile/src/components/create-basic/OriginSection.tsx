@@ -1,9 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { FormDropdown } from '../shared/FormDropdown';
 import { FormTextInput } from '../shared/FormTextInput';
-import { COUNTRIES } from '../../constants/recipeForm';
 
 interface OriginSectionProps {
   country: string;
@@ -27,14 +25,12 @@ export function OriginSection({
   const { t } = useTranslation('common');
   return (
     <View>
-      <FormDropdown
+      <FormTextInput
         label={t('create.origin.country')}
         value={country}
-        options={COUNTRIES}
-        onSelect={onCountryChange}
+        onChangeText={onCountryChange}
         placeholder={t('create.origin.countryPlaceholder')}
         error={countryError}
-        searchable
       />
       {country !== '' && (
         <>

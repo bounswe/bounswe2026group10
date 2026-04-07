@@ -27,6 +27,7 @@ import { searchIngredients } from "../../api/ingredients";
 import type { IngredientItem } from "../../api/ingredients";
 import { getTools } from "../../api/tools";
 import type { ToolItem } from "../../api/tools";
+import { getUnits } from "../../api/units";
 
 let nextId = 1;
 function generateId(): string {
@@ -60,6 +61,7 @@ export function CreateIngredientsToolsScreen() {
   >({});
   const [allIngredients, setAllIngredients] = useState<IngredientItem[]>([]);
   const [allTools, setAllTools] = useState<ToolItem[]>([]);
+  const [unitOptions, setUnitOptions] = useState<{ label: string; value: string }[]>([]);
 
   useEffect(() => {
     if (!isFocused) return;
@@ -105,6 +107,12 @@ export function CreateIngredientsToolsScreen() {
         setAllTools(data);
       })
       .catch((err) => console.error("[Tools] failed to load:", err));
+    getUnits()
+      .then((data) => {
+        console.log("[Units] loaded", data.length, "units from backend");
+        setUnitOptions(data.map((u) => ({ label: u, value: u })));
+      })
+      .catch((err) => console.error("[Units] failed to load:", err));
   }, []);
 
   const handleAddIngredient = () => {
@@ -210,6 +218,7 @@ export function CreateIngredientsToolsScreen() {
               key={ingredient.id}
               ingredient={ingredient}
               allIngredients={allIngredients}
+              unitOptions={unitOptions}
               onUpdate={(updated) =>
                 handleUpdateIngredient(ingredient.id, updated)
               }

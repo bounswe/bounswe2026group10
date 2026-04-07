@@ -621,7 +621,6 @@ const styles = StyleSheet.create({
   },
   servingSizeRow: {
     marginTop: spacing.lg,
-    marginBottom: spacing.xl,
   },
   servingSizeLabel: {
     fontFamily: fonts.sansMedium,
@@ -646,6 +645,7 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.sm,
     color: colors.negative,
     marginTop: spacing.xs,
+    marginBottom: spacing.sm,
   },
   // ── Images ──
   imagesSection: {
