@@ -337,7 +337,10 @@
       "location": "Location (optional)",
       "countryPlaceholder": "Country",
       "cityPlaceholder": "City",
-      "districtPlaceholder": "District"
+      "districtPlaceholder": "District",
+      "dietaryTags": "Dietary preferences (optional)",
+      "allergenTags": "Allergens in this recipe",
+      "allergenTagsHint": "Select all allergens present in the ingredients."
     },
     "parse": {
       "label": "Free-text recipe input",

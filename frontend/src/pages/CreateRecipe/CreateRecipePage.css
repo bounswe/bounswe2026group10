@@ -737,6 +737,97 @@
   text-align: center;
 }
 
+/* ── Tag chips (dietary / allergen) ─────────────────────────────────────── */
+
+.cr-field-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: -0.25rem 0 0.5rem;
+}
+
+.cr-tag-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cr-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(134, 69, 42, 0.25);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  user-select: none;
+}
+
+.cr-tag-chip:hover {
+  border-color: var(--color-main);
+  color: var(--color-main);
+}
+
+.cr-tag-chip--active {
+  background: rgba(134, 69, 42, 0.12);
+  border-color: var(--color-main);
+  color: var(--color-main);
+  font-weight: 500;
+}
+
+.cr-tag-chip--allergen {
+  border-color: rgba(200, 80, 60, 0.3);
+  color: var(--text-secondary);
+}
+
+.cr-tag-chip--allergen:hover {
+  border-color: #c8503c;
+  color: #c8503c;
+}
+
+.cr-tag-chip--allergen.cr-tag-chip--active {
+  background: rgba(200, 80, 60, 0.1);
+  border-color: #c8503c;
+  color: #c8503c;
+}
+
+.cr-tag-chip__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ── Review card tag badges ──────────────────────────────────────────────── */
+
+.cr-review-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.cr-review-tag {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.cr-review-tag--dietary {
+  background: rgba(134, 69, 42, 0.1);
+  color: var(--color-main);
+}
+
+.cr-review-tag--allergen {
+  background: rgba(200, 80, 60, 0.1);
+  color: #c8503c;
+}
+
 /* ── Wide screen adjustments ────────────────────────────────────────────── */
 
 @media (min-width: 768px) {

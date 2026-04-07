@@ -337,7 +337,10 @@
       "location": "Konum (isteğe bağlı)",
       "countryPlaceholder": "Ülke",
       "cityPlaceholder": "Şehir",
-      "districtPlaceholder": "İlçe"
+      "districtPlaceholder": "İlçe",
+      "dietaryTags": "Diyet tercihleri (isteğe bağlı)",
+      "allergenTags": "Bu tarifte bulunan alerjenler",
+      "allergenTagsHint": "Malzemelerde bulunan tüm alerjenleri seçin."
     },
     "parse": {
       "label": "Serbest metin tarif girişi",
