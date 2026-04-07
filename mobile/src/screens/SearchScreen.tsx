@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -15,7 +15,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   searchDishVarieties,
   fetchSearchGenres,
-  searchRecipesWithFilters,
+  fetchDiscoveryRecipes,
   type DishVarietyResult,
   type Recipe,
   type SortOption,
@@ -40,127 +40,107 @@ export function SearchScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<SearchStackParamList, 'Search'>>();
   const { t } = useTranslation('common');
+
+  // ── Search text ────────────────────────────────────────────────────────────
   const [query, setQuery] = useState(route.params?.initialQuery ?? '');
+  const [debouncedSearch, setDebouncedSearch] = useState(route.params?.initialQuery ?? '');
+
+  // ── Genre selection (drives genreId filter on recipe API) ──────────────────
+  const [selectedGenreId, setSelectedGenreId] = useState<number | null>(null);
+
+  // ── Base data (loaded once on mount) ──────────────────────────────────────
   const [allGenres, setAllGenres] = useState<DishGenre[]>([]);
   const [allVarieties, setAllVarieties] = useState<DishVarietyResult[]>([]);
-  const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
 
-  // Active-search results
-  const [matchedGenres, setMatchedGenres] = useState<DishGenre[]>([]);
-  const [varieties, setVarieties] = useState<DishVarietyResult[]>([]);
+  // ── Recipes (fetched on every filter/search/genre change) ─────────────────
   const [recipes, setRecipes] = useState<Recipe[]>([]);
 
+  // ── Filters & sort ────────────────────────────────────────────────────────
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [sort, setSort] = useState<SortOption>('rating');
-  const [loading, setLoading] = useState(false);
-  const [defaultLoading, setDefaultLoading] = useState(true);
-  const [filterModalVisible, setFilterModalVisible] = useState(false);
 
-  // Sheet state
+  // ── Loading states ────────────────────────────────────────────────────────
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [recipesLoading, setRecipesLoading] = useState(true);
+
+  // ── UI state ──────────────────────────────────────────────────────────────
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [sheetSection, setSheetSection] = useState<SheetSection>('genres');
   const [sheetVisible, setSheetVisible] = useState(false);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isSearchActive = query.trim().length > 0;
+  // ── Derived ───────────────────────────────────────────────────────────────
+  const normalizedSearch = debouncedSearch.trim().toLowerCase();
+  const isSearchActive = query.trim().length > 0 || selectedGenreId !== null;
   const hasFilters =
     filters.excludeAllergenIds.length > 0 ||
-    filters.dietaryTagIds.length > 0;
+    filters.dietaryTagIds.length > 0 ||
+    filters.country !== '' ||
+    filters.city !== '';
 
-  // ── Load default state (all genres + varieties + recipes) ──────────────────
+  // Client-side filtered genres (by search text)
+  const filteredGenres = useMemo(() => {
+    if (!normalizedSearch) return allGenres;
+    return allGenres.filter((g) => g.name.toLowerCase().includes(normalizedSearch));
+  }, [allGenres, normalizedSearch]);
+
+  // Client-side filtered varieties (by selected genre + search text)
+  const filteredVarieties = useMemo(() => {
+    let result = allVarieties;
+    if (selectedGenreId !== null) {
+      result = result.filter((v) => v.genreId === selectedGenreId);
+    }
+    if (normalizedSearch) {
+      result = result.filter(
+        (v) =>
+          v.name.toLowerCase().includes(normalizedSearch) ||
+          v.genreName?.toLowerCase().includes(normalizedSearch)
+      );
+    }
+    return sortVarieties(result, sort);
+  }, [allVarieties, selectedGenreId, normalizedSearch, sort]);
+
+  // ── Load genres + varieties once on mount ─────────────────────────────────
   useEffect(() => {
-    setDefaultLoading(true);
-    Promise.all([
-      fetchSearchGenres(),
-      searchDishVarieties(''),
-      searchRecipesWithFilters('', {}),
-    ])
-      .then(([genres, vars, recs]) => {
+    setInitialLoading(true);
+    Promise.all([fetchSearchGenres(), searchDishVarieties('')])
+      .then(([genres, vars]) => {
         setAllGenres(genres);
         setAllVarieties(vars);
-        setAllRecipes(recs);
       })
-      .finally(() => setDefaultLoading(false));
+      .finally(() => setInitialLoading(false));
   }, []);
 
-  // ── Active search ──────────────────────────────────────────────────────────
-  const runSearch = useCallback(
-    async (q: string, activeSort: SortOption, activeFilters: FilterState) => {
-      setLoading(true);
-      try {
-        const exactGenre = allGenres.find(
-          (g) => g.name.toLowerCase() === q.trim().toLowerCase()
-        );
-
-        const hasRecipeLevelFilters =
-          activeFilters.excludeAllergenIds.length > 0 ||
-          activeFilters.dietaryTagIds.length > 0;
-
-        // Always fetch genres and recipes in parallel
-        const [genreResults, recipeResults] = await Promise.all([
-          fetchSearchGenres(q),
-          searchRecipesWithFilters(exactGenre ? '' : q, {
-            excludeAllergenIds: activeFilters.excludeAllergenIds,
-            dietaryTagIds: activeFilters.dietaryTagIds,
-            genreId: exactGenre?.id,
-          }),
-        ]);
-
-        setMatchedGenres(genreResults);
-        setRecipes(recipeResults);
-
-        if (hasRecipeLevelFilters) {
-          // Build varieties from recipe results when diet/allergen filter is active
-          const varietyMap = new Map<number, DishVarietyResult>();
-          for (const r of recipeResults) {
-            if (!varietyMap.has(r.dishVarietyId)) {
-              varietyMap.set(r.dishVarietyId, {
-                id: r.dishVarietyId,
-                name: r.varietyName,
-                description: null,
-                genreId: exactGenre?.id ?? 0,
-                genreName: null,
-              });
-            }
-          }
-          setVarieties(sortVarieties(Array.from(varietyMap.values()), activeSort));
-        } else {
-          // Direct variety search
-          const varietyResults = exactGenre
-            ? await searchDishVarieties('', exactGenre.id)
-            : await searchDishVarieties(q);
-
-          // Filters only apply to recipes, not varieties
-          setVarieties(sortVarieties(varietyResults, activeSort));
-        }
-      } catch {
-        setMatchedGenres([]);
-        setVarieties([]);
-        setRecipes([]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [allGenres]
-  );
-
+  // ── Debounce search input ─────────────────────────────────────────────────
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!isSearchActive) {
-      setMatchedGenres([]);
-      setVarieties([]);
-      setRecipes([]);
-      return;
-    }
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => runSearch(query, sort, filters), 350);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(query), 350);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, sort, filters, isSearchActive, runSearch]);
+  }, [query]);
+
+  // ── Fetch recipes on search / genre / filter change ───────────────────────
+  useEffect(() => {
+    setRecipesLoading(true);
+    fetchDiscoveryRecipes({
+      search: debouncedSearch.trim() || undefined,
+      genreId: selectedGenreId ?? undefined,
+      excludeAllergenIds: filters.excludeAllergenIds,
+      dietaryTagIds: filters.dietaryTagIds,
+      country: filters.country || undefined,
+      city: filters.city || undefined,
+    })
+      .then(setRecipes)
+      .finally(() => setRecipesLoading(false));
+  }, [debouncedSearch, selectedGenreId, filters]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
-  const handleGenrePress = (genre: DishGenre) => {
-    setQuery(genre.name);
-  };
+  const handleGenrePress = useCallback((genre: DishGenre) => {
+    setSelectedGenreId((prev) => (prev === genre.id ? null : genre.id));
+    setQuery('');
+    setDebouncedSearch('');
+  }, []);
 
   const handleVarietyPress = (variety: DishVarietyResult) => {
     navigation.navigate('DishVarietyDetail', { id: variety.id });
@@ -169,16 +149,12 @@ export function SearchScreen() {
 
   const handleSortChange = (newSort: SortOption) => {
     setSort(newSort);
-    if (isSearchActive) {
-      setVarieties((prev) => sortVarieties([...prev], newSort));
-    }
   };
 
   const handleClear = () => {
     setQuery('');
-    setMatchedGenres([]);
-    setVarieties([]);
-    setRecipes([]);
+    setDebouncedSearch('');
+    setSelectedGenreId(null);
     setFilters(EMPTY_FILTERS);
   };
 
@@ -187,10 +163,7 @@ export function SearchScreen() {
     setSheetVisible(true);
   };
 
-  // Current data depending on mode
-  const activeGenres = isSearchActive ? matchedGenres : allGenres;
-  const activeVarieties = isSearchActive ? varieties : allVarieties;
-  const activeRecipes = isSearchActive ? recipes : allRecipes;
+  const loading = initialLoading || recipesLoading;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -209,9 +182,9 @@ export function SearchScreen() {
         onClose={() => setSheetVisible(false)}
         section={sheetSection}
         query={query}
-        genres={activeGenres}
-        varieties={activeVarieties}
-        recipes={activeRecipes}
+        genres={filteredGenres}
+        varieties={filteredVarieties}
+        recipes={recipes}
         onGenrePress={handleGenrePress}
         onVarietyPress={handleVarietyPress}
       />
@@ -224,12 +197,19 @@ export function SearchScreen() {
           onClear={handleClear}
           onFilterPress={() => setFilterModalVisible(true)}
         />
-        {hasFilters && (
+        {(hasFilters || selectedGenreId !== null) && (
           <TouchableOpacity
             style={styles.filterBadge}
             onPress={() => setFilterModalVisible(true)}
           >
             <View style={styles.filterBadgeContent}>
+              {selectedGenreId !== null && (
+                <View style={styles.filterTag}>
+                  <Text style={styles.filterTagText}>
+                    {allGenres.find((g) => g.id === selectedGenreId)?.name ?? ''}
+                  </Text>
+                </View>
+              )}
               {filters.excludeAllergenNames.map((name) => (
                 <View key={name} style={styles.filterTag}>
                   <Text style={styles.filterTagText}>{name}</Text>
@@ -240,6 +220,13 @@ export function SearchScreen() {
                   <Text style={styles.filterTagText}>{name}</Text>
                 </View>
               ))}
+              {filters.country !== '' && (
+                <View style={styles.filterTag}>
+                  <Text style={styles.filterTagText}>
+                    {filters.city ? `${filters.city}, ${filters.country}` : filters.country}
+                  </Text>
+                </View>
+              )}
             </View>
           </TouchableOpacity>
         )}
@@ -247,30 +234,32 @@ export function SearchScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          {/* Sort row — only in active search */}
+          {/* Sort row — only when search or genre filter is active */}
           {isSearchActive && (
             <SortRow activeSort={sort} onSortChange={handleSortChange} />
           )}
 
-          {loading || defaultLoading ? (
+          {loading ? (
             <ActivityIndicator color={colors.primary} style={styles.loader} />
           ) : (
             <>
               {/* ── Genres section ── */}
               <SectionBox
                 title={t('search.genres')}
-                count={activeGenres.length}
-                query={isSearchActive ? query : undefined}
+                count={filteredGenres.length}
+                query={isSearchActive ? query || undefined : undefined}
                 onSeeAll={() => openSheet('genres')}
               >
                 {isSearchActive ? (
-                  /* Search mode: show genre chips as preview */
-                  activeGenres.length === 0 ? null : (
+                  filteredGenres.length === 0 ? null : (
                     <View style={styles.genreChips}>
-                      {activeGenres.slice(0, PREVIEW_COUNT).map((g) => (
+                      {filteredGenres.slice(0, PREVIEW_COUNT).map((g) => (
                         <TouchableOpacity
                           key={g.id}
-                          style={styles.genreChip}
+                          style={[
+                            styles.genreChip,
+                            selectedGenreId === g.id && styles.genreChipActive,
+                          ]}
                           onPress={() => handleGenrePress(g)}
                         >
                           <Text style={styles.genreChipText}>{g.name}</Text>
@@ -279,19 +268,22 @@ export function SearchScreen() {
                     </View>
                   )
                 ) : (
-                  /* Default mode: full bento grid (always visible, tap to search) */
-                  <GenreBentoGrid genres={allGenres} onGenrePress={handleGenrePress} />
+                  <GenreBentoGrid
+                    genres={allGenres}
+                    onGenrePress={handleGenrePress}
+                    activeGenreId={selectedGenreId}
+                  />
                 )}
               </SectionBox>
 
               {/* ── Varieties section ── */}
               <SectionBox
                 title={t('search.varieties')}
-                count={activeVarieties.length}
-                query={isSearchActive ? query : undefined}
+                count={filteredVarieties.length}
+                query={isSearchActive ? query || undefined : undefined}
                 onSeeAll={() => openSheet('varieties')}
               >
-                {activeVarieties.slice(0, PREVIEW_COUNT).map((v) => (
+                {filteredVarieties.slice(0, PREVIEW_COUNT).map((v) => (
                   <DishVarietyCard
                     key={v.id}
                     variety={v}
@@ -303,11 +295,11 @@ export function SearchScreen() {
               {/* ── Recipes section ── */}
               <SectionBox
                 title={t('search.recipes')}
-                count={activeRecipes.length}
-                query={isSearchActive ? query : undefined}
+                count={recipes.length}
+                query={isSearchActive ? query || undefined : undefined}
                 onSeeAll={() => openSheet('recipes')}
               >
-                {activeRecipes.slice(0, PREVIEW_COUNT).map((r) => (
+                {recipes.slice(0, PREVIEW_COUNT).map((r) => (
                   <RecipeCard
                     key={r.id}
                     recipe={r}
@@ -370,8 +362,6 @@ function SectionBox({ title, count, query, onSeeAll, children }: SectionBoxProps
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function sortVarieties(items: DishVarietyResult[], _sort: SortOption): DishVarietyResult[] {
-  // For varieties, we only support sorting by name (default)
-  // Filters are only applied to recipes
   return [...items].sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -464,6 +454,11 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs + 2,
+  },
+  genreChipActive: {
+    backgroundColor: colors.primaryDark ?? colors.primary,
+    borderWidth: 2,
+    borderColor: colors.white,
   },
   genreChipText: {
     fontFamily: fonts.sansMedium,
