@@ -1,6 +1,7 @@
 import React from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { colors, fonts, fontSizes, spacing } from "../../theme";
 
 interface CookingModeButtonProps {
@@ -8,8 +9,9 @@ interface CookingModeButtonProps {
 }
 
 export function CookingModeButton({ onPress }: CookingModeButtonProps) {
+  const { t } = useTranslation("common");
   const handlePress =
-    onPress ?? (() => Alert.alert("Cooking Mode", "Coming soon"));
+    onPress ?? (() => Alert.alert(t("recipeDetail.startCookingMode"), t("recipeDetail.cookingModeSoon")));
 
   return (
     <TouchableOpacity
@@ -18,7 +20,7 @@ export function CookingModeButton({ onPress }: CookingModeButtonProps) {
       activeOpacity={0.8}
     >
       <MaterialCommunityIcons name="chef-hat" size={20} color={colors.white} />
-      <Text style={styles.label}>Watch Video Guide</Text>
+      <Text style={styles.label}>{t("recipeDetail.watchVideo")}</Text>
     </TouchableOpacity>
   );
 }

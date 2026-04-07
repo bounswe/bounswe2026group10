@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
 interface ServingAdjusterProps {
@@ -13,6 +14,7 @@ export function ServingAdjuster({
   onIncrement,
   onDecrement,
 }: ServingAdjusterProps) {
+  const { t } = useTranslation('common');
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -26,7 +28,7 @@ export function ServingAdjuster({
         </Text>
       </TouchableOpacity>
       <Text style={styles.label}>
-        {servings} {servings === 1 ? 'Serving' : 'Servings'}
+        {servings} {servings === 1 ? t('recipeDetail.servingsLabel') : t('recipeDetail.servingsLabelPlural')}
       </Text>
       <TouchableOpacity onPress={onIncrement} style={styles.button} activeOpacity={0.6}>
         <Text style={styles.buttonText}>+</Text>
