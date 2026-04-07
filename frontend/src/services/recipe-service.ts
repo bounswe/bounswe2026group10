@@ -105,6 +105,8 @@ export interface CreateRecipePayload {
   country?: string
   city?: string
   district?: string
+  /** Dietary + allergen tag IDs from GET /dietary-tags */
+  tagIds?: number[]
 }
 
 export interface CreatedRecipe {
