@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import type { Tool } from '../../types/ingredient';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 import type { ToolItem } from '../../api/tools';
@@ -28,6 +29,7 @@ export function ToolSearchSection({
   onAddTool,
   onRemoveTool,
 }: ToolSearchSectionProps) {
+  const { t } = useTranslation('common');
   const [search, setSearch] = useState('');
   const [showResults, setShowResults] = useState(false);
 
@@ -70,7 +72,7 @@ export function ToolSearchSection({
             setSearch(text);
             setShowResults(text.length > 0);
           }}
-          placeholder="Add a tool (e.g. Cast Iron Pan)"
+          placeholder={t('create.tools.searchPlaceholder')}
           placeholderTextColor={colors.outline}
           onFocus={() => {
             if (search.length > 0) setShowResults(true);
@@ -98,7 +100,7 @@ export function ToolSearchSection({
 
       {quickAddTools.length > 0 && (
         <>
-          <Text style={styles.quickAddLabel}>QUICK ADD TOOLS</Text>
+          <Text style={styles.quickAddLabel}>{t('create.tools.quickAddLabel')}</Text>
           <View style={styles.chips}>
             {quickAddTools.map((tool) => {
               const isSelected = selectedTools.some((t) => t.id === tool.name);
