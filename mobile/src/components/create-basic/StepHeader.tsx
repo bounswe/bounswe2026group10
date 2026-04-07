@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
 interface StepHeaderProps {
@@ -10,11 +11,12 @@ interface StepHeaderProps {
 }
 
 export function StepHeader({ currentStep, totalSteps, title, subtitle }: StepHeaderProps) {
+  const { t } = useTranslation('common');
   return (
     <View style={styles.container}>
       <View style={styles.badge}>
         <Text style={styles.badgeText}>
-          STEP {currentStep} OF {totalSteps}
+          {t('create.stepBadge', { current: currentStep, total: totalSteps })}
         </Text>
       </View>
       <Text style={styles.title}>{title}</Text>
