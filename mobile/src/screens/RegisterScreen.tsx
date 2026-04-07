@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -16,7 +16,6 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation/types';
 import { FormTextInput } from '../components/shared/FormTextInput';
 import { FormDropdown } from '../components/shared/FormDropdown';
-import { getRegions } from '../api/meta';
 import { useAuth } from '../context/AuthContext';
 import { colors, fonts, fontSizes, spacing } from '../theme';
 
@@ -38,17 +37,10 @@ export function RegisterScreen({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'learner' | 'cook' | 'expert' | null>(null);
-  const [region, setRegion] = useState('');
+  const [country, setCountry] = useState('');
   const [language, setLanguage] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [regionOptions, setRegionOptions] = useState<{ label: string; value: string }[]>([]);
-
-  useEffect(() => {
-    getRegions()
-      .then((regions) => setRegionOptions(regions.map((r) => ({ label: r, value: r }))))
-      .catch(() => {});
-  }, []);
 
   function validate(): boolean {
     const next: Record<string, string> = {};
@@ -59,7 +51,7 @@ export function RegisterScreen({ navigation }: Props) {
     if (password.length < 8) next.password = t('auth.register.errors.passwordMin');
     if (password !== confirmPassword) next.confirmPassword = t('auth.register.errors.confirmMismatch');
     if (!role) next.role = t('auth.register.errors.roleRequired');
-    if (!region) next.region = t('auth.register.errors.required');
+    if (!country.trim()) next.country = t('auth.register.errors.required');
     if (!language) next.language = t('auth.register.errors.required');
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -76,7 +68,7 @@ export function RegisterScreen({ navigation }: Props) {
         email: email.trim(),
         password,
         role: role!,
-        region,
+        region: country.trim(),
         preferredLanguage: language,
       });
     } catch (e: unknown) {
@@ -183,14 +175,12 @@ export function RegisterScreen({ navigation }: Props) {
             />
           </View>
 
-          <FormDropdown
-            label={t('auth.register.region')}
-            value={region}
-            options={regionOptions}
-            onSelect={setRegion}
-            placeholder={t('auth.register.regionPlaceholder')}
-            error={errors.region}
-            searchable
+          <FormTextInput
+            label={t('auth.register.country')}
+            value={country}
+            onChangeText={setCountry}
+            placeholder={t('auth.register.countryPlaceholder')}
+            error={errors.country}
           />
           <FormDropdown
             label={t('auth.register.profileLanguage')}
