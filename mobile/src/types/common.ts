@@ -19,18 +19,7 @@ export type AllergenTag =
   | 'GLUTEN'
   | 'TREE_NUTS';
 
-export type MeasurementUnit =
-  | 'g'
-  | 'kg'
-  | 'ml'
-  | 'L'
-  | 'cup'
-  | 'tbsp'
-  | 'tsp'
-  | 'piece'
-  | 'pinch'
-  | 'oz'
-  | 'lb';
+export type MeasurementUnit = string;
 
 export type SortOption = 'BEST_RATING' | 'MOST_RECENT' | 'BY_REGION';
 

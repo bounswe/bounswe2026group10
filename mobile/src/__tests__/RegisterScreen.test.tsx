@@ -27,10 +27,6 @@ jest.mock('../components/shared/FormDropdown', () => {
   };
 });
 
-jest.mock('../api/meta', () => ({
-  getRegions: jest.fn().mockResolvedValue(['Turkey', 'Greece']),
-}));
-
 const mockRegister = jest.fn();
 jest.mock('../context/AuthContext', () => ({
   useAuth: () => ({ register: mockRegister }),
@@ -45,7 +41,6 @@ const route = {} as any;
 
 async function renderScreen() {
   const screen = render(<RegisterScreen navigation={navigation} route={route} />);
-  // flush the getRegions() async useEffect so dropdown options are populated
   await act(async () => {});
   return screen;
 }
@@ -61,10 +56,10 @@ function fillTextFields(screen: ReturnType<typeof render>) {
 }
 
 async function fillAndSubmit(screen: Awaited<ReturnType<typeof renderScreen>>, role: string = 'Learner') {
-  const { getByText, getByTestId } = screen;
+  const { getByText, getByTestId, getByPlaceholderText } = screen;
   fillTextFields(screen);
   fireEvent.press(getByText(role));
-  fireEvent.press(getByTestId('dropdown-Region'));
+  fireEvent.changeText(getByPlaceholderText('e.g., Turkey'), 'Turkey');
   fireEvent.press(getByTestId('dropdown-Language'));
   await act(async () => { fireEvent.press(getByText('Create Account')); });
 }
@@ -149,7 +144,7 @@ describe('RegisterScreen', () => {
       const screen = await renderScreen();
       fillTextFields(screen);
       // deliberately skip role selection
-      fireEvent.press(screen.getByTestId('dropdown-Region'));
+      fireEvent.changeText(screen.getByPlaceholderText('e.g., Turkey'), 'Turkey');
       fireEvent.press(screen.getByTestId('dropdown-Language'));
       await act(async () => { fireEvent.press(screen.getByText('Create Account')); });
       expect(screen.getByText('Please choose a role')).toBeTruthy();
@@ -164,7 +159,7 @@ describe('RegisterScreen', () => {
       const screen = await renderScreen();
       fireEvent.press(screen.getByText('Learner'));
       fillTextFields(screen);
-      fireEvent.press(screen.getByTestId('dropdown-Region'));
+      fireEvent.changeText(screen.getByPlaceholderText('e.g., Turkey'), 'Turkey');
       fireEvent.press(screen.getByTestId('dropdown-Language'));
       await act(async () => { fireEvent.press(screen.getByText('Create Account')); });
       expect(mockRegister).toHaveBeenCalledWith(expect.objectContaining({ role: 'learner' }));
@@ -174,7 +169,7 @@ describe('RegisterScreen', () => {
       const screen = await renderScreen();
       fireEvent.press(screen.getByText('Cook'));
       fillTextFields(screen);
-      fireEvent.press(screen.getByTestId('dropdown-Region'));
+      fireEvent.changeText(screen.getByPlaceholderText('e.g., Turkey'), 'Turkey');
       fireEvent.press(screen.getByTestId('dropdown-Language'));
       await act(async () => { fireEvent.press(screen.getByText('Create Account')); });
       expect(mockRegister).toHaveBeenCalledWith(expect.objectContaining({ role: 'cook' }));
@@ -184,7 +179,7 @@ describe('RegisterScreen', () => {
       const screen = await renderScreen();
       fireEvent.press(screen.getByText('Expert'));
       fillTextFields(screen);
-      fireEvent.press(screen.getByTestId('dropdown-Region'));
+      fireEvent.changeText(screen.getByPlaceholderText('e.g., Turkey'), 'Turkey');
       fireEvent.press(screen.getByTestId('dropdown-Language'));
       await act(async () => { fireEvent.press(screen.getByText('Create Account')); });
       expect(mockRegister).toHaveBeenCalledWith(expect.objectContaining({ role: 'expert' }));
@@ -195,7 +190,7 @@ describe('RegisterScreen', () => {
       fireEvent.press(screen.getByText('Learner'));
       fireEvent.press(screen.getByText('Cook')); // switch to Cook
       fillTextFields(screen);
-      fireEvent.press(screen.getByTestId('dropdown-Region'));
+      fireEvent.changeText(screen.getByPlaceholderText('e.g., Turkey'), 'Turkey');
       fireEvent.press(screen.getByTestId('dropdown-Language'));
       await act(async () => { fireEvent.press(screen.getByText('Create Account')); });
       expect(mockRegister).toHaveBeenCalledWith(expect.objectContaining({ role: 'cook' }));
@@ -216,7 +211,7 @@ describe('RegisterScreen', () => {
           email: 'jane@test.com',
           password: 'password123',
           role: 'learner',
-          region: 'Turkey',
+          region: 'Turkey',  // sent as region to backend
           preferredLanguage: 'tr',
         })
       );
@@ -231,7 +226,7 @@ describe('RegisterScreen', () => {
       fireEvent.changeText(screen.getByPlaceholderText('••••••••'), 'password123');
       fireEvent.changeText(screen.getByPlaceholderText('Re-enter password'), 'password123');
       fireEvent.press(screen.getByText('Learner'));
-      fireEvent.press(screen.getByTestId('dropdown-Region'));
+      fireEvent.changeText(screen.getByPlaceholderText('e.g., Turkey'), 'Turkey');
       fireEvent.press(screen.getByTestId('dropdown-Language'));
       await act(async () => { fireEvent.press(screen.getByText('Create Account')); });
       expect(mockRegister).toHaveBeenCalledWith(
@@ -263,7 +258,7 @@ describe('RegisterScreen', () => {
       const screen = await renderScreen();
       fillTextFields(screen);
       fireEvent.press(screen.getByText('Learner'));
-      fireEvent.press(screen.getByTestId('dropdown-Region'));
+      fireEvent.changeText(screen.getByPlaceholderText('e.g., Turkey'), 'Turkey');
       fireEvent.press(screen.getByTestId('dropdown-Language'));
       fireEvent.press(screen.getByText('Create Account'));
       await act(async () => {});

@@ -90,9 +90,9 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
           rating={recipe.rating}
           ratingCount={recipe.ratingCount}
           type={recipe.type}
-          region={recipe.origin.city
-            ? `${recipe.origin.city}, ${recipe.origin.country}`
-            : recipe.origin.country}
+          region={[recipe.origin.district, recipe.origin.city, recipe.origin.country]
+            .filter(Boolean)
+            .join(', ')}
           dishVarietyName={recipe.dishVarietyName}
           tags={recipe.tags}
           allergens={recipe.allergens}

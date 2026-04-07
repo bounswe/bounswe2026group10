@@ -48,6 +48,7 @@ export function ChipSelector<T extends string>({
 
 const styles = StyleSheet.create({
   container: {
+    marginTop: spacing.lg,
     marginBottom: spacing['2xl'],
   },
   label: {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { User } from '../../types/user';
-import type { AllergenTag, DietaryTag, RecipeType } from '../../types/common';
+import type { RecipeType } from '../../types/common';
 import { StarRating } from '../shared/StarRating';
 import { Badge } from '../shared/Badge';
 import { IconButton } from '../shared/IconButton';
@@ -16,12 +16,12 @@ interface RecipeHeaderProps {
   type: RecipeType;
   region: string;
   dishVarietyName?: string;
-  tags: DietaryTag[];
-  allergens: AllergenTag[];
+  tags: string[];
+  allergens: string[];
   onAuthorPress?: () => void;
 }
 
-const dietaryTagColors: Record<DietaryTag, string> = {
+const dietaryTagColors: Record<string, string> = {
   VEGAN: '#386a20',
   VEGETARIAN: '#386a20',
   HALAL: '#586330',
@@ -91,7 +91,7 @@ export function RecipeHeader({
             <Badge
               key={tag}
               label={formatTagLabel(tag)}
-              backgroundColor={dietaryTagColors[tag]}
+              backgroundColor={dietaryTagColors[tag] ?? '#586330'}
             />
           ))}
           {allergens.map((allergen) => (
