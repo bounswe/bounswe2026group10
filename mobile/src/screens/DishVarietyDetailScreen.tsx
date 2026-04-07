@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSizes, spacing } from '../theme';
 import { RecipeCard } from '../components/search/RecipeCard';
 import { fetchApi } from '../api/client';
@@ -61,6 +62,7 @@ function CulturalSpotlight({
   imageUrl,
   onPress,
 }: CulturalSpotlightProps) {
+  const { t } = useTranslation('common');
   return (
     <View style={styles.spotlight}>
       {imageUrl && (
@@ -72,14 +74,14 @@ function CulturalSpotlight({
       )}
 
       <View style={styles.spotlightLabel}>
-        <Text style={styles.spotlightLabelText}>CULTURAL SPOTLIGHT</Text>
+        <Text style={styles.spotlightLabelText}>{t('dishVariety.culturalSpotlight').toUpperCase()}</Text>
       </View>
 
       <Text style={styles.spotlightTitle}>{recipe.title}</Text>
 
       <View style={styles.spotlightMeta}>
         <View style={styles.typeBadge}>
-          <Text style={styles.typeBadgeText}>CULTURAL</Text>
+          <Text style={styles.typeBadgeText}>{t('dishVariety.culturalBadge').toUpperCase()}</Text>
         </View>
         {recipe.averageRating != null && (
           <View style={styles.ratingRow}>
@@ -91,11 +93,11 @@ function CulturalSpotlight({
       </View>
 
       <Text style={styles.spotlightDescription}>
-        {description?.trim() || 'No description available'}
+        {description?.trim() || t('dishVariety.noDescription')}
       </Text>
 
       <TouchableOpacity style={styles.ctaButton} onPress={onPress}>
-        <Text style={styles.ctaButtonText}>View Recipe</Text>
+        <Text style={styles.ctaButtonText}>{t('dishVariety.openRecipe')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -104,6 +106,7 @@ function CulturalSpotlight({
 export function DishVarietyDetailScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
+  const { t } = useTranslation('common');
   const varietyId = route.params?.id;
 
   const [variety, setVariety] = useState<DishVarietyDetail | null>(null);
@@ -197,12 +200,12 @@ export function DishVarietyDetailScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error ?? 'Dish variety not found'}</Text>
+          <Text style={styles.errorText}>{error ?? t('dishVariety.notFound')}</Text>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.backButtonText}>Go Back</Text>
+            <Text style={styles.backButtonText}>{t('common.back')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -221,7 +224,7 @@ export function DishVarietyDetailScreen() {
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
         <MaterialCommunityIcons name="arrow-left" size={24} color={colors.onSurface} />
-        <Text style={styles.backNavText}>Back</Text>
+        <Text style={styles.backNavText}>{t('common.back')}</Text>
       </TouchableOpacity>
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
@@ -241,11 +244,11 @@ export function DishVarietyDetailScreen() {
         {/* Recipes Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            Recipes ({variety.recipes.length})
+            {t('dishVariety.recipes', { count: variety.recipes.length })}
           </Text>
 
           {variety.recipes.length === 0 ? (
-            <Text style={styles.emptyText}>No recipes available</Text>
+            <Text style={styles.emptyText}>{t('dishVariety.noRecipes')}</Text>
           ) : (
             <>
               {/* Cultural Recipe Spotlight */}
@@ -263,7 +266,7 @@ export function DishVarietyDetailScreen() {
               {/* Community Recipes */}
               {communityRecipes.length > 0 ? (
                 <View>
-                  <Text style={styles.subsectionTitle}>Community Recipes</Text>
+                  <Text style={styles.subsectionTitle}>{t('dishVariety.communityRecipes')}</Text>
                   <View style={styles.recipesList}>
                     {communityRecipes.map((recipe) => (
                       <RecipeCard
