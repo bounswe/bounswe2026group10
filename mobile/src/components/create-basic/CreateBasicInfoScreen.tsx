@@ -26,7 +26,9 @@ import { ImportCards } from "./ImportCards";
 import { RecipeParseModal } from "./RecipeParseModal";
 import { OriginSection } from "./OriginSection";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../../context/AuthContext";
 import { useRecipeForm } from "../../context/RecipeFormContext";
+import type { RecipeType } from "../../types/common";
 import { validateBasicInfo } from "../../utils/recipeValidation";
 import { getDishGenres } from "../../api/dish-genres";
 import { getDietaryTags } from "../../api/dietary-tags";
@@ -47,7 +49,14 @@ export function CreateBasicInfoScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const isFocused = useIsFocused();
+  const { authState } = useAuth();
+  const role =
+    authState.status === "authenticated"
+      ? (authState.user.role ?? "").toUpperCase()
+      : "";
+  const canCreateCultural = role === "EXPERT";
   const { draft, updateDraft, resetDraft } = useRecipeForm();
+  const [recipeType, setRecipeType] = useState<RecipeType>(draft.type);
   const [title, setTitle] = useState(draft.title);
   const [country, setCountry] = useState(draft.originCountry);
   const [city, setCity] = useState(draft.originCity);
@@ -83,6 +92,7 @@ export function CreateBasicInfoScreen() {
 
   useEffect(() => {
     if (!isFocused) return;
+    setRecipeType(draft.type);
     setTitle(draft.title);
     setCountry(draft.originCountry);
     setCity(draft.originCity);
@@ -235,7 +245,7 @@ export function CreateBasicInfoScreen() {
         .map((o) => o.label);
       updateDraft({
         title,
-        type: "COMMUNITY",
+        type: recipeType,
         originCountry: country,
         originCity: city,
         originDistrict: district,
@@ -265,6 +275,7 @@ export function CreateBasicInfoScreen() {
         style: "destructive",
         onPress: () => {
           resetDraft();
+          setRecipeType("COMMUNITY");
           setTitle("");
           setCountry("");
           setCity("");
@@ -474,6 +485,65 @@ export function CreateBasicInfoScreen() {
           </ScrollView>
         </View>
 
+        {/* ── Recipe Type ── */}
+        <View style={styles.typeSection}>
+          <Text style={styles.typeLabel}>
+            {t("create.fields.recipeType").toUpperCase()}
+          </Text>
+          <View style={styles.typeCardsRow}>
+            {(
+              [
+                {
+                  value: "COMMUNITY" as RecipeType,
+                  titleKey: "create.fields.community",
+                  descKey: "create.fields.communityDesc",
+                },
+                {
+                  value: "CULTURAL" as RecipeType,
+                  titleKey: "create.fields.cultural",
+                  descKey: "create.fields.culturalDesc",
+                },
+              ] as const
+            ).map(({ value, titleKey, descKey }) => {
+              const isSelected = recipeType === value;
+              const isDisabled = value === "CULTURAL" && !canCreateCultural;
+              return (
+                <TouchableOpacity
+                  key={value}
+                  style={[
+                    styles.typeCard,
+                    isSelected && styles.typeCardActive,
+                    isDisabled && styles.typeCardDisabled,
+                  ]}
+                  onPress={() => {
+                    if (!isDisabled) setRecipeType(value);
+                  }}
+                  activeOpacity={isDisabled ? 1 : 0.7}
+                  disabled={isDisabled}
+                >
+                  <Text
+                    style={[
+                      styles.typeCardTitle,
+                      isSelected && styles.typeCardTitleActive,
+                      isDisabled && styles.typeCardTitleDisabled,
+                    ]}
+                  >
+                    {t(titleKey)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.typeCardDesc,
+                      isDisabled && styles.typeCardDescDisabled,
+                    ]}
+                  >
+                    {isDisabled ? t("create.fields.expertOnly") : t(descKey)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
         <TouchableOpacity
           style={styles.nextButton}
           onPress={handleNext}
@@ -631,5 +701,55 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.xs,
     color: colors.primary,
     textAlign: "center",
+  },
+  // ── Recipe Type ──
+  typeSection: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  typeLabel: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSizes.xs,
+    color: colors.onSurfaceVariant,
+    letterSpacing: 0.5,
+    marginBottom: spacing.sm,
+  },
+  typeCardsRow: {
+    gap: spacing.sm,
+  },
+  typeCard: {
+    borderWidth: 1.5,
+    borderColor: colors.outline,
+    borderRadius: 12,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.white,
+  },
+  typeCardActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.surfaceContainer,
+  },
+  typeCardDisabled: {
+    opacity: 0.5,
+  },
+  typeCardTitle: {
+    fontFamily: fonts.sansBold,
+    fontSize: fontSizes.md,
+    color: colors.onSurface,
+    marginBottom: 2,
+  },
+  typeCardTitleActive: {
+    color: colors.primary,
+  },
+  typeCardTitleDisabled: {
+    color: colors.onSurfaceVariant,
+  },
+  typeCardDesc: {
+    fontFamily: fonts.sans,
+    fontSize: fontSizes.sm,
+    color: colors.onSurfaceVariant,
+  },
+  typeCardDescDisabled: {
+    fontStyle: "italic" as const,
   },
 });
