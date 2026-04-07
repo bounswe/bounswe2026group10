@@ -7,13 +7,23 @@ import {
   logout as apiLogout,
   getMe,
 } from '../api/auth';
-import { persistToken, loadPersistedToken, setToken } from '../api/client';
+import {
+  persistToken,
+  loadPersistedToken,
+  setToken,
+  persistRefreshToken,
+  loadPersistedRefreshToken,
+  setRefreshToken,
+} from '../api/client';
 
 jest.mock('../api/auth');
 jest.mock('../api/client', () => ({
   persistToken: jest.fn(),
   loadPersistedToken: jest.fn(),
   setToken: jest.fn(),
+  persistRefreshToken: jest.fn(),
+  loadPersistedRefreshToken: jest.fn(),
+  setRefreshToken: jest.fn(),
 }));
 
 const mockApiLogin = apiLogin as jest.MockedFunction<typeof apiLogin>;
@@ -22,6 +32,8 @@ const mockApiLogout = apiLogout as jest.MockedFunction<typeof apiLogout>;
 const mockGetMe = getMe as jest.MockedFunction<typeof getMe>;
 const mockPersistToken = persistToken as jest.MockedFunction<typeof persistToken>;
 const mockLoadPersistedToken = loadPersistedToken as jest.MockedFunction<typeof loadPersistedToken>;
+const mockPersistRefreshToken = persistRefreshToken as jest.MockedFunction<typeof persistRefreshToken>;
+const mockLoadPersistedRefreshToken = loadPersistedRefreshToken as jest.MockedFunction<typeof loadPersistedRefreshToken>;
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>{children}</AuthProvider>
@@ -51,6 +63,8 @@ describe('AuthContext', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockPersistToken.mockResolvedValue(undefined);
+    mockPersistRefreshToken.mockResolvedValue(undefined);
+    mockLoadPersistedRefreshToken.mockResolvedValue(null);
   });
 
   // ─── Initial token check ────────────────────────────────────────────────────
@@ -58,6 +72,7 @@ describe('AuthContext', () => {
   describe('startup token check', () => {
     it('starts in loading state before the async check resolves', () => {
       mockLoadPersistedToken.mockReturnValue(new Promise(() => {})); // never resolves
+      mockLoadPersistedRefreshToken.mockReturnValue(new Promise(() => {})); // never resolves
       const { result } = renderHook(() => useAuth(), { wrapper });
       expect(result.current.authState.status).toBe('loading');
     });

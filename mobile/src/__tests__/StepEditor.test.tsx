@@ -9,8 +9,7 @@ jest.mock('@expo/vector-icons', () => ({
 
 const baseStep: StepFormItem = {
   id: 's1',
-  title: 'Boil water',
-  description: '',
+  description: 'Boil water',
   timestamp: '',
   isExpanded: false,
 };
@@ -32,14 +31,14 @@ describe('StepEditor', () => {
     expect(getByText('Boil water')).toBeTruthy();
   });
 
-  it('does not show STEP TITLE input when collapsed', () => {
+  it('does not show DESCRIPTION label when collapsed', () => {
     const { queryByText } = render(
       <StepEditor step={baseStep} stepNumber={1} onUpdate={noop} onDelete={noop} canDelete={false} />
     );
-    expect(queryByText('STEP TITLE')).toBeNull();
+    expect(queryByText('DESCRIPTION')).toBeNull();
   });
 
-  it('shows STEP TITLE label after tapping header to expand', () => {
+  it('shows DESCRIPTION label after tapping header to expand', () => {
     const onUpdate = jest.fn((updated: StepFormItem) => updated);
     const { getByText, rerender } = render(
       <StepEditor step={baseStep} stepNumber={1} onUpdate={onUpdate} onDelete={noop} canDelete={false} />
@@ -49,7 +48,7 @@ describe('StepEditor', () => {
     rerender(
       <StepEditor step={updatedStep} stepNumber={1} onUpdate={onUpdate} onDelete={noop} canDelete={false} />
     );
-    expect(getByText('STEP TITLE')).toBeTruthy();
+    expect(getByText('DESCRIPTION')).toBeTruthy();
   });
 
   it('shows DESCRIPTION and TIMESTAMP labels when expanded', () => {
@@ -61,7 +60,7 @@ describe('StepEditor', () => {
     expect(getByText('TIMESTAMP')).toBeTruthy();
   });
 
-  it('shows title error text when errors.title is set', () => {
+  it('shows description error text when errors.description is set', () => {
     const expandedStep = { ...baseStep, isExpanded: true };
     const { getByText } = render(
       <StepEditor
@@ -70,10 +69,10 @@ describe('StepEditor', () => {
         onUpdate={noop}
         onDelete={noop}
         canDelete={false}
-        errors={{ title: 'Title is required' }}
+        errors={{ description: 'Description is required' }}
       />
     );
-    expect(getByText('Title is required')).toBeTruthy();
+    expect(getByText('Description is required')).toBeTruthy();
   });
 
   it('shows timestamp error text when errors.timestamp is set', () => {
