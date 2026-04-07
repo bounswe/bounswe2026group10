@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { ApiError } from "../../api/client";
 import { parseRecipeText } from "../../api/parse";
 import type { ParseRecipeResponse } from "../../api/parse";
@@ -60,6 +61,7 @@ function mapToMeasurementUnit(raw: string): MeasurementUnit {
 type Phase = "input" | "loading" | "preview";
 
 export function RecipeParseModal({ visible, onClose, onApplied }: Props) {
+  const { t } = useTranslation("common");
   const { updateDraft } = useRecipeForm();
   const [text, setText] = useState("");
   const [phase, setPhase] = useState<Phase>("input");
@@ -90,15 +92,14 @@ export function RecipeParseModal({ visible, onClose, onApplied }: Props) {
       setParsed(result);
       setPhase("preview");
     } catch (err) {
-      let message = "Something went wrong. Please try again.";
+      let message = t("create.parse.errors.generic");
       if (err instanceof ApiError) {
         if (err.code === "VALIDATION_ERROR") {
-          message = "Text must be between 10 and 5,000 characters.";
+          message = t("create.parse.errors.validation");
         } else if (err.code === "UNAUTHORIZED") {
-          message = "Please log in to use this feature.";
+          message = t("create.parse.errors.unauthorized");
         } else if (err.code === "FORBIDDEN") {
-          message =
-            "This feature is only available to cook and expert accounts.";
+          message = t("create.parse.errors.forbidden");
         } else {
           message = err.message;
         }
@@ -106,8 +107,7 @@ export function RecipeParseModal({ visible, onClose, onApplied }: Props) {
         err instanceof Error &&
         (err.message.includes("network") || err.message.includes("fetch"))
       ) {
-        message =
-          "Could not connect to the server. Check your connection and try again.";
+        message = t("create.parse.errors.network");
       }
       setError(message);
       setPhase("input");
@@ -166,11 +166,11 @@ export function RecipeParseModal({ visible, onClose, onApplied }: Props) {
             >
               {phase === "input" && (
                 <>
-                  <Text style={styles.title}>Paste Your Recipe</Text>
+                  <Text style={styles.title}>{t("create.parse.title")}</Text>
                   <TextInput
                     style={styles.textInput}
                     multiline
-                    placeholder="Paste or type your recipe here…"
+                    placeholder={t("create.parse.placeholder")}
                     placeholderTextColor={colors.onSurfaceVariant}
                     value={text}
                     onChangeText={setText}
@@ -198,14 +198,14 @@ export function RecipeParseModal({ visible, onClose, onApplied }: Props) {
                     disabled={!isTextValid}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.primaryButtonText}>Parse Recipe</Text>
+                    <Text style={styles.primaryButtonText}>{t("create.parse.parseButton")}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.cancelButton}
                     onPress={handleClose}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                    <Text style={styles.cancelButtonText}>{t("common.cancel")}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -213,28 +213,28 @@ export function RecipeParseModal({ visible, onClose, onApplied }: Props) {
               {phase === "loading" && (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color={colors.primary} />
-                  <Text style={styles.loadingText}>Analysing your recipe…</Text>
+                  <Text style={styles.loadingText}>{t("create.parse.analysing")}</Text>
                 </View>
               )}
 
               {phase === "preview" && parsed !== null && (
                 <>
-                  <Text style={styles.title}>Recipe Parsed</Text>
+                  <Text style={styles.title}>{t("create.parse.parsedTitle")}</Text>
                   <Text style={styles.parsedTitle}>{parsed.title}</Text>
                   <View style={styles.chips}>
                     <View style={styles.chip}>
                       <Text style={styles.chipText}>
-                        {parsed.ingredients.length} ingredients
+                        {t("create.parse.chips.ingredients", { count: parsed.ingredients.length })}
                       </Text>
                     </View>
                     <View style={styles.chip}>
                       <Text style={styles.chipText}>
-                        {parsed.steps.length} steps
+                        {t("create.parse.chips.steps", { count: parsed.steps.length })}
                       </Text>
                     </View>
                     <View style={styles.chip}>
                       <Text style={styles.chipText}>
-                        {parsed.tools.length} tools
+                        {t("create.parse.chips.tools", { count: parsed.tools.length })}
                       </Text>
                     </View>
                   </View>
@@ -244,7 +244,7 @@ export function RecipeParseModal({ visible, onClose, onApplied }: Props) {
                     activeOpacity={0.8}
                   >
                     <Text style={styles.primaryButtonText}>
-                      Apply to Recipe
+                      {t("create.parse.apply")}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -252,7 +252,7 @@ export function RecipeParseModal({ visible, onClose, onApplied }: Props) {
                     onPress={handleTryAgain}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.ghostButtonText}>Try Again</Text>
+                    <Text style={styles.ghostButtonText}>{t("create.parse.tryAgain")}</Text>
                   </TouchableOpacity>
                 </>
               )}
