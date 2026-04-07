@@ -1,6 +1,7 @@
 import React from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
 interface ImportCardsProps {
@@ -8,30 +9,32 @@ interface ImportCardsProps {
 }
 
 export function ImportCards({ onPasteText }: ImportCardsProps) {
+  const { t } = useTranslation('common');
+
   const handleVoiceRecording = () => {
-    Alert.alert('Coming Soon', 'Voice recording will be available in a future update.');
+    Alert.alert(t('common.comingSoon'), t('create.import.voiceComingSoon'));
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionLabel}>IMPORT YOUR RECIPE</Text>
+      <Text style={styles.sectionLabel}>{t('create.import.title')}</Text>
       <View style={styles.cards}>
         <TouchableOpacity style={styles.card} onPress={onPasteText} activeOpacity={0.7}>
           <MaterialCommunityIcons name="text-box-outline" size={28} color={colors.primary} />
-          <Text style={styles.cardTitle}>Paste Text</Text>
-          <Text style={styles.cardSubtitle}>Type or paste a recipe</Text>
+          <Text style={styles.cardTitle}>{t('create.import.pasteText')}</Text>
+          <Text style={styles.cardSubtitle}>{t('create.import.pasteTextSubtitle')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.card} onPress={handleVoiceRecording} activeOpacity={0.7}>
           <MaterialCommunityIcons name="microphone-outline" size={28} color={colors.primary} />
-          <Text style={styles.cardTitle}>Voice Recording</Text>
-          <Text style={styles.cardSubtitle}>Describe it out loud</Text>
+          <Text style={styles.cardTitle}>{t('create.import.voiceRecording')}</Text>
+          <Text style={styles.cardSubtitle}>{t('create.import.voiceRecordingSubtitle')}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.dividerRow}>
         <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or fill in manually</Text>
+        <Text style={styles.dividerText}>{t('create.import.orFillIn')}</Text>
         <View style={styles.dividerLine} />
       </View>
     </View>
