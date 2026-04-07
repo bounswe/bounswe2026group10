@@ -20,6 +20,7 @@ import { StepHeader } from "../create-basic/StepHeader";
 import { IngredientRowEditor } from "./IngredientRowEditor";
 import type { IngredientFormItem } from "./IngredientRowEditor";
 import { ToolSearchSection } from "./ToolSearchSection";
+import { useTranslation } from "react-i18next";
 import { useRecipeForm } from "../../context/RecipeFormContext";
 import { validateIngredients } from "../../utils/recipeValidation";
 import { searchIngredients } from "../../api/ingredients";
@@ -43,6 +44,7 @@ function createEmptyIngredient(): IngredientFormItem {
 }
 
 export function CreateIngredientsToolsScreen() {
+  const { t } = useTranslation("common");
   const navigation =
     useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const isFocused = useIsFocused();
@@ -149,14 +151,14 @@ export function CreateIngredientsToolsScreen() {
   };
 
   const handleSaveDraft = () => {
-    Alert.alert("Draft Saved", "Your recipe draft has been saved.");
+    Alert.alert(t("create.draftSaved"), t("create.draftSavedMsg"));
   };
 
   const handleClose = () => {
-    Alert.alert("Discard Recipe?", "Your changes will be lost.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("create.discardTitle"), t("create.discardMsg"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Discard",
+        text: t("create.discard"),
         style: "destructive",
         onPress: () => {
           resetDraft();
@@ -183,12 +185,12 @@ export function CreateIngredientsToolsScreen() {
         <StepHeader
           currentStep={2}
           totalSteps={4}
-          title="Ingredients & Tools"
-          subtitle="The soul of your dish lies in the details."
+          title={t("create.steps.2")}
+          subtitle={t("create.steps.2subtitle")}
         />
 
         <SectionHeader
-          title="Ingredients"
+          title={t("create.ingredients.title")}
           rightElement={
             <TouchableOpacity
               onPress={handleAddIngredient}
@@ -199,7 +201,7 @@ export function CreateIngredientsToolsScreen() {
                 size={20}
                 color={colors.primary}
               />
-              <Text style={styles.addButtonText}>Add Item</Text>
+              <Text style={styles.addButtonText}>{t("create.ingredients.add")}</Text>
             </TouchableOpacity>
           }
         >
@@ -217,7 +219,7 @@ export function CreateIngredientsToolsScreen() {
           ))}
         </SectionHeader>
 
-        <SectionHeader title="Tools & Equipment">
+        <SectionHeader title={t("create.tools.title")}>
           <ToolSearchSection
             allTools={allTools}
             selectedTools={tools}
@@ -237,7 +239,7 @@ export function CreateIngredientsToolsScreen() {
               size={20}
               color={colors.onSurface}
             />
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -246,7 +248,7 @@ export function CreateIngredientsToolsScreen() {
           onPress={handleNext}
           activeOpacity={0.8}
         >
-          <Text style={styles.nextButtonText}>Next: Steps</Text>
+          <Text style={styles.nextButtonText}>{t("create.continueSteps")}</Text>
           <MaterialCommunityIcons
             name="arrow-right"
             size={20}
@@ -259,7 +261,7 @@ export function CreateIngredientsToolsScreen() {
           onPress={handleSaveDraft}
           activeOpacity={0.7}
         >
-          <Text style={styles.saveDraftText}>Save Draft</Text>
+          <Text style={styles.saveDraftText}>{t("create.saveDraft")}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

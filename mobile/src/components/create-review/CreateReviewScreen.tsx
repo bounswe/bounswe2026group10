@@ -17,12 +17,14 @@ import type { CreateStackParamList } from "../../navigation/types";
 import { colors, fonts, fontSizes, spacing } from "../../theme";
 import { IconButton } from "../shared/IconButton";
 import { StepHeader } from "../create-basic/StepHeader";
+import { useTranslation } from "react-i18next";
 import { useRecipeForm } from "../../context/RecipeFormContext";
 import { attachRecipeMedia, createRecipe, publishRecipe } from "../../api/recipes";
 import { buildRecipePayload } from "../../utils/buildRecipePayload";
 import { validateForPublish } from "../../utils/recipeValidation";
 
 export function CreateReviewScreen() {
+  const { t } = useTranslation("common");
   const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const { draft, resetDraft } = useRecipeForm();
   const [publishing, setPublishing] = useState(false);
@@ -67,7 +69,7 @@ export function CreateReviewScreen() {
     const missing = validateForPublish(draft);
     if (missing.length > 0) {
       Alert.alert(
-        'Recipe Incomplete',
+        t('create.incompleteTitle'),
         'Please complete the following before publishing:\n\n' +
           missing.map((m) => `• ${m}`).join('\n')
       );
@@ -83,7 +85,7 @@ export function CreateReviewScreen() {
       await attachMedia(created.id);
       const published = await publishRecipe(created.id);
       console.log("[publish] recipe published:", published);
-      Alert.alert("Published!", "Your recipe is now live.", [
+      Alert.alert(t("create.published"), t("create.publishedMsg"), [
         { text: "OK", onPress: goHome },
       ]);
     } finally {
@@ -98,15 +100,15 @@ export function CreateReviewScreen() {
     });
     console.log("[draft] recipe saved:", result.id);
     await attachMedia(result.id);
-    Alert.alert("Draft Saved", "Your recipe has been saved to drafts.", [
+    Alert.alert(t("create.draftSaved"), t("create.draftSavedMsg2"), [
       { text: "OK", onPress: goHome },
     ]);
   };
 
   const handleClose = () => {
-    Alert.alert("Discard Recipe?", "Your changes will be lost.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Discard", style: "destructive", onPress: goHome },
+    Alert.alert(t("create.discardTitle"), t("create.discardMsg"), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("create.discard"), style: "destructive", onPress: goHome },
     ]);
   };
 
@@ -125,8 +127,8 @@ export function CreateReviewScreen() {
         <StepHeader
           currentStep={4}
           totalSteps={4}
-          title="Review"
-          subtitle="Almost there — give your recipe one last look."
+          title={t("create.steps.4")}
+          subtitle={t("create.steps.4subtitle")}
         />
 
         {/* Recipe title */}
@@ -142,7 +144,7 @@ export function CreateReviewScreen() {
         {/* Story */}
         {!!draft.story && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>STORY</Text>
+            <Text style={styles.sectionLabel}>{t("create.review.story").toUpperCase()}</Text>
             <Text style={styles.bodyText}>{draft.story}</Text>
           </View>
         )}
@@ -150,7 +152,7 @@ export function CreateReviewScreen() {
         {/* Images */}
         {draft.imageUrls.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>IMAGES</Text>
+            <Text style={styles.sectionLabel}>{t("create.review.images").toUpperCase()}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -166,7 +168,7 @@ export function CreateReviewScreen() {
         {/* Dietary tags */}
         {hasDietaryTags && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>DIETARY TAGS</Text>
+            <Text style={styles.sectionLabel}>{t("create.review.dietaryTags").toUpperCase()}</Text>
             <View style={styles.tagRow}>
               {draft.dietaryTagNames.map((name) => (
                 <View key={name} style={styles.tagChip}>
@@ -180,7 +182,7 @@ export function CreateReviewScreen() {
         {/* Allergen tags */}
         {hasAllergenTags && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>ALLERGEN TAGS</Text>
+            <Text style={styles.sectionLabel}>{t("create.review.allergenTags").toUpperCase()}</Text>
             <View style={styles.tagRow}>
               {draft.allergenTagNames.map((name) => (
                 <View key={name} style={styles.tagChip}>
@@ -193,7 +195,7 @@ export function CreateReviewScreen() {
 
         {/* Ingredients */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>INGREDIENTS</Text>
+          <Text style={styles.sectionLabel}>{t("create.review.ingredients").toUpperCase()}</Text>
           {draft.ingredients
             .filter((i) => i.name.trim())
             .map((ing) => (
@@ -204,14 +206,14 @@ export function CreateReviewScreen() {
               </Text>
             ))}
           {draft.ingredients.filter((i) => i.name.trim()).length === 0 && (
-            <Text style={styles.emptyText}>No ingredients added</Text>
+            <Text style={styles.emptyText}>{t("create.review.noIngredients")}</Text>
           )}
         </View>
 
         {/* Tools */}
         {draft.tools.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>TOOLS</Text>
+            <Text style={styles.sectionLabel}>{t("create.review.tools").toUpperCase()}</Text>
             {draft.tools.map((tool) => (
               <Text key={tool.id} style={styles.listItem}>
                 {"• "}
@@ -224,7 +226,7 @@ export function CreateReviewScreen() {
         {/* Video */}
         {!!draft.videoFileName && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>RECIPE VIDEO</Text>
+            <Text style={styles.sectionLabel}>{t("create.review.video").toUpperCase()}</Text>
             <View style={styles.videoRow}>
               <MaterialCommunityIcons
                 name="check-circle"
@@ -240,7 +242,7 @@ export function CreateReviewScreen() {
 
         {/* Steps */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>STEPS</Text>
+          <Text style={styles.sectionLabel}>{t("create.review.steps").toUpperCase()}</Text>
           {draft.steps.map((step, index) => (
             <View key={index} style={styles.stepCard}>
               <View style={styles.stepCardHeader}>
@@ -255,7 +257,7 @@ export function CreateReviewScreen() {
             </View>
           ))}
           {draft.steps.length === 0 && (
-            <Text style={styles.emptyText}>No steps added</Text>
+            <Text style={styles.emptyText}>{t("create.review.noSteps")}</Text>
           )}
         </View>
 
@@ -271,7 +273,7 @@ export function CreateReviewScreen() {
               size={20}
               color={colors.onSurface}
             />
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -288,7 +290,7 @@ export function CreateReviewScreen() {
             <ActivityIndicator color={colors.white} />
           ) : (
             <>
-              <Text style={styles.publishButtonText}>Publish Recipe</Text>
+              <Text style={styles.publishButtonText}>{t("create.review.publish")}</Text>
               <MaterialCommunityIcons
                 name="check-circle-outline"
                 size={20}
@@ -303,7 +305,7 @@ export function CreateReviewScreen() {
           onPress={handleSaveDraft}
           activeOpacity={0.7}
         >
-          <Text style={styles.saveDraftText}>Save as Draft</Text>
+          <Text style={styles.saveDraftText}>{t("create.review.saveDraft")}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
