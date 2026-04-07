@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { Recipe, RecipeCard } from '../../types/recipe';
+import { useTranslation } from 'react-i18next';
 import { colors, spacing } from '../../theme';
 import { useServingAdjuster } from '../../hooks/useServingAdjuster';
 import { getRecipeById } from '../../api/recipes';
@@ -29,6 +30,7 @@ interface RecipeDetailScreenProps {
 const EMPTY_ALTERNATIVES: RecipeCard[] = [];
 
 export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
+  const { t } = useTranslation('common');
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,7 +67,7 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
   if (error || !recipe) {
     return (
       <SafeAreaView style={styles.centered}>
-        <Text style={styles.errorText}>{error ?? 'Recipe not found'}</Text>
+        <Text style={styles.errorText}>{error ?? t('recipeDetail.notFound')}</Text>
       </SafeAreaView>
     );
   }
@@ -94,7 +96,7 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
           dishVarietyName={recipe.dishVarietyName}
           tags={recipe.tags}
           allergens={recipe.allergens}
-          onAuthorPress={() => Alert.alert('Profile', 'Navigation coming soon')}
+          onAuthorPress={() => Alert.alert('Profile', t('common.comingSoon'))}
         />
 
         {recipe.story ? <StoryCard story={recipe.story} /> : null}
@@ -127,7 +129,7 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
           creatorUsername={recipe.creatorUsername}
           onRatingChange={fetchRecipe}
           onNavigateToComments={() =>
-            Alert.alert('Comments', 'Comment section coming soon!')
+            Alert.alert(t('recipeDetail.viewAllComments'), t('recipeDetail.commentsSoon'))
           }
         />
       </ScrollView>

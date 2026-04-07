@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 import { getUserRating, rateRecipe, deleteUserRating } from '../../api/recipes';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +14,7 @@ interface RatingPromptProps {
 }
 
 export function RatingPrompt({ recipeId, creatorUsername, onNavigateToComments, onRatingChange }: RatingPromptProps) {
+  const { t } = useTranslation('common');
   const { authState } = useAuth();
   const isAuthenticated = authState.status === 'authenticated';
   const [selectedRating, setSelectedRating] = useState(0);
@@ -29,11 +31,11 @@ export function RatingPrompt({ recipeId, creatorUsername, onNavigateToComments, 
 
   const handleStarPress = async (score: number) => {
     if (!isAuthenticated) {
-      Alert.alert('Sign in required', 'Please log in to rate this recipe.');
+      Alert.alert(t('common.signInRequired'), t('recipeDetail.ratingLoginPrompt'));
       return;
     }
     if (isAuthenticated && authState.user.username === creatorUsername) {
-      Alert.alert('Rating', 'You cannot rate your own recipe.');
+      Alert.alert(t('recipeDetail.ratingHeading'), t('recipeDetail.ratingOwnRecipe'));
       return;
     }
     if (submitting) return;
@@ -49,18 +51,18 @@ export function RatingPrompt({ recipeId, creatorUsername, onNavigateToComments, 
       onRatingChange?.();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to submit rating';
-      Alert.alert('Rating', message);
+      Alert.alert(t('recipeDetail.ratingHeading'), message);
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleViewComments =
-    onNavigateToComments ?? (() => Alert.alert('Comments', 'Coming soon'));
+    onNavigateToComments ?? (() => Alert.alert(t('recipeDetail.viewAllComments'), t('common.comingSoon')));
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>How did it turn out?</Text>
+      <Text style={styles.heading}>{t('recipeDetail.yourRating')}</Text>
 
       <View style={styles.ratingRow}>
         {[1, 2, 3, 4, 5].map((star) => (
@@ -80,15 +82,15 @@ export function RatingPrompt({ recipeId, creatorUsername, onNavigateToComments, 
       </View>
 
       <TouchableOpacity onPress={handleViewComments}>
-        <Text style={styles.viewAll}>View all comments</Text>
+        <Text style={styles.viewAll}>{t('recipeDetail.viewAllComments')}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => Alert.alert('Comment', 'Coming soon')}
+        onPress={() => Alert.alert(t('recipeDetail.addThoughts'), t('common.comingSoon'))}
         activeOpacity={0.8}
       >
-        <Text style={styles.addButtonText}>Add Your Thoughts</Text>
+        <Text style={styles.addButtonText}>{t('recipeDetail.addThoughts')}</Text>
       </TouchableOpacity>
     </View>
   );

@@ -1,6 +1,10 @@
+import './src/i18n';
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useFonts } from 'expo-font';
+import * as SecureStore from 'expo-secure-store';
+import i18n from './src/i18n';
 import {
   Newsreader_400Regular_Italic,
   Newsreader_700Bold_Italic,
@@ -36,6 +40,13 @@ function RootNavigator() {
 }
 
 export default function App() {
+  // Restore persisted language on startup
+  React.useEffect(() => {
+    SecureStore.getItemAsync('app_language').then((lang) => {
+      if (lang === 'en' || lang === 'tr') i18n.changeLanguage(lang);
+    });
+  }, []);
+
   const [fontsLoaded] = useFonts({
     Newsreader_400Regular_Italic,
     Newsreader_700Bold_Italic,

@@ -133,7 +133,7 @@ describe('DishVarietyDetailScreen', () => {
 
     it('shows recipes count in section title', async () => {
       const { getByText } = await renderAndFlush();
-      expect(getByText('Recipes (2)')).toBeTruthy();
+      expect(getByText('2 Recipes')).toBeTruthy();
     });
   });
 

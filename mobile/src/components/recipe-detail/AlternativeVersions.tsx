@@ -1,5 +1,6 @@
 import React from 'react';
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { RecipeCard } from '../../types/recipe';
 import { RecipeCardSmall } from '../shared/RecipeCardSmall';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
@@ -10,11 +11,12 @@ interface AlternativeVersionsProps {
 }
 
 export function AlternativeVersions({ cards, onCardPress }: AlternativeVersionsProps) {
+  const { t } = useTranslation('common');
   if (cards.length === 0) return null;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Alternative Versions</Text>
+      <Text style={styles.title}>{t('recipeDetail.alternativeRecipes')}</Text>
       <FlatList
         data={cards}
         horizontal

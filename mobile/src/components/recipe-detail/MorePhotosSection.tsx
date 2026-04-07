@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
 interface MorePhotosSectionProps {
@@ -8,13 +9,14 @@ interface MorePhotosSectionProps {
 }
 
 export function MorePhotosSection({ images }: MorePhotosSectionProps) {
+  const { t } = useTranslation('common');
   const [expanded, setExpanded] = useState(false);
   const extras = images.slice(1);
   return (
     <View style={styles.container}>
       <Pressable style={styles.headerRow} onPress={() => setExpanded((v) => !v)}>
         <MaterialCommunityIcons name="image-multiple" size={20} color={colors.primary} />
-        <Text style={styles.headerText}>More Photos</Text>
+        <Text style={styles.headerText}>{t('recipeDetail.mediaGallery')}</Text>
         <MaterialCommunityIcons
           name={expanded ? 'chevron-up' : 'chevron-down'}
           size={20}

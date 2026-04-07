@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { User } from '../../types/user';
 import type { AllergenTag, DietaryTag, RecipeType } from '../../types/common';
 import { StarRating } from '../shared/StarRating';
@@ -47,6 +48,7 @@ export function RecipeHeader({
   allergens,
   onAuthorPress,
 }: RecipeHeaderProps) {
+  const { t } = useTranslation('common');
   const [bookmarked, setBookmarked] = useState(false);
 
   return (
@@ -56,7 +58,7 @@ export function RecipeHeader({
       <View style={styles.metaRow}>
         <TouchableOpacity onPress={onAuthorPress} activeOpacity={0.6}>
           <Text style={styles.author}>
-            by {author.firstName} {author.lastName}
+            {t('recipeDetail.by', { name: `${author.firstName} ${author.lastName}` })}
           </Text>
         </TouchableOpacity>
         <StarRating rating={rating} count={ratingCount} size={14} />
@@ -110,7 +112,7 @@ export function RecipeHeader({
         />
         <IconButton
           name="share-variant-outline"
-          onPress={() => Alert.alert('Share', 'Sharing coming soon')}
+          onPress={() => Alert.alert(t('recipeDetail.share'), t('recipeDetail.shareSoon'))}
         />
       </View>
     </View>

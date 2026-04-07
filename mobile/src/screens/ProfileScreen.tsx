@@ -12,12 +12,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../context/AuthContext';
 import { fetchApi } from '../api/client';
 import { colors, fonts, fontSizes, spacing } from '../theme';
 import type { ProfileStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<ProfileStackParamList, 'Profile'>;
+type Lang = 'en' | 'tr';
 
 interface RecipeSummary {
   id: string;
@@ -34,12 +37,6 @@ const ROLE_COLORS: Record<string, string> = {
   expert: colors.primary,
 };
 
-const ROLE_LABELS: Record<string, string> = {
-  learner: 'Learner',
-  cook: 'Cook',
-  expert: 'Expert',
-};
-
 function StarIcon() {
   return (
     <MaterialCommunityIcons name="star" size={12} color={colors.starYellow} />
@@ -49,6 +46,14 @@ function StarIcon() {
 export function ProfileScreen() {
   const { authState, logout } = useAuth();
   const navigation = useNavigation<Nav>();
+  const { t, i18n } = useTranslation('common');
+  const currentLang = (i18n.language === 'tr' ? 'tr' : 'en') as Lang;
+
+  async function toggleLanguage() {
+    const next: Lang = currentLang === 'en' ? 'tr' : 'en';
+    await i18n.changeLanguage(next);
+    SecureStore.setItemAsync('app_language', next);
+  }
 
   const user = authState.status === 'authenticated' ? authState.user : null;
 
@@ -83,7 +88,7 @@ export function ProfileScreen() {
     : '??';
 
   const role = user?.role ?? 'learner';
-  const roleLabel = ROLE_LABELS[role] ?? role;
+  const roleLabel = t(`app.roles.${role}`);
   const roleColor = ROLE_COLORS[role] ?? colors.primary;
 
   const publishedRecipes = recipes.filter((r) => r.isPublished);
@@ -99,13 +104,16 @@ export function ProfileScreen() {
       >
         {/* ── Header ── */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profile</Text>
-          {/* Language toggle — wired up in a later task */}
-          <View style={styles.langToggle}>
-            <Text style={[styles.langOption, styles.langActive]}>EN</Text>
+          <Text style={styles.headerTitle}>{t('profileScreen.title')}</Text>
+          <TouchableOpacity style={styles.langToggle} onPress={toggleLanguage} activeOpacity={0.7}>
+            <Text style={[styles.langOption, currentLang === 'en' && styles.langActive]}>
+              {t('language.short.en')}
+            </Text>
             <Text style={styles.langSep}>|</Text>
-            <Text style={styles.langOption}>TR</Text>
-          </View>
+            <Text style={[styles.langOption, currentLang === 'tr' && styles.langActive]}>
+              {t('language.short.tr')}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* ── User card ── */}
@@ -130,17 +138,17 @@ export function ProfileScreen() {
           <View style={styles.statsRow}>
             <View style={styles.stat}>
               <Text style={styles.statVal}>{recipes.length}</Text>
-              <Text style={styles.statLabel}>Total</Text>
+              <Text style={styles.statLabel}>{t('profileScreen.statTotal')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.stat}>
               <Text style={styles.statVal}>{publishedRecipes.length}</Text>
-              <Text style={styles.statLabel}>Published</Text>
+              <Text style={styles.statLabel}>{t('profileScreen.statPublished')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.stat}>
               <Text style={styles.statVal}>{draftCount}</Text>
-              <Text style={styles.statLabel}>Drafts</Text>
+              <Text style={styles.statLabel}>{t('profileScreen.statDraft')}</Text>
             </View>
           </View>
         )}
@@ -156,7 +164,7 @@ export function ProfileScreen() {
         {/* ── Recent published recipes ── */}
         {!recipesLoading && recentPublished.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recent Recipes</Text>
+            <Text style={styles.sectionTitle}>{t('profileScreen.recentRecipes')}</Text>
             {recentPublished.map((recipe) => (
               <TouchableOpacity
                 key={recipe.id}
@@ -189,7 +197,7 @@ export function ProfileScreen() {
                       ]}
                     >
                       <Text style={styles.typeBadgeText}>
-                        {recipe.type === 'cultural' ? 'Cultural' : 'Community'}
+                        {recipe.type === 'cultural' ? t('library.typeCultural') : t('library.typeCommunity')}
                       </Text>
                     </View>
                     {recipe.averageRating !== null && (
@@ -207,7 +215,7 @@ export function ProfileScreen() {
             {publishedRecipes.length > 5 && (
               <TouchableOpacity style={styles.seeAll} activeOpacity={0.7}>
                 <Text style={styles.seeAllText}>
-                  See all {publishedRecipes.length} recipes
+                  {t('profileScreen.seeAll', { count: publishedRecipes.length })}
                 </Text>
               </TouchableOpacity>
             )}
@@ -216,7 +224,7 @@ export function ProfileScreen() {
 
         {!recipesLoading && recipes.length === 0 && (
           <Text style={styles.emptyText}>
-            No recipes yet. Start creating!
+            {t('profileScreen.noRecipes')}
           </Text>
         )}
 
@@ -231,7 +239,7 @@ export function ProfileScreen() {
             size={18}
             color={colors.negative}
           />
-          <Text style={styles.signOutText}>Log out</Text>
+          <Text style={styles.signOutText}>{t('app.logout')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

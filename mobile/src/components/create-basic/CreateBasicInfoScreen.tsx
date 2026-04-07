@@ -25,6 +25,7 @@ import { StepHeader } from "./StepHeader";
 import { ImportCards } from "./ImportCards";
 import { RecipeParseModal } from "./RecipeParseModal";
 import { OriginSection } from "./OriginSection";
+import { useTranslation } from "react-i18next";
 import { useRecipeForm } from "../../context/RecipeFormContext";
 import { validateBasicInfo } from "../../utils/recipeValidation";
 import { getDishGenres } from "../../api/dish-genres";
@@ -42,6 +43,7 @@ interface ImageItem {
 }
 
 export function CreateBasicInfoScreen() {
+  const { t } = useTranslation("common");
   const navigation =
     useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const isFocused = useIsFocused();
@@ -252,14 +254,14 @@ export function CreateBasicInfoScreen() {
   };
 
   const handleSaveDraft = () => {
-    Alert.alert("Draft Saved", "Your recipe draft has been saved.");
+    Alert.alert(t("create.draftSaved"), t("create.draftSavedMsg"));
   };
 
   const handleClose = () => {
-    Alert.alert("Discard Recipe?", "Your changes will be lost.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("create.discardTitle"), t("create.discardMsg"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Discard",
+        text: t("create.discard"),
         style: "destructive",
         onPress: () => {
           resetDraft();
@@ -297,8 +299,8 @@ export function CreateBasicInfoScreen() {
         <StepHeader
           currentStep={1}
           totalSteps={4}
-          title="Basic Info"
-          subtitle="Lay the foundation for your culinary story."
+          title={t("create.steps.1")}
+          subtitle={t("create.steps.1subtitle")}
         />
 
         <ImportCards onPasteText={() => setParseModalVisible(true)} />
@@ -309,13 +311,13 @@ export function CreateBasicInfoScreen() {
         />
 
         <FormTextInput
-          label="Recipe Title"
+          label={t("create.fields.recipeTitle")}
           value={title}
           onChangeText={(text) => {
             setTitle(text);
             if (errors.title) setErrors((prev) => ({ ...prev, title: "" }));
           }}
-          placeholder="e.g., Nonna's Sunday Ragu"
+          placeholder={t("create.fields.recipeTitlePlaceholder")}
           inputFont="serif"
           inputFontSize={fontSizes["2xl"]}
           error={errors.title}
@@ -335,20 +337,20 @@ export function CreateBasicInfoScreen() {
         />
 
         <FormDropdown
-          label="Genre"
+          label={t("create.fields.genre")}
           value={genreId !== null ? String(genreId) : ""}
           options={genreOptions}
           onSelect={(v) => {
             handleGenreChange(v);
             if (errors.genre) setErrors((p) => ({ ...p, genre: "" }));
           }}
-          placeholder="Select genre"
+          placeholder={t("create.fields.genrePlaceholder")}
           searchable
           error={errors.genre}
         />
 
         <FormDropdown
-          label="Variety"
+          label={t("create.fields.variety")}
           value={varietyId !== null ? String(varietyId) : ""}
           options={varietyOptions}
           onSelect={(id) => {
@@ -356,14 +358,14 @@ export function CreateBasicInfoScreen() {
             if (errors.variety) setErrors((p) => ({ ...p, variety: "" }));
           }}
           placeholder={
-            genreId !== null ? "Select variety" : "Select a genre first"
+            genreId !== null ? t("create.fields.varietyPlaceholder") : t("create.fields.varietyNeedGenre")
           }
           searchable
           error={errors.variety}
         />
 
         <View style={styles.servingSizeRow}>
-          <Text style={styles.servingSizeLabel}>Serving Size</Text>
+          <Text style={styles.servingSizeLabel}>{t("create.fields.servingSize")}</Text>
           <TextInput
             style={[
               styles.servingSizeInput,
@@ -375,7 +377,7 @@ export function CreateBasicInfoScreen() {
               if (errors.servingSize)
                 setErrors((p) => ({ ...p, servingSize: "" }));
             }}
-            placeholder="e.g. 4"
+            placeholder={t("create.fields.servingSizePlaceholder")}
             placeholderTextColor={colors.outline}
             keyboardType="number-pad"
           />
@@ -385,7 +387,7 @@ export function CreateBasicInfoScreen() {
         )}
 
         <ChipSelector
-          label="Dietary Tags"
+          label={t("create.fields.dietaryTags")}
           options={dietaryChipOptions}
           selected={selectedDietaryIds}
           onToggle={(id) =>
@@ -394,7 +396,7 @@ export function CreateBasicInfoScreen() {
         />
 
         <ChipSelector
-          label="Allergen Tags"
+          label={t("create.fields.allergenTags")}
           options={allergenChipOptions}
           selected={selectedAllergenIds}
           onToggle={(id) =>
@@ -403,10 +405,10 @@ export function CreateBasicInfoScreen() {
         />
 
         <FormTextInput
-          label="The Story / Description"
+          label={t("create.fields.story")}
           value={story}
           onChangeText={setStory}
-          placeholder="Share the history of this dish or any special memories..."
+          placeholder={t("create.fields.storyPlaceholder")}
           multiline
           numberOfLines={4}
           optional
@@ -414,7 +416,7 @@ export function CreateBasicInfoScreen() {
 
         {/* ── Recipe Images ── */}
         <View style={styles.imagesSection}>
-          <Text style={styles.imagesLabel}>RECIPE IMAGES</Text>
+          <Text style={styles.imagesLabel}>{t("create.media.title").toUpperCase()}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -467,7 +469,7 @@ export function CreateBasicInfoScreen() {
                 size={28}
                 color={colors.primary}
               />
-              <Text style={styles.addImageText}>Add{"\n"}Photo</Text>
+              <Text style={styles.addImageText}>{t("create.media.addPhoto")}</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -477,7 +479,7 @@ export function CreateBasicInfoScreen() {
           onPress={handleNext}
           activeOpacity={0.8}
         >
-          <Text style={styles.nextButtonText}>Next: Ingredients</Text>
+          <Text style={styles.nextButtonText}>{t("create.continueIngredients")}</Text>
           <MaterialCommunityIcons
             name="arrow-right"
             size={20}
@@ -490,7 +492,7 @@ export function CreateBasicInfoScreen() {
           onPress={handleSaveDraft}
           activeOpacity={0.7}
         >
-          <Text style={styles.saveDraftText}>Save Draft</Text>
+          <Text style={styles.saveDraftText}>{t("create.saveDraft")}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

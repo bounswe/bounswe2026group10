@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import {
   fetchCommunityPicks,
   fetchGenres,
@@ -25,6 +26,7 @@ import { colors, fonts, fontSizes, spacing } from '../theme';
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const { authState } = useAuth();
+  const { t } = useTranslation('common');
   const [communityPicks, setCommunityPicks] = useState<RecipeListItem[]>([]);
   const [genres, setGenres] = useState<DishGenre[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +67,11 @@ export function HomeScreen() {
     );
   }
 
+  const greeting =
+    authState.status === 'authenticated'
+      ? t('home.hi', { username: authState.user.username })
+      : t('home.discover');
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
@@ -79,15 +86,13 @@ export function HomeScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>
-            {authState.status === 'authenticated' ? `Hi, ${authState.user.username}!` : 'Discover'}
-          </Text>
-          <Text style={styles.subtitle}>Heritage recipes from around the world</Text>
+          <Text style={styles.greeting}>{greeting}</Text>
+          <Text style={styles.subtitle}>{t('home.subtitle')}</Text>
         </View>
 
         {/* Community Picks */}
         <View style={styles.section}>
-          <HomeSectionHeader title="Community Picks" />
+          <HomeSectionHeader title={t('home.communityPicks')} />
           {communityPicks.length > 0 ? (
             <ScrollView
               horizontal
@@ -104,14 +109,14 @@ export function HomeScreen() {
             </ScrollView>
           ) : (
             <View style={styles.emptySection}>
-              <Text style={styles.emptyText}>No recipes yet — check back soon!</Text>
+              <Text style={styles.emptyText}>{t('home.noRecipes')}</Text>
             </View>
           )}
         </View>
 
         {/* Browse by Genre */}
         <View style={styles.section}>
-          <HomeSectionHeader title="Browse by Genre" />
+          <HomeSectionHeader title={t('home.browseByGenre')} />
           {genres.length > 0 ? (
             <ScrollView
               horizontal
@@ -134,7 +139,7 @@ export function HomeScreen() {
             </ScrollView>
           ) : (
             <View style={styles.emptySection}>
-              <Text style={styles.emptyText}>No genres available</Text>
+              <Text style={styles.emptyText}>{t('home.noGenres')}</Text>
             </View>
           )}
         </View>

@@ -28,6 +28,7 @@ import { RecipeCard } from '../components/search/RecipeCard';
 import { SortRow } from '../components/search/SortRow';
 import { FilterModal, type FilterState, EMPTY_FILTERS } from '../components/search/FilterModal';
 import { SearchResultsSheet, type SheetSection } from '../components/search/SearchResultsSheet';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSizes, spacing } from '../theme';
 
 // How many items to preview per section before the "See All" box
@@ -38,6 +39,7 @@ type NavigationProp = NativeStackNavigationProp<any>;
 export function SearchScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<SearchStackParamList, 'Search'>>();
+  const { t } = useTranslation('common');
   const [query, setQuery] = useState(route.params?.initialQuery ?? '');
   const [allGenres, setAllGenres] = useState<DishGenre[]>([]);
   const [allVarieties, setAllVarieties] = useState<DishVarietyResult[]>([]);
@@ -256,7 +258,7 @@ export function SearchScreen() {
             <>
               {/* ── Genres section ── */}
               <SectionBox
-                title="Genres"
+                title={t('search.genres')}
                 count={activeGenres.length}
                 query={isSearchActive ? query : undefined}
                 onSeeAll={() => openSheet('genres')}
@@ -284,7 +286,7 @@ export function SearchScreen() {
 
               {/* ── Varieties section ── */}
               <SectionBox
-                title="Varieties"
+                title={t('search.varieties')}
                 count={activeVarieties.length}
                 query={isSearchActive ? query : undefined}
                 onSeeAll={() => openSheet('varieties')}
@@ -300,7 +302,7 @@ export function SearchScreen() {
 
               {/* ── Recipes section ── */}
               <SectionBox
-                title="Recipes"
+                title={t('search.recipes')}
                 count={activeRecipes.length}
                 query={isSearchActive ? query : undefined}
                 onSeeAll={() => openSheet('recipes')}
@@ -334,8 +336,9 @@ interface SectionBoxProps {
 }
 
 function SectionBox({ title, count, query, onSeeAll, children }: SectionBoxProps) {
+  const { t } = useTranslation('common');
   const heading = query
-    ? `${count} ${title} for "${query}"`
+    ? t('search.resultsFor', { count, title, query })
     : title;
 
   return (
@@ -347,7 +350,7 @@ function SectionBox({ title, count, query, onSeeAll, children }: SectionBoxProps
       >
         <Text style={styles.sectionBoxTitle}>{heading}</Text>
         <View style={styles.seeAllRow}>
-          <Text style={styles.seeAllText}>See All</Text>
+          <Text style={styles.seeAllText}>{t('search.seeAll')}</Text>
           <MaterialCommunityIcons
             name="chevron-right"
             size={18}

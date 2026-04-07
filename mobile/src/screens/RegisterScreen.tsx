@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation/types';
 import { FormTextInput } from '../components/shared/FormTextInput';
@@ -21,13 +22,14 @@ import { colors, fonts, fontSizes, spacing } from '../theme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
-const LANGUAGE_OPTIONS = [
-  { label: 'Turkish', value: 'tr' },
-  { label: 'English', value: 'en' },
-];
-
 export function RegisterScreen({ navigation }: Props) {
   const { register } = useAuth();
+  const { t } = useTranslation('common');
+
+  const LANGUAGE_OPTIONS = [
+    { label: t('auth.register.languageTurkish'), value: 'tr' },
+    { label: t('auth.register.languageEnglish'), value: 'en' },
+  ];
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -50,15 +52,15 @@ export function RegisterScreen({ navigation }: Props) {
 
   function validate(): boolean {
     const next: Record<string, string> = {};
-    if (!firstName.trim()) next.firstName = 'Required';
-    if (!lastName.trim()) next.lastName = 'Required';
-    if (!username.trim()) next.username = 'Required';
-    if (!email.trim() || !email.includes('@')) next.email = 'Valid email required';
-    if (password.length < 8) next.password = 'At least 8 characters';
-    if (password !== confirmPassword) next.confirmPassword = 'Passwords do not match';
-    if (!role) next.role = 'Please choose a role';
-    if (!region) next.region = 'Required';
-    if (!language) next.language = 'Required';
+    if (!firstName.trim()) next.firstName = t('auth.register.errors.required');
+    if (!lastName.trim()) next.lastName = t('auth.register.errors.required');
+    if (!username.trim()) next.username = t('auth.register.errors.required');
+    if (!email.trim() || !email.includes('@')) next.email = t('auth.register.errors.emailInvalid');
+    if (password.length < 8) next.password = t('auth.register.errors.passwordMin');
+    if (password !== confirmPassword) next.confirmPassword = t('auth.register.errors.confirmMismatch');
+    if (!role) next.role = t('auth.register.errors.roleRequired');
+    if (!region) next.region = t('auth.register.errors.required');
+    if (!language) next.language = t('auth.register.errors.required');
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -78,7 +80,7 @@ export function RegisterScreen({ navigation }: Props) {
         preferredLanguage: language,
       });
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Registration failed. Please try again.';
+      const msg = e instanceof Error ? e.message : t('auth.register.errors.registerFailed');
       setErrors({ submit: msg });
     } finally {
       setLoading(false);
@@ -92,7 +94,7 @@ export function RegisterScreen({ navigation }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Roots & Recipes</Text>
+        <Text style={styles.headerTitle}>{t('app.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -112,69 +114,69 @@ export function RegisterScreen({ navigation }: Props) {
           )}
 
           <FormTextInput
-            label="First Name"
+            label={t('auth.register.firstName')}
             value={firstName}
             onChangeText={setFirstName}
-            placeholder="First name"
+            placeholder={t('auth.register.firstNamePlaceholder')}
             error={errors.firstName}
           />
           <FormTextInput
-            label="Last Name"
+            label={t('auth.register.lastName')}
             value={lastName}
             onChangeText={setLastName}
-            placeholder="Last name"
+            placeholder={t('auth.register.lastNamePlaceholder')}
             error={errors.lastName}
           />
           <FormTextInput
-            label="Username"
+            label={t('auth.register.username')}
             value={username}
             onChangeText={setUsername}
-            placeholder="your_username"
+            placeholder={t('auth.register.usernamePlaceholder')}
             error={errors.username}
           />
           <FormTextInput
-            label="Email Address"
+            label={t('auth.register.email')}
             value={email}
             onChangeText={setEmail}
-            placeholder="your@email.com"
+            placeholder={t('auth.register.emailPlaceholder')}
             error={errors.email}
           />
           <FormTextInput
-            label="Password"
+            label={t('auth.register.password')}
             value={password}
             onChangeText={setPassword}
-            placeholder="••••••••"
+            placeholder={t('auth.register.passwordPlaceholder')}
             error={errors.password}
           />
           <FormTextInput
-            label="Confirm Password"
+            label={t('auth.register.confirmPassword')}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            placeholder="Re-enter password"
+            placeholder={t('auth.register.confirmPasswordPlaceholder')}
             error={errors.confirmPassword}
           />
 
           {/* Role selection */}
-          <Text style={styles.sectionLabel}>Choose Your Role</Text>
+          <Text style={styles.sectionLabel}>{t('auth.register.rolesLegend')}</Text>
           {errors.role && <Text style={styles.fieldError}>{errors.role}</Text>}
           <View style={styles.roleRow}>
             <RoleCard
-              title="Learner"
-              description="Exploring family traditions and new flavors."
+              title={t('auth.register.roleLearner')}
+              description={t('auth.register.roleLearnerDesc')}
               icon="book-open-variant"
               selected={role === 'learner'}
               onPress={() => setRole('learner')}
             />
             <RoleCard
-              title="Cook"
-              description="Sharing and preserving daily kitchen rituals."
+              title={t('auth.register.roleCook')}
+              description={t('auth.register.roleCookDesc')}
               icon="chef-hat"
               selected={role === 'cook'}
               onPress={() => setRole('cook')}
             />
             <RoleCard
-              title="Expert"
-              description="Guiding others with culinary expertise and cultural knowledge."
+              title={t('auth.register.roleExpert')}
+              description={t('auth.register.roleExpertDesc')}
               icon="medal-outline"
               selected={role === 'expert'}
               onPress={() => setRole('expert')}
@@ -182,20 +184,20 @@ export function RegisterScreen({ navigation }: Props) {
           </View>
 
           <FormDropdown
-            label="Region"
+            label={t('auth.register.region')}
             value={region}
             options={regionOptions}
             onSelect={setRegion}
-            placeholder="Select region…"
+            placeholder={t('auth.register.regionPlaceholder')}
             error={errors.region}
             searchable
           />
           <FormDropdown
-            label="Language"
+            label={t('auth.register.profileLanguage')}
             value={language}
             options={LANGUAGE_OPTIONS}
             onSelect={setLanguage}
-            placeholder="Select language…"
+            placeholder={t('auth.register.languagePlaceholder')}
             error={errors.language}
           />
 
@@ -208,14 +210,14 @@ export function RegisterScreen({ navigation }: Props) {
             {loading ? (
               <ActivityIndicator color={colors.white} />
             ) : (
-              <Text style={styles.submitButtonText}>Create Account</Text>
+              <Text style={styles.submitButtonText}>{t('auth.register.submit')}</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.switchRow}>
-            <Text style={styles.switchText}>Already have an account? </Text>
+            <Text style={styles.switchText}>{t('auth.register.footerHasAccount')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.switchLink}>Sign In</Text>
+              <Text style={styles.switchLink}>{t('auth.register.signIn')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

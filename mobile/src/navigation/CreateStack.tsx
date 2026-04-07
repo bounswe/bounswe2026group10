@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { useTranslation } from 'react-i18next';
 import type { CreateStackParamList, RootTabParamList } from './types';
 import { RecipeFormProvider } from '../context/RecipeFormContext';
 import { useAuth } from '../context/AuthContext';
@@ -16,13 +17,14 @@ const Stack = createNativeStackNavigator<CreateStackParamList>();
 export function CreateStack() {
   const { authState } = useAuth();
   const navigation = useNavigation<BottomTabNavigationProp<RootTabParamList>>();
+  const { t } = useTranslation('common');
 
   const role = authState.status === 'authenticated' ? (authState.user.role ?? '').toUpperCase() : '';
   const canCreate = role === 'COOK' || role === 'EXPERT';
 
   useEffect(() => {
     if (!canCreate) {
-      Alert.alert('Permission Required', 'You should be a Cook or Expert to create a Recipe.');
+      Alert.alert(t('nav.createDisabledTitle'), t('nav.createDisabledHint'));
       navigation.navigate('HomeTab');
     }
   }, [canCreate]);

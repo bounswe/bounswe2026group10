@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation/types';
 import { useAuth } from '../context/AuthContext';
@@ -10,19 +11,20 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
 
 export function WelcomeScreen({ navigation }: Props) {
   const { continueAsGuest } = useAuth();
+  const { t } = useTranslation('common');
 
   return (
     <View style={styles.bg}>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         {/* Brand */}
         <View style={styles.brandArea}>
-          <Text style={styles.appName}>Roots & Recipes</Text>
+          <Text style={styles.appName}>{t('app.title')}</Text>
           <Text style={styles.headline}>
-            {'Gathering the\n'}
-            <Text style={styles.headlineItalic}>Flavors</Text>
-            {' of\nGenerations.'}
+            {t('welcome.headlineBefore') + '\n'}
+            <Text style={styles.headlineItalic}>{t('welcome.headlineAccent')}</Text>
+            {' ' + t('welcome.headlineAfter')}
           </Text>
-          <Text style={styles.tagline}>Preserve. Cook. Share.</Text>
+          <Text style={styles.tagline}>{t('welcome.tagline')}</Text>
           <View style={styles.divider} />
         </View>
 
@@ -33,7 +35,7 @@ export function WelcomeScreen({ navigation }: Props) {
             onPress={() => navigation.navigate('Register')}
             activeOpacity={0.85}
           >
-            <Text style={styles.primaryButtonText}>Create Account</Text>
+            <Text style={styles.primaryButtonText}>{t('welcome.createAccount')}</Text>
             <Text style={styles.primaryButtonArrow}>→</Text>
           </TouchableOpacity>
 
@@ -42,11 +44,11 @@ export function WelcomeScreen({ navigation }: Props) {
             onPress={() => navigation.navigate('Login')}
             activeOpacity={0.85}
           >
-            <Text style={styles.secondaryButtonText}>Sign In</Text>
+            <Text style={styles.secondaryButtonText}>{t('welcome.signIn')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={continueAsGuest} activeOpacity={0.7}>
-            <Text style={styles.guestLink}>Continue as Guest</Text>
+            <Text style={styles.guestLink}>{t('welcome.continueGuest')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

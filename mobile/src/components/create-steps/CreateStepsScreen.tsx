@@ -22,6 +22,7 @@ import { StepHeader } from '../create-basic/StepHeader';
 import { StepEditor } from './StepEditor';
 import type { StepFormItem, StepFormItemErrors } from './StepEditor';
 import { uploadVideo } from '../../api/video';
+import { useTranslation } from 'react-i18next';
 import { useRecipeForm } from '../../context/RecipeFormContext';
 import { validateSteps } from '../../utils/recipeValidation';
 import type { CreateStackParamList } from '../../navigation/types';
@@ -45,6 +46,7 @@ function createEmptyStep(): StepFormItem {
 }
 
 export function CreateStepsScreen() {
+  const { t } = useTranslation('common');
   const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const { draft, updateDraft, resetDraft } = useRecipeForm();
 
@@ -155,14 +157,14 @@ export function CreateStepsScreen() {
   };
 
   const handleSaveDraft = () => {
-    Alert.alert('Draft Saved', 'Your recipe draft has been saved.');
+    Alert.alert(t('create.draftSaved'), t('create.draftSavedMsg'));
   };
 
   const handleClose = () => {
-    Alert.alert('Discard Recipe?', 'Your changes will be lost.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('create.discardTitle'), t('create.discardMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Discard',
+        text: t('create.discard'),
         style: 'destructive',
         onPress: () => {
           resetDraft();
@@ -189,15 +191,15 @@ export function CreateStepsScreen() {
         <StepHeader
           currentStep={3}
           totalSteps={4}
-          title="Recipe Steps"
-          subtitle="Break down the preparation into steps, just as they were taught to you."
+          title={t('create.steps.3')}
+          subtitle={t('create.steps.3subtitle')}
         />
 
         {/* Single recipe video upload */}
         <View style={styles.videoSection}>
           <View style={styles.videoLabelRow}>
-            <Text style={styles.videoLabel}>RECIPE VIDEO</Text>
-            <Text style={styles.optionalLabel}> (optional)</Text>
+            <Text style={styles.videoLabel}>{t('create.media.video').toUpperCase()}</Text>
+            <Text style={styles.optionalLabel}> {t('create.media.videoOptional')}</Text>
           </View>
 
           {uploading ? (
@@ -205,7 +207,7 @@ export function CreateStepsScreen() {
               <View style={styles.videoFilenameRow}>
                 <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={styles.videoFilenameText} numberOfLines={1}>
-                  {videoFileName ?? 'video'} — uploading…
+                  {videoFileName ?? 'video'} — {t('create.media.videoUploading')}
                 </Text>
               </View>
             </View>
@@ -214,7 +216,7 @@ export function CreateStepsScreen() {
               <View style={styles.videoFilenameRow}>
                 <MaterialCommunityIcons name="check-circle" size={20} color={colors.positive} />
                 <Text style={styles.videoFilenameText} numberOfLines={1}>
-                  {videoFileName ?? 'video'} — uploaded
+                  {videoFileName ?? 'video'} — {t('create.media.videoUploaded')}
                 </Text>
                 <TouchableOpacity
                   onPress={handleRemoveVideo}
@@ -238,7 +240,7 @@ export function CreateStepsScreen() {
                 />
                 <TouchableOpacity onPress={handlePickVideo} style={styles.videoSelectButton} activeOpacity={0.7}>
                   <Text style={[styles.videoSelectButtonText, videoError ? styles.videoSelectButtonTextError : null]}>
-                    Select Video
+                    {t('create.media.videoSelect')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -262,7 +264,7 @@ export function CreateStepsScreen() {
 
         <TouchableOpacity style={styles.addStepButton} onPress={handleAddStep} activeOpacity={0.7}>
           <MaterialCommunityIcons name="plus-circle-outline" size={20} color={colors.primary} />
-          <Text style={styles.addStepText}>Add Step</Text>
+          <Text style={styles.addStepText}>{t('create.instructions.addStep')}</Text>
         </TouchableOpacity>
 
         <View style={styles.navigationRow}>
@@ -272,17 +274,17 @@ export function CreateStepsScreen() {
             activeOpacity={0.7}
           >
             <MaterialCommunityIcons name="arrow-left" size={20} color={colors.onSurface} />
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>{t('common.back')}</Text>
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.nextButton} onPress={handleNext} activeOpacity={0.8}>
-          <Text style={styles.nextButtonText}>Next: Review</Text>
+          <Text style={styles.nextButtonText}>{t('create.continueReview')}</Text>
           <MaterialCommunityIcons name="arrow-right" size={20} color={colors.white} />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.saveDraftButton} onPress={handleSaveDraft} activeOpacity={0.7}>
-          <Text style={styles.saveDraftText}>Save Draft</Text>
+          <Text style={styles.saveDraftText}>{t('create.saveDraft')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

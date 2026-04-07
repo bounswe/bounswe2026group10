@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import type { DishGenre } from '../../api/dish-genres';
 import type { DishVarietyResult, Recipe } from '../../api/search';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
@@ -31,12 +32,6 @@ interface SearchResultsSheetProps {
   onVarietyPress: (variety: DishVarietyResult) => void;
 }
 
-const SECTION_LABELS: Record<SheetSection, string> = {
-  genres: 'Genres',
-  varieties: 'Varieties',
-  recipes: 'Recipes',
-};
-
 export function SearchResultsSheet({
   visible,
   onClose,
@@ -49,7 +44,13 @@ export function SearchResultsSheet({
   onVarietyPress,
 }: SearchResultsSheetProps) {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const { t } = useTranslation('common');
   const isSearchActive = query.trim().length > 0;
+  const SECTION_LABELS: Record<SheetSection, string> = {
+    genres: t('search.genres'),
+    varieties: t('search.varieties'),
+    recipes: t('search.recipes'),
+  };
   const label = SECTION_LABELS[section];
 
   const count =
@@ -60,7 +61,7 @@ export function SearchResultsSheet({
       : recipes.length;
 
   const heading = isSearchActive
-    ? `${count} ${label} for "${query}"`
+    ? t('search.resultsFor', { count, title: label, query })
     : label;
 
   return (
@@ -160,6 +161,7 @@ export function SearchResultsSheet({
 }
 
 function EmptyState({ label }: { label: string }) {
+  const { t } = useTranslation('common');
   return (
     <View style={styles.emptyState}>
       <MaterialCommunityIcons
@@ -167,8 +169,8 @@ function EmptyState({ label }: { label: string }) {
         size={48}
         color={colors.outline}
       />
-      <Text style={styles.emptyTitle}>No {label} found</Text>
-      <Text style={styles.emptySubtitle}>Try adjusting your search or filters</Text>
+      <Text style={styles.emptyTitle}>{t('search.noResults', { label })}</Text>
+      <Text style={styles.emptySubtitle}>{t('search.noResultsHint')}</Text>
     </View>
   );
 }

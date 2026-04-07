@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { fetchDietaryTags, type DietaryTag } from '../../api/search';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
@@ -37,6 +38,7 @@ export const EMPTY_FILTERS: FilterState = {
 };
 
 export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters }: FilterModalProps) {
+  const { t } = useTranslation('common');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     allergens: false,
     dietary: false,
@@ -112,7 +114,7 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
       <SafeAreaView style={styles.container} edges={['top']}>
         {/* Header */}
         <View style={styles.header} pointerEvents="box-none">
-          <Text style={styles.title}>Filters</Text>
+          <Text style={styles.title}>{t('search.filters')}</Text>
           <TouchableOpacity
             onPress={onClose}
             style={styles.closeButton}
@@ -135,7 +137,7 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
                   style={styles.sectionHeader}
                   onPress={() => toggleSection('allergens')}
                 >
-                  <Text style={styles.filterTitle}>Exclude Allergens</Text>
+                  <Text style={styles.filterTitle}>{t('search.allergens')}</Text>
                   <MaterialCommunityIcons
                     name={expandedSections.allergens ? 'chevron-up' : 'chevron-down'}
                     size={20}
@@ -176,7 +178,7 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
                   style={styles.sectionHeader}
                   onPress={() => toggleSection('dietary')}
                 >
-                  <Text style={styles.filterTitle}>Dietary Preferences</Text>
+                  <Text style={styles.filterTitle}>{t('search.dietaryTags')}</Text>
                   <MaterialCommunityIcons
                     name={expandedSections.dietary ? 'chevron-up' : 'chevron-down'}
                     size={20}
@@ -217,10 +219,10 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
         {/* Footer Buttons */}
         <View style={styles.footer}>
           <TouchableOpacity style={styles.buttonSecondary} onPress={handleClear}>
-            <Text style={styles.buttonSecondaryText}>Clear All</Text>
+            <Text style={styles.buttonSecondaryText}>{t('search.clearAll')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.buttonPrimary} onPress={handleApply}>
-            <Text style={styles.buttonPrimaryText}>Apply Filters</Text>
+            <Text style={styles.buttonPrimaryText}>{t('search.applyFilters')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

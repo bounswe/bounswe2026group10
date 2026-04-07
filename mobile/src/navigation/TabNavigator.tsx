@@ -2,6 +2,7 @@ import React from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import type { RootTabParamList } from './types';
 import { useAuth } from '../context/AuthContext';
 import { HomeStack } from './HomeStack';
@@ -15,6 +16,7 @@ const Tab = createBottomTabNavigator<RootTabParamList>();
 
 export function TabNavigator() {
   const { authState } = useAuth();
+  const { t } = useTranslation('common');
 
   const role =
     authState.status === 'authenticated' ? (authState.user.role ?? '').toUpperCase() : '';
@@ -44,7 +46,7 @@ export function TabNavigator() {
         name="HomeTab"
         component={HomeStack}
         options={{
-          tabBarLabel: 'Home',
+          tabBarLabel: t('nav.home'),
           tabBarIcon: ({ color, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'home' : 'home-outline'}
@@ -58,7 +60,7 @@ export function TabNavigator() {
         name="SearchTab"
         component={SearchStack}
         options={{
-          tabBarLabel: 'Search',
+          tabBarLabel: t('nav.search'),
           tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons name="magnify" size={24} color={color} />
           ),
@@ -68,7 +70,7 @@ export function TabNavigator() {
         name="CreateTab"
         component={CreateStack}
         options={{
-          tabBarLabel: 'Create',
+          tabBarLabel: t('nav.create'),
           tabBarIcon: ({ focused }) => (
             <View style={styles.createButton}>
               <MaterialCommunityIcons
@@ -84,8 +86,8 @@ export function TabNavigator() {
             if (!canCreate) {
               e.preventDefault();
               Alert.alert(
-                'Permission Required',
-                'You should be a Cook or Expert to create a Recipe.'
+                t('nav.createDisabledTitle'),
+                t('nav.createDisabledHint')
               );
             }
           },
@@ -95,7 +97,7 @@ export function TabNavigator() {
         name="LibraryTab"
         component={LibraryStack}
         options={{
-          tabBarLabel: 'Library',
+          tabBarLabel: t('nav.library'),
           tabBarIcon: ({ color, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'bookmark' : 'bookmark-outline'}
@@ -109,7 +111,7 @@ export function TabNavigator() {
         name="ProfileTab"
         component={ProfileStack}
         options={{
-          tabBarLabel: 'Profile',
+          tabBarLabel: t('nav.profile'),
           tabBarIcon: ({ color, focused }) => (
             <MaterialCommunityIcons
               name={focused ? 'account' : 'account-outline'}

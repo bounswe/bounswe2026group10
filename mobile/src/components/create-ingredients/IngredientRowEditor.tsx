@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import type { MeasurementUnit } from '../../types/common';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 import { UNIT_OPTIONS } from '../../constants/ingredientsAndTools';
@@ -37,6 +38,7 @@ export function IngredientRowEditor({
   onRemove,
   error,
 }: IngredientRowEditorProps) {
+  const { t } = useTranslation('common');
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const query = ingredient.name.trim().toLowerCase();
@@ -60,12 +62,12 @@ export function IngredientRowEditor({
     <View style={styles.container}>
       <View style={styles.row}>
         <View style={styles.nameContainer}>
-          <Text style={styles.fieldLabel}>INGREDIENT NAME</Text>
+          <Text style={styles.fieldLabel}>{t('create.ingredients.nameLabel')}</Text>
           <TextInput
             style={[styles.input, error?.name && styles.inputError]}
             value={ingredient.name}
             onChangeText={handleNameChange}
-            placeholder="e.g. Fresh Basil"
+            placeholder={t('create.ingredients.namePlaceholder')}
             placeholderTextColor={colors.outline}
             onFocus={() => {
               if (ingredient.name.length > 0) setShowSuggestions(true);
@@ -101,7 +103,7 @@ export function IngredientRowEditor({
 
       <View style={styles.quantityRow}>
         <View style={styles.quantityContainer}>
-          <Text style={styles.fieldLabel}>QUANTITY</Text>
+          <Text style={styles.fieldLabel}>{t('create.ingredients.quantityLabel')}</Text>
           <TextInput
             style={[styles.input, styles.quantityInput, error?.quantity && styles.inputError]}
             value={ingredient.quantity}
@@ -114,13 +116,13 @@ export function IngredientRowEditor({
         </View>
 
         <View style={styles.unitContainer}>
-          <Text style={styles.fieldLabel}>UNIT</Text>
+          <Text style={styles.fieldLabel}>{t('create.ingredients.unitLabel')}</Text>
           <FormDropdown
             label=""
             value={ingredient.unit}
             options={UNIT_OPTIONS}
             onSelect={(value) => onUpdate({ ...ingredient, unit: value as MeasurementUnit })}
-            placeholder="Unit"
+            placeholder={t('create.ingredients.unitPlaceholder')}
           />
         </View>
       </View>

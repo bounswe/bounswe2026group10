@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
 interface SearchBarProps {
@@ -11,13 +12,14 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ value, onChangeText, onClear, onFilterPress }: SearchBarProps) {
+  const { t } = useTranslation('common');
   return (
     <View style={styles.container}>
       <View style={styles.inputWrapper}>
         <MaterialCommunityIcons name="magnify" size={20} color={colors.onSurfaceVariant} />
         <TextInput
           style={styles.input}
-          placeholder="Search heirloom flavors..."
+          placeholder={t('search.placeholder')}
           placeholderTextColor={colors.onSurfaceVariant}
           value={value}
           onChangeText={onChangeText}
