@@ -1,7 +1,7 @@
 import React, { ComponentProps } from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { FilterModal } from '../components/search/FilterModal';
-import { fetchDietaryTags } from '../api/search';
+import { fetchDietaryTags, fetchLocations } from '../api/search';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -11,9 +11,11 @@ jest.mock('@expo/vector-icons', () => ({
 
 jest.mock('../api/search', () => ({
   fetchDietaryTags: jest.fn(),
+  fetchLocations: jest.fn(),
 }));
 
 const mockFetchTags = fetchDietaryTags as jest.MockedFunction<typeof fetchDietaryTags>;
+const mockFetchLocations = fetchLocations as jest.MockedFunction<typeof fetchLocations>;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -39,6 +41,7 @@ describe('FilterModal', () => {
       { id: 1, name: 'Vegetarian', category: 'dietary' },
       { id: 2, name: 'Peanuts', category: 'allergen' },
     ]);
+    mockFetchLocations.mockResolvedValue(['Turkey', 'Italy']);
   });
 
   describe('rendering', () => {
@@ -123,6 +126,8 @@ describe('FilterModal', () => {
         excludeAllergenNames: ['Peanuts'],
         dietaryTagIds: [1],
         dietaryTagNames: ['Vegetarian'],
+        country: 'Turkey',
+        city: 'Istanbul',
       };
       const { getByText, rerender } = await renderAndFlush({
         ...defaultProps,
@@ -140,6 +145,8 @@ describe('FilterModal', () => {
             excludeAllergenNames: [],
             dietaryTagIds: [],
             dietaryTagNames: [],
+            country: '',
+            city: '',
           }}
         />
       );
