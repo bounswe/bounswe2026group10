@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import type { Recipe } from '../../api/search';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
@@ -10,6 +11,7 @@ interface RecipeCardProps {
 }
 
 export function RecipeCard({ recipe, onPress }: RecipeCardProps) {
+  const { t } = useTranslation('common');
   const isCultural = recipe.recipeType === 'cultural';
   const imageSource = recipe.imageUrl
     ? { uri: recipe.imageUrl }
@@ -25,7 +27,7 @@ export function RecipeCard({ recipe, onPress }: RecipeCardProps) {
         {/* Recipe type badge — top-right, like the example image */}
         <View style={[styles.badge, isCultural ? styles.badgeCultural : styles.badgeCommunity]}>
           <Text style={styles.badgeText}>
-            {isCultural ? 'CULTURAL' : 'COMMUNITY'}
+            {isCultural ? t('library.typeCultural').toUpperCase() : t('library.typeCommunity').toUpperCase()}
           </Text>
         </View>
       </View>
@@ -43,7 +45,7 @@ export function RecipeCard({ recipe, onPress }: RecipeCardProps) {
             <Text style={styles.ratingText}>
               {recipe.averageRating > 0
                 ? recipe.averageRating.toFixed(1)
-                : 'No ratings'}
+                : t('common.noRatings')}
             </Text>
             {recipe.ratingCount > 0 && (
               <Text style={styles.ratingCount}>({recipe.ratingCount})</Text>

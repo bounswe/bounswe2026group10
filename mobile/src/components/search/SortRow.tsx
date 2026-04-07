@@ -1,12 +1,8 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { SortOption } from '../../api/search';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
-
-const SORT_OPTIONS: { key: SortOption; label: string }[] = [
-  { key: 'rating', label: 'Best Rating' },
-  { key: 'recent', label: 'Most Recent' },
-];
 
 interface SortRowProps {
   activeSort: SortOption;
@@ -14,9 +10,14 @@ interface SortRowProps {
 }
 
 export function SortRow({ activeSort, onSortChange }: SortRowProps) {
+  const { t } = useTranslation('common');
+  const SORT_OPTIONS: { key: SortOption; label: string }[] = [
+    { key: 'rating', label: t('search.sortBestRating') },
+    { key: 'recent', label: t('search.sortMostRecent') },
+  ];
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Sort:</Text>
+      <Text style={styles.label}>{t('search.sortLabel')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {SORT_OPTIONS.map((option) => {
           const isActive = option.key === activeSort;
