@@ -101,8 +101,8 @@ describe('buildRecipePayload', () => {
     const payload = buildRecipePayload(
       makeDraft({
         steps: [
-          { title: 'Mix', description: 'Mix everything', timestamp: '' },
-          { title: 'Bake', description: 'Bake it', timestamp: '' },
+          { description: 'Mix everything', timestamp: '' },
+          { description: 'Bake it', timestamp: '' },
         ],
       })
     );
@@ -110,22 +110,13 @@ describe('buildRecipePayload', () => {
     expect(payload.steps[1].stepOrder).toBe(2);
   });
 
-  it('falls back to step title when description is empty', () => {
+  it('sets description from step description', () => {
     const payload = buildRecipePayload(
       makeDraft({
-        steps: [{ title: 'Preheat oven', description: '', timestamp: '' }],
+        steps: [{ description: 'Preheat oven', timestamp: '' }],
       })
     );
     expect(payload.steps[0].description).toBe('Preheat oven');
-  });
-
-  it('uses description over title when both are present', () => {
-    const payload = buildRecipePayload(
-      makeDraft({
-        steps: [{ title: 'Step 1', description: 'Detailed description', timestamp: '' }],
-      })
-    );
-    expect(payload.steps[0].description).toBe('Detailed description');
   });
 
   it('combines dietaryTagIds and allergenTagIds into tagIds', () => {
