@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
 interface HomeSectionHeaderProps {
@@ -8,12 +9,13 @@ interface HomeSectionHeaderProps {
 }
 
 export function HomeSectionHeader({ title, onSeeAll }: HomeSectionHeaderProps) {
+  const { t } = useTranslation('common');
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
       {onSeeAll && (
         <TouchableOpacity onPress={onSeeAll} activeOpacity={0.7}>
-          <Text style={styles.seeAll}>See All</Text>
+          <Text style={styles.seeAll}>{t('home.seeAll')}</Text>
         </TouchableOpacity>
       )}
     </View>
