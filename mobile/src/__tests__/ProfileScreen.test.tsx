@@ -8,6 +8,50 @@ jest.mock('@expo/vector-icons', () => ({
   MaterialCommunityIcons: 'MaterialCommunityIcons',
 }));
 
+jest.mock('expo-secure-store', () => ({
+  setItemAsync: jest.fn().mockResolvedValue(undefined),
+  getItemAsync: jest.fn().mockResolvedValue(null),
+}));
+
+const mockChangeLanguage = jest.fn().mockResolvedValue(undefined);
+let mockLanguage = 'en';
+
+// Minimal English strings needed by ProfileScreen
+const EN: Record<string, string> = {
+  'profileScreen.title': 'Profile',
+  'profileScreen.statTotal': 'Total',
+  'profileScreen.statPublished': 'Published',
+  'profileScreen.statDraft': 'Drafts',
+  'profileScreen.recentRecipes': 'Recent Recipes',
+  'profileScreen.seeAll': 'See all {{count}} recipes',
+  'profileScreen.noRecipes': 'No recipes yet. Start creating!',
+  'app.logout': 'Log out',
+  'app.roles.learner': 'Learner',
+  'app.roles.cook': 'Cook',
+  'app.roles.expert': 'Expert',
+  'language.short.en': 'EN',
+  'language.short.tr': 'TR',
+  'library.typeCultural': 'Cultural',
+  'library.typeCommunity': 'Community',
+};
+
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, params?: Record<string, string | number>) => {
+      const template = EN[key] ?? key;
+      if (!params) return template;
+      return Object.entries(params).reduce(
+        (s, [k, v]) => s.replace(`{{${k}}}`, String(v)),
+        template
+      );
+    },
+    i18n: {
+      language: mockLanguage,
+      changeLanguage: mockChangeLanguage,
+    },
+  }),
+}));
+
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
 }));
