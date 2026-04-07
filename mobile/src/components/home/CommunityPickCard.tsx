@@ -12,10 +12,14 @@ interface CommunityPickCardProps {
 export function CommunityPickCard({ recipe, onPress }: CommunityPickCardProps) {
   return (
     <TouchableOpacity onPress={onPress} style={styles.container} activeOpacity={0.7}>
-      <Image
-        source={{ uri: `https://picsum.photos/seed/${recipe.id}/400/300` }}
-        style={styles.image}
-      />
+      {recipe.imageUrl ? (
+        <Image
+          source={{ uri: recipe.imageUrl }}
+          style={styles.image}
+        />
+      ) : (
+        <View style={styles.image} />
+      )}
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={2}>
           {recipe.title}

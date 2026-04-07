@@ -13,17 +13,18 @@ interface RecipeCardProps {
 export function RecipeCard({ recipe, onPress }: RecipeCardProps) {
   const { t } = useTranslation('common');
   const isCultural = recipe.recipeType === 'cultural';
-  const imageSource = recipe.imageUrl
-    ? { uri: recipe.imageUrl }
-    : { uri: `https://picsum.photos/seed/r${recipe.id}/400/240` };
 
   return (
     <TouchableOpacity onPress={onPress} style={styles.container} activeOpacity={0.7}>
       <View style={styles.imageWrapper}>
-        <Image
-          source={imageSource}
-          style={styles.image}
-        />
+        {recipe.imageUrl ? (
+          <Image
+            source={{ uri: recipe.imageUrl }}
+            style={styles.image}
+          />
+        ) : (
+          <View style={styles.image} />
+        )}
         {/* Recipe type badge — top-right, like the example image */}
         <View style={[styles.badge, isCultural ? styles.badgeCultural : styles.badgeCommunity]}>
           <Text style={styles.badgeText}>

@@ -16,6 +16,7 @@ export interface RecipeListItem {
   genreName: string | null;
   createdAt: string;
   updatedAt: string;
+  imageUrl: string | null;
 }
 
 export interface RecipeListResponse {
@@ -32,7 +33,23 @@ export async function fetchCommunityPicks(
   limit = 10
 ): Promise<RecipeListResponse> {
   try {
-    return await fetchApi<RecipeListResponse>(`/recipes?page=${page}&limit=${limit}`);
+    const raw = await fetchApi<{ recipes: any[]; pagination: any }>(`/recipes?page=${page}&limit=${limit}`);
+    const recipes: RecipeListItem[] = (raw.recipes ?? []).map((r: any) => ({
+      id: r.id,
+      title: r.title,
+      type: r.type,
+      averageRating: r.averageRating ?? null,
+      ratingCount: r.ratingCount ?? 0,
+      creatorId: r.creatorId ?? null,
+      creatorUsername: r.creatorUsername ?? null,
+      dishVarietyId: r.dishVarietyId ?? null,
+      dishVarietyName: r.dishVarietyName ?? null,
+      genreName: r.genreName ?? null,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      imageUrl: r.coverImageUrl ?? null,
+    }));
+    return { recipes, pagination: raw.pagination };
   } catch (error) {
     console.error('fetchCommunityPicks error:', error);
     return {
