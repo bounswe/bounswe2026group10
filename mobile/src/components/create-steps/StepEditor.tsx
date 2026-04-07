@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { FormTextInput } from '../shared/FormTextInput';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
@@ -45,6 +46,7 @@ export function StepEditor({
   canDelete,
   errors,
 }: StepEditorProps) {
+  const { t } = useTranslation('common');
   const hasErrors = !!(errors?.description || errors?.timestamp);
 
   const toggle = () => {
@@ -54,7 +56,7 @@ export function StepEditor({
 
   const previewText = step.description.trim()
     ? step.description.substring(0, 40) + (step.description.length > 40 ? '…' : '')
-    : 'No description yet';
+    : t('create.instructions.noDescription');
 
   return (
     <View style={styles.card}>
@@ -99,20 +101,20 @@ export function StepEditor({
       {step.isExpanded && (
         <View style={styles.expandedBody}>
           <FormTextInput
-            label="DESCRIPTION"
+            label={t('create.instructions.descriptionLabel')}
             value={step.description}
             onChangeText={(text) => onUpdate({ ...step, description: text })}
-            placeholder="Describe what to do in this step…"
+            placeholder={t('create.instructions.descriptionPlaceholder')}
             multiline
             numberOfLines={4}
             error={errors?.description}
           />
 
           <FormTextInput
-            label="TIMESTAMP"
+            label={t('create.instructions.timestampLabel')}
             value={step.timestamp}
             onChangeText={(text) => onUpdate({ ...step, timestamp: text })}
-            placeholder="MM:SS"
+            placeholder={t('create.instructions.timestampPlaceholder')}
             optional
             error={errors?.timestamp}
           />
