@@ -3,6 +3,7 @@ import {
   fetchSearchGenres,
   fetchDietaryTags,
   searchRecipesWithFilters,
+  fetchDiscoveryRecipes,
 } from '../api/search';
 import { fetchApi } from '../api/client';
 
@@ -176,6 +177,79 @@ describe('searchRecipesWithFilters', () => {
   it('returns empty array on error', async () => {
     mockFetchApi.mockRejectedValueOnce(new Error('Network error'));
     const result = await searchRecipesWithFilters('kebap', {});
+    expect(result).toEqual([]);
+  });
+});
+
+// ─── fetchDiscoveryRecipes ────────────────────────────────────────────────────
+
+describe('fetchDiscoveryRecipes', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('calls /discovery/recipes with search param directly (no variety resolution)', async () => {
+    mockFetchApi.mockResolvedValueOnce({ recipes: [] });
+    await fetchDiscoveryRecipes({ search: 'lentil' });
+    const call = (mockFetchApi as jest.Mock).mock.calls[0][0] as string;
+    expect(call).toContain('search=lentil');
+    // Must be a single API call — no variety resolution step
+    expect(mockFetchApi).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes genreId param', async () => {
+    mockFetchApi.mockResolvedValueOnce({ recipes: [] });
+    await fetchDiscoveryRecipes({ genreId: 3 });
+    const call = (mockFetchApi as jest.Mock).mock.calls[0][0] as string;
+    expect(call).toContain('genreId=3');
+  });
+
+  it('passes country and city params', async () => {
+    mockFetchApi.mockResolvedValueOnce({ recipes: [] });
+    await fetchDiscoveryRecipes({ country: 'Turkey', city: 'Istanbul' });
+    const call = (mockFetchApi as jest.Mock).mock.calls[0][0] as string;
+    expect(call).toContain('country=Turkey');
+    expect(call).toContain('city=Istanbul');
+  });
+
+  it('passes excludeAllergens and tagIds params', async () => {
+    mockFetchApi.mockResolvedValueOnce({ recipes: [] });
+    await fetchDiscoveryRecipes({ excludeAllergenIds: [1, 2], dietaryTagIds: [5] });
+    const call = (mockFetchApi as jest.Mock).mock.calls[0][0] as string;
+    expect(call).toContain('excludeAllergens=1%2C2');
+    expect(call).toContain('tagIds=5');
+  });
+
+  it('maps backend response to Recipe interface', async () => {
+    const raw = [
+      {
+        id: 'r1',
+        title: 'Mercimek Çorbası',
+        profile: { username: 'anadolu_chef' },
+        average_rating: 4.8,
+        rating_count: 22,
+        dish_variety_id: 7,
+        dish_variety: { id: 7, name: 'Lentil Soup' },
+        type: 'cultural',
+        image_url: null,
+      },
+    ];
+    mockFetchApi.mockResolvedValueOnce({ recipes: raw });
+    const result = await fetchDiscoveryRecipes({ search: 'mercimek' });
+    expect(result[0]).toEqual({
+      id: 'r1',
+      title: 'Mercimek Çorbası',
+      creatorUsername: 'anadolu_chef',
+      averageRating: 4.8,
+      ratingCount: 22,
+      dishVarietyId: 7,
+      varietyName: 'Lentil Soup',
+      recipeType: 'cultural',
+      imageUrl: null,
+    });
+  });
+
+  it('returns empty array on error', async () => {
+    mockFetchApi.mockRejectedValueOnce(new Error('Network error'));
+    const result = await fetchDiscoveryRecipes({ search: 'test' });
     expect(result).toEqual([]);
   });
 });
