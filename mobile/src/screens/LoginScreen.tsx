@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation/types';
 import { FormTextInput } from '../components/shared/FormTextInput';
@@ -23,6 +24,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation }: Props) {
   const { login } = useAuth();
+  const { t } = useTranslation('common');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,14 +40,14 @@ export function LoginScreen({ navigation }: Props) {
   async function handleLogin() {
     setError('');
     if (!email.trim() || !password) {
-      setError('Please enter your email and password.');
+      setError(t('auth.login.errors.required'));
       return;
     }
     setLoading(true);
     try {
       await login({ email: email.trim(), password });
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Invalid email or password.';
+      const msg = e instanceof Error ? e.message : t('auth.login.errors.invalid');
       setError(msg);
     } finally {
       setLoading(false);
@@ -59,7 +61,7 @@ export function LoginScreen({ navigation }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Roots & Recipes</Text>
+        <Text style={styles.headerTitle}>{t('app.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -75,11 +77,10 @@ export function LoginScreen({ navigation }: Props) {
           {/* Title */}
           <View style={styles.titleArea}>
             <Text style={styles.title}>
-              Welcome <Text style={styles.titleItalic}>back</Text>
+              {t('auth.login.title')}{' '}
+              <Text style={styles.titleItalic}>{t('auth.login.titleEm')}</Text>
             </Text>
-            <Text style={styles.subtitle}>
-              Rediscover the tastes that connect generations.
-            </Text>
+            <Text style={styles.subtitle}>{t('auth.login.subtitle')}</Text>
           </View>
 
           {/* Error banner */}
@@ -91,19 +92,19 @@ export function LoginScreen({ navigation }: Props) {
 
           {/* Form */}
           <FormTextInput
-            label="Email Address"
+            label={t('auth.login.emailLabel')}
             value={email}
             onChangeText={setEmail}
-            placeholder="your@email.com"
+            placeholder={t('auth.login.emailPlaceholder')}
           />
 
           {/* Password with show/hide */}
           <View style={styles.passwordContainer}>
             <FormTextInput
-              label="Password"
+              label={t('auth.login.passwordLabel')}
               value={password}
               onChangeText={setPassword}
-              placeholder="••••••••"
+              placeholder={t('auth.login.passwordPlaceholder')}
               secureTextEntry={!showPassword}
             />
             <TouchableOpacity
@@ -124,12 +125,12 @@ export function LoginScreen({ navigation }: Props) {
             style={styles.forgotRow}
             onPress={() => setForgotModalVisible(true)}
           >
-            <Text style={styles.forgotText}>Forgot Password?</Text>
+            <Text style={styles.forgotText}>{t('auth.login.forgotPassword')}</Text>
           </TouchableOpacity>
 
           {/* Remember me */}
           <View style={styles.rememberRow}>
-            <Text style={styles.rememberLabel}>Remember me</Text>
+            <Text style={styles.rememberLabel}>{t('auth.login.rememberMe')}</Text>
             <Switch
               value={rememberMe}
               onValueChange={setRememberMe}
@@ -148,23 +149,23 @@ export function LoginScreen({ navigation }: Props) {
             {loading ? (
               <ActivityIndicator color={colors.white} />
             ) : (
-              <Text style={styles.submitButtonText}>Sign In</Text>
+              <Text style={styles.submitButtonText}>{t('auth.login.signIn')}</Text>
             )}
           </TouchableOpacity>
 
           {/* Register link */}
           <View style={styles.switchRow}>
-            <Text style={styles.switchText}>Don't have an account? </Text>
+            <Text style={styles.switchText}>{t('auth.login.footerNoAccount')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.switchLink}>Register</Text>
+              <Text style={styles.switchLink}>{t('auth.login.register')}</Text>
             </TouchableOpacity>
           </View>
 
           {/* Footer links */}
           <View style={styles.footerLinks}>
-            <Text style={styles.footerLink}>Privacy Policy</Text>
+            <Text style={styles.footerLink}>{t('auth.login.privacy')}</Text>
             <Text style={styles.footerDot}> · </Text>
-            <Text style={styles.footerLink}>Terms of Service</Text>
+            <Text style={styles.footerLink}>{t('auth.login.terms')}</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -190,25 +191,23 @@ export function LoginScreen({ navigation }: Props) {
           }}
         >
           <View style={styles.modalCard} onStartShouldSetResponder={() => true}>
-            <Text style={styles.modalTitle}>Reset Password</Text>
+            <Text style={styles.modalTitle}>{t('auth.login.modalTitle')}</Text>
             {forgotSent ? (
-              <Text style={styles.modalSuccess}>
-                If that email is registered, a reset link has been sent.
-              </Text>
+              <Text style={styles.modalSuccess}>{t('auth.login.modalSuccess')}</Text>
             ) : (
               <>
                 <FormTextInput
-                  label="Email Address"
+                  label={t('auth.login.emailLabel')}
                   value={forgotEmail}
                   onChangeText={setForgotEmail}
-                  placeholder="your@email.com"
+                  placeholder={t('auth.login.emailPlaceholder')}
                 />
                 <TouchableOpacity
                   style={styles.submitButton}
                   onPress={() => setForgotSent(true)}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.submitButtonText}>Send Reset Link</Text>
+                  <Text style={styles.submitButtonText}>{t('auth.login.modalSendReset')}</Text>
                 </TouchableOpacity>
               </>
             )}
