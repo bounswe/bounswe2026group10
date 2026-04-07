@@ -70,6 +70,47 @@ export async function publishRecipe(id: string): Promise<{ id: string; isPublish
   });
 }
 
+export async function deleteRecipe(id: string): Promise<void> {
+  await fetchApi<null>(`/recipes/${id}`, { method: 'DELETE' });
+}
+
+export interface MyRecipeSummary {
+  id: string;
+  title: string;
+  type: 'community' | 'cultural';
+  isPublished: boolean;
+  averageRating: number | null;
+  ratingCount: number;
+  country: string | null;
+  city: string | null;
+  district: string | null;
+  createdAt: string;
+  updatedAt: string;
+  coverImageUrl: string | null;
+}
+
+export async function getMyRecipes(
+  status?: 'published' | 'draft'
+): Promise<MyRecipeSummary[]> {
+  const query = status ? `?status=${status}` : '';
+  const raw = await fetchApi<any[]>(`/recipes/mine${query}`);
+  const list = Array.isArray(raw) ? raw : [];
+  return list.map((r: any) => ({
+    id: String(r.id),
+    title: r.title ?? '',
+    type: r.type === 'cultural' ? 'cultural' : 'community',
+    isPublished: r.isPublished ?? false,
+    averageRating: r.averageRating ?? null,
+    ratingCount: r.ratingCount ?? 0,
+    country: r.country ?? null,
+    city: r.city ?? null,
+    district: r.district ?? null,
+    createdAt: r.createdAt ?? '',
+    updatedAt: r.updatedAt ?? '',
+    coverImageUrl: r.coverImageUrl ?? null,
+  }));
+}
+
 interface BackendIngredient {
   id: string;
   ingredientId: number | null;
