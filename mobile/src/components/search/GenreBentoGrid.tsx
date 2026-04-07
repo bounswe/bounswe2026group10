@@ -21,27 +21,29 @@ function getGenreImage(name: string): string {
 interface GenreBentoGridProps {
   genres: DishGenre[];
   onGenrePress: (genre: DishGenre) => void;
+  activeGenreId?: number | null;
 }
 
 interface GenreTileProps {
   genre: DishGenre;
   onPress: () => void;
   tall?: boolean;
+  active?: boolean;
 }
 
-function GenreTile({ genre, onPress, tall = false }: GenreTileProps) {
+function GenreTile({ genre, onPress, tall = false, active = false }: GenreTileProps) {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.8}
-      style={[styles.tile, tall && styles.tileTall]}
+      style={[styles.tile, tall && styles.tileTall, active && styles.tileActive]}
     >
       <ImageBackground
         source={{ uri: getGenreImage(genre.name) }}
         style={styles.tileImage}
         imageStyle={styles.tileImageInner}
       >
-        <View style={styles.tileOverlay} />
+        <View style={[styles.tileOverlay, active && styles.tileOverlayActive]} />
         <View style={styles.tileLabel}>
           <Text style={styles.tileName}>{genre.name}</Text>
         </View>
@@ -50,7 +52,7 @@ function GenreTile({ genre, onPress, tall = false }: GenreTileProps) {
   );
 }
 
-export function GenreBentoGrid({ genres, onGenrePress }: GenreBentoGridProps) {
+export function GenreBentoGrid({ genres, onGenrePress, activeGenreId }: GenreBentoGridProps) {
   if (genres.length === 0) return null;
 
   // First genre is large (spans full row), rest fill 2-column grid
@@ -59,11 +61,11 @@ export function GenreBentoGrid({ genres, onGenrePress }: GenreBentoGridProps) {
   return (
     <View style={styles.container}>
       {first && (
-        <GenreTile genre={first} onPress={() => onGenrePress(first)} tall />
+        <GenreTile genre={first} onPress={() => onGenrePress(first)} tall active={activeGenreId === first.id} />
       )}
       <View style={styles.grid}>
         {rest.map((genre) => (
-          <GenreTile key={genre.id} genre={genre} onPress={() => onGenrePress(genre)} />
+          <GenreTile key={genre.id} genre={genre} onPress={() => onGenrePress(genre)} active={activeGenreId === genre.id} />
         ))}
       </View>
     </View>
@@ -90,10 +92,17 @@ const styles = StyleSheet.create({
   tileImageInner: {
     borderRadius: 20,
   },
+  tileActive: {
+    borderWidth: 3,
+    borderColor: colors.primary,
+  },
   tileOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.35)',
     borderRadius: 20,
+  },
+  tileOverlayActive: {
+    backgroundColor: 'rgba(0,0,0,0.55)',
   },
   tileLabel: {
     padding: spacing.md,
