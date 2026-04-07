@@ -1,22 +1,7 @@
 import React from 'react';
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { DishGenre } from '../../api/dish-genres';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
-
-const GENRE_IMAGES: Record<string, string> = {
-  soups: 'https://picsum.photos/seed/genre-soups/400/300',
-  desserts: 'https://picsum.photos/seed/genre-desserts/400/300',
-  pastries: 'https://picsum.photos/seed/genre-pastries/400/300',
-  salads: 'https://picsum.photos/seed/genre-salads/400/300',
-  stews: 'https://picsum.photos/seed/genre-stews/400/300',
-  mezzes: 'https://picsum.photos/seed/genre-mezzes/400/300',
-  kebabs: 'https://picsum.photos/seed/genre-kebabs/400/300',
-};
-
-function getGenreImage(name: string): string {
-  const key = name.toLowerCase();
-  return GENRE_IMAGES[key] ?? `https://picsum.photos/seed/genre-${key}/400/300`;
-}
 
 interface GenreBentoGridProps {
   genres: DishGenre[];
@@ -38,16 +23,12 @@ function GenreTile({ genre, onPress, tall = false, active = false }: GenreTilePr
       activeOpacity={0.8}
       style={[styles.tile, tall && styles.tileTall, active && styles.tileActive]}
     >
-      <ImageBackground
-        source={{ uri: getGenreImage(genre.name) }}
-        style={styles.tileImage}
-        imageStyle={styles.tileImageInner}
-      >
+      <View style={styles.tileImage}>
         <View style={[styles.tileOverlay, active && styles.tileOverlayActive]} />
         <View style={styles.tileLabel}>
           <Text style={styles.tileName}>{genre.name}</Text>
         </View>
-      </ImageBackground>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -88,9 +69,7 @@ const styles = StyleSheet.create({
   tileImage: {
     flex: 1,
     justifyContent: 'flex-end',
-  },
-  tileImageInner: {
-    borderRadius: 20,
+    backgroundColor: colors.surfaceContainer,
   },
   tileActive: {
     borderWidth: 3,
@@ -98,11 +77,12 @@ const styles = StyleSheet.create({
   },
   tileOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: colors.primary,
+    opacity: 0.6,
     borderRadius: 20,
   },
   tileOverlayActive: {
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    opacity: 0.8,
   },
   tileLabel: {
     padding: spacing.md,

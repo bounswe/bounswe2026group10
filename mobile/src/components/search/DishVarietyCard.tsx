@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { DishVarietyResult } from '../../api/search';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
@@ -12,10 +12,7 @@ interface DishVarietyCardProps {
 export function DishVarietyCard({ variety, onPress }: DishVarietyCardProps) {
   return (
     <TouchableOpacity onPress={onPress} style={styles.container} activeOpacity={0.7}>
-      <Image
-        source={{ uri: `https://picsum.photos/seed/variety-${variety.id}/200/200` }}
-        style={styles.image}
-      />
+      <View style={styles.image} />
       <View style={styles.info}>
         <View style={styles.titleRow}>
           <Text style={styles.name} numberOfLines={1}>
