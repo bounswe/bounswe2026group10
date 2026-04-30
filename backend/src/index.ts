@@ -14,6 +14,7 @@ import ingredientsRouter from "./routes/ingredients.js";
 import toolsRouter from "./routes/tools.js";
 import unitsRouter from "./routes/units.js";
 import substitutionsRouter from "./routes/substitutions.js";
+import commentsRouter from "./routes/comments.js";
 
 const app = express();
 const PORT = process.env["PORT"] ?? 3000;
@@ -41,6 +42,7 @@ app.use("/ingredients", ingredientsRouter);
 app.use("/tools", toolsRouter);
 app.use("/units", unitsRouter);
 app.use("/ingredients", substitutionsRouter);
+app.use("/", commentsRouter);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {
