@@ -279,6 +279,30 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     }
   }
 
+  // Optionally resolve isFavorited for authenticated callers
+  let isFavorited = false;
+  const authHeader = req.headers["authorization"];
+  if (authHeader?.startsWith("Bearer ")) {
+    const token = authHeader.slice(7);
+    const { data: userData } = await supabase.auth.getUser(token);
+    if (userData?.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+      if (profile) {
+        const { data: fav } = await supabase
+          .from("user_favorites")
+          .select("id")
+          .eq("user_id", (profile as any).id)
+          .eq("recipe_id", recipeId)
+          .maybeSingle();
+        isFavorited = !!fav;
+      }
+    }
+  }
+
   res.status(200).json(
     successResponse({
       id: data.id,
@@ -298,6 +322,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       district: (data as any).district ?? null,
       averageRating: (data as any).average_rating ?? null,
       ratingCount: (data as any).rating_count ?? 0,
+      isFavorited,
       ingredients: (data.recipe_ingredients ?? []).map((ri: any) => ({
         id: ri.id,
         ingredientId: ri.ingredient?.id ?? null,
