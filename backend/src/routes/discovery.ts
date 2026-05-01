@@ -2,6 +2,31 @@ import { Router } from "express";
 import { z } from "zod";
 import { supabase } from "../config/supabase.js";
 import { successResponse, errorResponse } from "../utils/response.js";
+import {
+  escapeLikePattern,
+  dedupeLocationLabels,
+  getLocationVariants,
+} from "../utils/locations.js";
+
+// Apply a case-insensitive location filter that also expands known aliases
+// (so a filter for "tr"/"Türkiye" still matches recipes stored as "Turkey").
+// When the input has only one known variant, falls back to a single .ilike()
+// call so the SQL stays simple. Returns the modified query.
+function applyLocationFilter(
+  query: any,
+  column: "country" | "city" | "district",
+  rawValue: string
+): any {
+  const variants = getLocationVariants(rawValue);
+  if (variants.length === 0) return query;
+  if (variants.length === 1) {
+    return query.ilike(column, escapeLikePattern(variants[0]!));
+  }
+  const orFilter = variants
+    .map((v) => `${column}.ilike.${escapeLikePattern(v)}`)
+    .join(",");
+  return query.or(orFilter);
+}
 
 const router = Router();
 
@@ -188,17 +213,12 @@ router.get("/recipes", async (req, res) => {
       query = query.ilike("title", `%${search}%`);
     }
 
-    if (country) {
-      query = query.eq("country", country);
-    }
-
-    if (city) {
-      query = query.eq("city", city);
-    }
-
-    if (district) {
-      query = query.eq("district", district);
-    }
+    // Origin filters tolerate casing/whitespace differences and known
+    // aliases (e.g. "tr"/"Türkiye" → "Turkey") via applyLocationFilter
+    // (issue #398).
+    if (country) query = applyLocationFilter(query, "country", country);
+    if (city) query = applyLocationFilter(query, "city", city);
+    if (district) query = applyLocationFilter(query, "district", district);
 
     if (varietyId !== undefined) {
       query = query.eq("dish_variety_id", varietyId);
@@ -403,15 +423,21 @@ router.get("/locations", async (req, res) => {
     );
   }
 
+  // Match parent scope case-insensitively and across known aliases so
+  // "Turkey" / "turkey" / "Türkiye" / "tr" all resolve the same set of
+  // children (issue #398).
   let field: string;
   let query = supabase.from("recipes").select("country, city, district").eq("is_published", true);
 
   if (country && city) {
     field = "district";
-    query = query.eq("country", country).eq("city", city).not("district", "is", null);
+    query = applyLocationFilter(query, "country", country);
+    query = applyLocationFilter(query, "city", city);
+    query = query.not("district", "is", null);
   } else if (country) {
     field = "city";
-    query = query.eq("country", country).not("city", "is", null);
+    query = applyLocationFilter(query, "country", country);
+    query = query.not("city", "is", null);
   } else {
     field = "country";
     query = query.not("country", "is", null);
@@ -423,13 +449,7 @@ router.get("/locations", async (req, res) => {
     return res.status(500).json(errorResponse("DB_ERROR", error.message));
   }
 
-  const results = [
-    ...new Set(
-      (data ?? [])
-        .map((r: any) => r[field])
-        .filter((v: any) => typeof v === "string" && v.trim() !== "")
-    ),
-  ].sort();
+  const results = dedupeLocationLabels((data ?? []).map((r: any) => r[field]));
 
   return res.status(200).json(successResponse({ results }));
 });
