@@ -572,6 +572,158 @@ describe("Recipe Endpoints (Creation & Publishing)", () => {
       expect(response.body.data.city).toBe("Adana");
     });
 
+    it("should collapse internal whitespace in location fields and persist the normalized value", async () => {
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { id: "recipe-collapse-1", created_at: "2023-01-01" },
+      });
+      const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes") return { insert: mockInsert };
+        return { insert: jest.fn().mockResolvedValue({ error: null }) };
+      });
+
+      const response = await request(app)
+        .post("/recipes")
+        .set("Authorization", "Bearer valid_token")
+        .send({ ...validCommunityPayload, country: "United   States", city: " New  York " });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.country).toBe("United States");
+      expect(response.body.data.city).toBe("New York");
+      // Verify the DB-bound payload uses the normalized form, not the raw input.
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          country: "United States",
+          city: "New York",
+        })
+      );
+    });
+
+    it("should store null when a location field is whitespace-only", async () => {
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { id: "recipe-empty-loc-1", created_at: "2023-01-01" },
+      });
+      const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes") return { insert: mockInsert };
+        return { insert: jest.fn().mockResolvedValue({ error: null }) };
+      });
+
+      const response = await request(app)
+        .post("/recipes")
+        .set("Authorization", "Bearer valid_token")
+        .send({ ...validCommunityPayload, country: "Turkey", city: "   " });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.country).toBe("Turkey");
+      expect(response.body.data.city).toBeNull();
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({ city: null })
+      );
+    });
+
+    // ─── Alias canonicalization on write (issue #398) ────────────────────
+    // POST normalizes country to its canonical display name, so future rows
+    // store one consistent form regardless of how the user typed it.
+
+    it("should canonicalize ISO-2 alias on write (country='tr' → 'Turkey')", async () => {
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { id: "recipe-tr-1", created_at: "2023-01-01" },
+      });
+      const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes") return { insert: mockInsert };
+        return { insert: jest.fn().mockResolvedValue({ error: null }) };
+      });
+
+      const response = await request(app)
+        .post("/recipes")
+        .set("Authorization", "Bearer valid_token")
+        .send({ ...validCommunityPayload, country: "tr" });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.country).toBe("Turkey");
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({ country: "Turkey" })
+      );
+    });
+
+    it("should canonicalize Turkish-name alias on write (country='Türkiye' → 'Turkey')", async () => {
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { id: "recipe-tk-1", created_at: "2023-01-01" },
+      });
+      const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes") return { insert: mockInsert };
+        return { insert: jest.fn().mockResolvedValue({ error: null }) };
+      });
+
+      const response = await request(app)
+        .post("/recipes")
+        .set("Authorization", "Bearer valid_token")
+        .send({ ...validCommunityPayload, country: "Türkiye" });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.country).toBe("Turkey");
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({ country: "Turkey" })
+      );
+    });
+
+    it("should canonicalize uppercase alias on write (country='TUR' → 'Turkey')", async () => {
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { id: "recipe-tur-1", created_at: "2023-01-01" },
+      });
+      const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes") return { insert: mockInsert };
+        return { insert: jest.fn().mockResolvedValue({ error: null }) };
+      });
+
+      const response = await request(app)
+        .post("/recipes")
+        .set("Authorization", "Bearer valid_token")
+        .send({ ...validCommunityPayload, country: "TUR" });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.country).toBe("Turkey");
+    });
+
+    it("should preserve unknown country names verbatim on write", async () => {
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { id: "recipe-narnia-1", created_at: "2023-01-01" },
+      });
+      const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes") return { insert: mockInsert };
+        return { insert: jest.fn().mockResolvedValue({ error: null }) };
+      });
+
+      const response = await request(app)
+        .post("/recipes")
+        .set("Authorization", "Bearer valid_token")
+        .send({ ...validCommunityPayload, country: "Narnia" });
+
+      expect(response.status).toBe(201);
+      // Not in alias table → stored as typed (after whitespace trim).
+      expect(response.body.data.country).toBe("Narnia");
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({ country: "Narnia" })
+      );
+    });
+
     it("should return 201 with only country provided", async () => {
       const mockSingle = jest.fn().mockResolvedValue({
         data: { id: "recipe-partial-1", created_at: "2023-01-01" },

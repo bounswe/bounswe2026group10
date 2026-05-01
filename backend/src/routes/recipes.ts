@@ -5,6 +5,7 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import type { AuthenticatedRequest } from "../types/index.js";
 import { errorResponse, successResponse } from "../utils/response.js";
+import { canonicalizeLocationForWrite } from "../utils/locations.js";
 import { translateRecipe } from "../services/translationService.js";
 
 const router = Router();
@@ -434,6 +435,10 @@ router.post(
       return;
     }
 
+    const normalizedCountry = canonicalizeLocationForWrite(body.country);
+    const normalizedCity = canonicalizeLocationForWrite(body.city);
+    const normalizedDistrict = canonicalizeLocationForWrite(body.district);
+
     // 1. Insert Core Recipe
     const { data: recipe, error: recipeError } = await userClient
       .from("recipes")
@@ -446,9 +451,9 @@ router.post(
         serving_size: body.servingSize ?? null,
         type: body.type,
         is_published: body.isPublished,
-        country: body.country ?? null,
-        city: body.city ?? null,
-        district: body.district ?? null,
+        country: normalizedCountry,
+        city: normalizedCity,
+        district: normalizedDistrict,
       })
       .select("id, created_at")
       .single();
@@ -535,9 +540,9 @@ router.post(
         servingSize: body.servingSize ?? null,
         type: body.type,
         isPublished: body.isPublished,
-        country: body.country ?? null,
-        city: body.city ?? null,
-        district: body.district ?? null,
+        country: normalizedCountry,
+        city: normalizedCity,
+        district: normalizedDistrict,
         ingredients: body.ingredients,
         steps: body.steps,
         tools: body.tools,
@@ -603,9 +608,9 @@ router.patch(
     if (body.servingSize !== undefined) updateData.serving_size = body.servingSize;
     if (body.type !== undefined) updateData.type = body.type;
     if (body.dishVarietyId !== undefined) updateData.dish_variety_id = body.dishVarietyId;
-    if (body.country !== undefined) updateData.country = body.country;
-    if (body.city !== undefined) updateData.city = body.city;
-    if (body.district !== undefined) updateData.district = body.district;
+    if (body.country !== undefined) updateData.country = canonicalizeLocationForWrite(body.country);
+    if (body.city !== undefined) updateData.city = canonicalizeLocationForWrite(body.city);
+    if (body.district !== undefined) updateData.district = canonicalizeLocationForWrite(body.district);
 
     if (Object.keys(updateData).length > 0) {
       const { error: updateError } = await userClient

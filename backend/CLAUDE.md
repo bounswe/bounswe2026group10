@@ -172,16 +172,16 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 
 ### Discovery (`/discovery`)
 - `GET /discovery/recipes` — Filtered recipe discovery
-  - Query params: `genreId`, `varietyId`, `excludeAllergens` (comma-separated IDs), `tagIds` (comma-separated dietary tag IDs — only recipes with ALL specified tags), `search` (case-insensitive partial match on recipe title), `country`, `city`, `district` (exact match on recipe location fields), `page`, `limit`
+  - Query params: `genreId`, `varietyId`, `excludeAllergens` (comma-separated IDs), `tagIds` (comma-separated dietary tag IDs — only recipes with ALL specified tags), `search` (case-insensitive partial match on recipe title), `country`, `city`, `district` (case-insensitive, whitespace-/diacritic-tolerant; country also resolves common aliases — `"tr"`/`"Türkiye"`/`"TUR"` all match recipes stored as `"Turkey"`. See Location Normalization below), `page`, `limit`
   - Response recipe objects include `country`, `city`, `district` fields (nullable)
 - `GET /discovery/recipes/by-ingredients` — Recipes fully makeable with provided ingredients
   - Query params: `ingredientIds` (comma-separated IDs, required), `page`, `limit`
   - Only returns recipes whose every ingredient is in the provided list; partial matches excluded
 - `GET /discovery/locations` — Distinct location values with at least one published recipe (#323)
   - No params → distinct countries
-  - `?country=Turkey` → distinct cities in Turkey
-  - `?country=Turkey&city=Istanbul` → distinct districts in Istanbul
-  - Returns `{ results: string[] }` sorted alphabetically
+  - `?country=Turkey` → distinct cities in Turkey (parent `country` matched case-insensitively + via known aliases — `"tr"`/`"Türkiye"`/`"TUR"` all resolve to the same set)
+  - `?country=Turkey&city=Istanbul` → distinct districts in Istanbul (parent `country`/`city` matched case-insensitively; country also alias-aware)
+  - Returns `{ results: string[] }` deduplicated by canonical key (alias-aware: `"Turkey"`, `"Türkiye"`, `"TR"` collapse into one entry — canonical display name wins), sorted alphabetically
   - Returns 400 if `city` is provided without `country`; null/empty fields excluded
 
 ### Media (`/media`)
@@ -293,6 +293,53 @@ Use `successResponse(data)` and `errorResponse(code, message)` from `src/utils/r
 - Chainable mock pattern simulates PostgREST query builder
 - Supertest for HTTP-level assertions
 - Tests run sequentially (`--runInBand`)
+
+### Location Normalization (issue #398)
+
+Recipe origin labels (`country`, `city`, `district`) are free-text fields that
+are easy to mis-type. The origin filter must tolerate three kinds of mismatch
+between filter input and stored value:
+
+1. **Casing / whitespace** — `"Turkey"` vs `" turkey "`.
+2. **Diacritics / Turkish dotted-i** — `"Türkiye"` vs `"Turkiye"`,
+   `"İstanbul"` vs `"Istanbul"`.
+3. **Aliases** — `"Turkey"` vs `"tr"` vs `"TUR"` vs `"Türkiye"`.
+
+The helpers live in `src/utils/locations.ts`:
+
+- `normalizeLocation()` — trims, collapses internal whitespace, returns
+  `null` for empty input. Preserves casing and diacritics.
+- `canonicalizeLocationForWrite()` — `normalizeLocation` + alias resolution
+  to the canonical display name (e.g. `"tr"` / `"Türkiye"` → `"Turkey"`).
+  Inputs that don't match any alias pass through unchanged.
+- `getLocationVariants()` — returns every known surface form equivalent to
+  the input (e.g. `"tr"` → `["Turkey", "tr", "tur", "turkiye",
+  "republic of turkey", ...]`). Inputs without aliases return as a
+  single-element list.
+- `escapeLikePattern()` — escapes `%`, `_`, `\` for safe ILIKE patterns.
+- `dedupeLocationLabels()` — collapses values by canonical key (alias-aware,
+  diacritic-insensitive); when an alias group is hit the canonical display
+  name wins, otherwise first-seen casing wins. Sorted alphabetically.
+
+How they're wired:
+
+- **On write** (`POST /recipes`, `PATCH /recipes/:id`): country, city, and
+  district run through `canonicalizeLocationForWrite()`, so a user who types
+  `"tr"` ends up with `"Turkey"` stored. Future rows are clean by
+  construction.
+- **On read** (`GET /discovery/recipes`, `GET /discovery/locations`): each
+  location filter expands to `getLocationVariants()` and the query becomes
+  `column.ilike.<v1> OR column.ilike.<v2> OR …` (via Supabase `.or()`).
+  Single-variant inputs (e.g. cities not in the alias table) fall back to a
+  plain `.ilike()` so the SQL stays simple. This handles legacy rows that
+  predate the canonicalize-on-write change.
+- **Locations dedup**: `GET /discovery/locations` runs results through
+  `dedupeLocationLabels()`, so a DB holding `"Turkey"`, `"Türkiye"`, and
+  `"TR"` collapses into a single `"Turkey"` entry in the response.
+
+The alias table currently covers Turkey, United States, United Kingdom,
+Germany, Italy, France, Spain, Japan, Greece, and Azerbaijan. Add countries
+to `LOCATION_ALIASES` in `src/utils/locations.ts` as new mismatches surface.
 
 ### Naming Conventions
 - **Files:** kebab-case (`dish-varieties.ts`)

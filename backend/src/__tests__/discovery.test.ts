@@ -18,7 +18,7 @@ jest.mock("../config/supabase.js", () => {
 
 const chainable = (resolved: { data: any; error: any; count?: number | null }) => {
   const mock: any = {};
-  const methods = ["select", "eq", "neq", "in", "not", "order", "range", "filter", "single", "limit", "ilike"];
+  const methods = ["select", "eq", "neq", "in", "not", "or", "order", "range", "filter", "single", "limit", "ilike"];
   methods.forEach((m) => {
     mock[m] = jest.fn().mockReturnValue(mock);
   });
@@ -649,6 +649,187 @@ describe("GET /discovery/recipes", () => {
     expect(recipe).toHaveProperty("city");
     expect(recipe).toHaveProperty("district");
   });
+
+  // ─── Region label normalization (issue #398) ───────────────────────────────
+  // The origin filter must tolerate incidental differences in casing and
+  // whitespace, otherwise valid recipes are dropped from filtered results.
+
+  it("matches country case-insensitively (filter 'turkey' finds 'Turkey')", async () => {
+    const mockWithLocation = [{ ...mockRecipes[0], country: "Turkey", city: null, district: null }];
+    const chain = chainable({ data: mockWithLocation, error: null, count: 1 });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/discovery/recipes?country=turkey");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    // "turkey" is in the alias table, so the filter expands to an OR over
+    // every known variant (Turkey/Türkiye/tr/...) instead of a single ilike.
+    expect(chain.or).toHaveBeenCalledTimes(1);
+    const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
+    expect(orArg).toContain("country.ilike.Turkey");
+    expect(orArg).toContain("country.ilike.tr");
+    expect(orArg).toContain("country.ilike.turkiye");
+    expect(chain.eq).not.toHaveBeenCalledWith("country", expect.anything());
+  });
+
+  it("matches city case-insensitively (filter 'ADANA' finds 'Adana')", async () => {
+    const mockWithLocation = [{ ...mockRecipes[0], country: "Turkey", city: "Adana", district: null }];
+    const chain = chainable({ data: mockWithLocation, error: null, count: 1 });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/discovery/recipes?city=ADANA");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(chain.ilike).toHaveBeenCalledWith("city", "ADANA");
+  });
+
+  it("matches district case-insensitively (filter 'seyhan' finds 'Seyhan')", async () => {
+    const mockWithLocation = [{ ...mockRecipes[0], country: "Turkey", city: "Adana", district: "Seyhan" }];
+    const chain = chainable({ data: mockWithLocation, error: null, count: 1 });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/discovery/recipes?district=seyhan");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(chain.ilike).toHaveBeenCalledWith("district", "seyhan");
+  });
+
+  it("trims and collapses whitespace on country filter input", async () => {
+    const mockWithLocation = [{ ...mockRecipes[0], country: "Turkey", city: null, district: null }];
+    const chain = chainable({ data: mockWithLocation, error: null, count: 1 });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/discovery/recipes?country=%20%20Turkey%20%20");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    // Whitespace-padded "Turkey" is trimmed before alias lookup; the result
+    // is an OR over Turkey variants (no leading/trailing spaces in any).
+    expect(chain.or).toHaveBeenCalledTimes(1);
+    const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
+    expect(orArg).toContain("country.ilike.Turkey");
+    expect(orArg).not.toContain("  Turkey  ");
+  });
+
+  it("escapes ILIKE wildcards in country filter input", async () => {
+    const chain = chainable({ data: [], error: null, count: 0 });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/discovery/recipes?country=100%25_organic");
+
+    expect(res.status).toBe(200);
+    expect(chain.ilike).toHaveBeenCalledWith("country", "100\\%\\_organic");
+  });
+
+  // ─── Alias + diacritic resolution (issue #398) ────────────────────────────
+  // The origin filter must not silently drop recipes when the user types a
+  // country in a different surface form than what is stored in the DB.
+  // E.g. recipe stored as "Turkey", filter sent as "tr" / "TUR" / "Türkiye".
+
+  it("matches stored 'Turkey' when filter is 'tr' (ISO-2 alias)", async () => {
+    const chain = chainable({
+      data: [{ ...mockRecipes[0], country: "Turkey", city: null, district: null }],
+      error: null,
+      count: 1,
+    });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/discovery/recipes?country=tr");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(chain.or).toHaveBeenCalledTimes(1);
+    const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
+    expect(orArg).toContain("country.ilike.Turkey");
+    expect(orArg).toContain("country.ilike.tr");
+    expect(orArg).toContain("country.ilike.turkiye");
+  });
+
+  it("matches stored 'Turkey' when filter is 'Türkiye' (folds diacritics)", async () => {
+    const chain = chainable({
+      data: [{ ...mockRecipes[0], country: "Turkey", city: null, district: null }],
+      error: null,
+      count: 1,
+    });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get(
+      "/discovery/recipes?country=" + encodeURIComponent("Türkiye")
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(chain.or).toHaveBeenCalledTimes(1);
+    const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
+    expect(orArg).toContain("country.ilike.Turkey");
+  });
+
+  it("matches stored 'Türkiye' when filter is 'Turkey' (legacy DB rows)", async () => {
+    // Existing rows may still hold "Türkiye" — the OR over variants should
+    // include the variant form too.
+    const chain = chainable({
+      data: [{ ...mockRecipes[0], country: "Türkiye", city: null, district: null }],
+      error: null,
+      count: 1,
+    });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/discovery/recipes?country=Turkey");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
+    expect(orArg).toContain("country.ilike.turkiye");
+  });
+
+  it("matches stored 'Türkiye' when filter is uppercase 'TÜRKIYE'", async () => {
+    const chain = chainable({
+      data: [{ ...mockRecipes[0], country: "Türkiye", city: null, district: null }],
+      error: null,
+      count: 1,
+    });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get(
+      "/discovery/recipes?country=" + encodeURIComponent("TÜRKIYE")
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(chain.or).toHaveBeenCalledTimes(1);
+  });
+
+  it("expands 'usa' to United States variants (not turkey-only)", async () => {
+    const chain = chainable({
+      data: [{ ...mockRecipes[0], country: "United States", city: null, district: null }],
+      error: null,
+      count: 1,
+    });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/discovery/recipes?country=usa");
+
+    expect(res.status).toBe(200);
+    const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
+    expect(orArg).toContain("country.ilike.United States");
+    expect(orArg).toContain("country.ilike.us");
+    expect(orArg).not.toContain("Turkey");
+  });
+
+  it("falls back to a single ilike for non-alias countries (e.g. Narnia)", async () => {
+    const chain = chainable({ data: [], error: null, count: 0 });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/discovery/recipes?country=Narnia");
+
+    expect(res.status).toBe(200);
+    // Not in alias table → simple ilike, no .or() expansion.
+    expect(chain.ilike).toHaveBeenCalledWith("country", "Narnia");
+    expect(chain.or).not.toHaveBeenCalled();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -941,5 +1122,135 @@ describe("GET /discovery/locations", () => {
     expect(res.status).toBe(500);
     expect(res.body.success).toBe(false);
     expect(res.body.error.code).toBe("DB_ERROR");
+  });
+
+  // ─── Region label normalization (issue #398) ───────────────────────────────
+
+  it("deduplicates countries case-insensitively", async () => {
+    const mockRows = [
+      { country: "Turkey", city: null, district: null },
+      { country: "TURKEY", city: null, district: null },
+      { country: "turkey", city: null, district: null },
+      { country: "Italy", city: null, district: null },
+    ];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRows, error: null })
+    );
+
+    const res = await request(app).get("/discovery/locations");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.results).toEqual(["Italy", "Turkey"]);
+  });
+
+  it("matches parent country case-insensitively when listing cities", async () => {
+    const mockRows = [
+      { country: "Turkey", city: "Istanbul", district: null },
+      { country: "Turkey", city: "Adana", district: null },
+    ];
+    const chain = chainable({ data: mockRows, error: null });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/discovery/locations?country=turkey");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.results).toEqual(["Adana", "Istanbul"]);
+    // Turkey is in the alias table, so the filter is an OR over variants.
+    expect(chain.or).toHaveBeenCalledTimes(1);
+    const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
+    expect(orArg).toContain("country.ilike.Turkey");
+    expect(orArg).toContain("country.ilike.turkiye");
+  });
+
+  it("matches parent country and city case-insensitively when listing districts", async () => {
+    const mockRows = [
+      { country: "Turkey", city: "Istanbul", district: "Kadıköy" },
+      { country: "Turkey", city: "Istanbul", district: "Şişli" },
+    ];
+    const chain = chainable({ data: mockRows, error: null });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/discovery/locations?country=TURKEY&city=istanbul");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.results).toEqual(["Kadıköy", "Şişli"]);
+    // Country goes through the alias-OR; city is not in the alias table so
+    // it falls through to a single ilike.
+    expect(chain.or).toHaveBeenCalledTimes(1);
+    const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
+    expect(orArg).toContain("country.ilike.Turkey");
+    expect(chain.ilike).toHaveBeenCalledWith("city", "istanbul");
+  });
+
+  it("trims and collapses whitespace in country filter input", async () => {
+    const mockRows = [
+      { country: "Turkey", city: "Istanbul", district: null },
+    ];
+    const chain = chainable({ data: mockRows, error: null });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/discovery/locations?country=%20%20Turkey%20%20");
+
+    expect(res.status).toBe(200);
+    expect(chain.or).toHaveBeenCalledTimes(1);
+    const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
+    expect(orArg).toContain("country.ilike.Turkey");
+    expect(orArg).not.toContain("  Turkey  ");
+  });
+
+  // ─── Alias-aware dedup (issue #398) ───────────────────────────────────────
+  // Legacy data may hold the same place under several surface forms. The
+  // distinct list returned to clients should collapse them into one entry.
+
+  it("collapses 'Turkey' / 'Türkiye' / 'TR' into a single canonical entry", async () => {
+    const mockRows = [
+      { country: "Turkey", city: null, district: null },
+      { country: "Türkiye", city: null, district: null },
+      { country: "TR", city: null, district: null },
+      { country: "TUR", city: null, district: null },
+      { country: "Italy", city: null, district: null },
+    ];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRows, error: null })
+    );
+
+    const res = await request(app).get("/discovery/locations");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.results).toEqual(["Italy", "Turkey"]);
+  });
+
+  it("returns the canonical display name even when the DB row is an alias form", async () => {
+    const mockRows = [
+      { country: "TR", city: null, district: null },
+      { country: "tr", city: null, district: null },
+    ];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRows, error: null })
+    );
+
+    const res = await request(app).get("/discovery/locations");
+
+    expect(res.status).toBe(200);
+    // Even though the DB only has "TR"/"tr", the API surfaces "Turkey".
+    expect(res.body.data.results).toEqual(["Turkey"]);
+  });
+
+  it("filtering by 'tr' returns cities from rows stored as 'Turkey'", async () => {
+    const mockRows = [
+      { country: "Turkey", city: "Istanbul", district: null },
+      { country: "Türkiye", city: "Adana", district: null },
+    ];
+    const chain = chainable({ data: mockRows, error: null });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/discovery/locations?country=tr");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.results).toEqual(["Adana", "Istanbul"]);
+    expect(chain.or).toHaveBeenCalledTimes(1);
+    const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
+    expect(orArg).toContain("country.ilike.Turkey");
+    expect(orArg).toContain("country.ilike.turkiye");
   });
 });
