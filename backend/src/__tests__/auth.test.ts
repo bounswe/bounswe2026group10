@@ -146,6 +146,59 @@ describe("Auth Routes", () => {
       expect(response.status).toBe(200);
       expect(response.body.data.accessToken).toBe("new_access");
     });
+
+    it("should return 401 with INVALID_REFRESH_TOKEN when Supabase rejects the token", async () => {
+      (supabase.auth.refreshSession as jest.Mock).mockResolvedValue({
+        data: { session: null },
+        error: { message: "Refresh token expired" },
+      });
+
+      const response = await request(app).post("/auth/refresh").send({
+        refreshToken: "expired_refresh_token",
+      });
+
+      expect(response.status).toBe(401);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.code).toBe("INVALID_REFRESH_TOKEN");
+    });
+
+    it("should return 400 when refreshToken field is missing", async () => {
+      const response = await request(app).post("/auth/refresh").send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe("VALIDATION_ERROR");
+    });
+  });
+
+  describe("requireAuth middleware", () => {
+    it("should return 401 when Authorization header is missing", async () => {
+      const response = await request(app).get("/auth/me");
+      expect(response.status).toBe(401);
+      expect(response.body.error.code).toBe("UNAUTHORIZED");
+    });
+
+    it("should return 401 when Authorization header has no Bearer prefix", async () => {
+      const response = await request(app)
+        .get("/auth/me")
+        .set("Authorization", "Token some_token");
+      expect(response.status).toBe(401);
+      expect(response.body.error.code).toBe("UNAUTHORIZED");
+    });
+
+    it("should return 401 when access token is expired or invalid", async () => {
+      (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+        data: { user: null },
+        error: { message: "JWT expired" },
+      });
+
+      const response = await request(app)
+        .get("/auth/me")
+        .set("Authorization", "Bearer expired_access_token");
+
+      expect(response.status).toBe(401);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.code).toBe("UNAUTHORIZED");
+    });
   });
 
   describe("GET /auth/me", () => {
