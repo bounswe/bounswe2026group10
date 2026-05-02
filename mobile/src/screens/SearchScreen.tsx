@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { searchIncludes } from '../utils/string';
 import {
   ActivityIndicator,
   ScrollView,
@@ -80,7 +81,7 @@ export function SearchScreen() {
   // Client-side filtered genres (by search text)
   const filteredGenres = useMemo(() => {
     if (!normalizedSearch) return allGenres;
-    return allGenres.filter((g) => g.name.toLowerCase().includes(normalizedSearch));
+    return allGenres.filter((g) => searchIncludes(g.name, normalizedSearch));
   }, [allGenres, normalizedSearch]);
 
   // Client-side filtered varieties (by selected genre + search text)
@@ -92,8 +93,8 @@ export function SearchScreen() {
     if (normalizedSearch) {
       result = result.filter(
         (v) =>
-          v.name.toLowerCase().includes(normalizedSearch) ||
-          v.genreName?.toLowerCase().includes(normalizedSearch)
+          searchIncludes(v.name, normalizedSearch) ||
+          (v.genreName != null && searchIncludes(v.genreName, normalizedSearch))
       );
     }
     return sortVarieties(result, sort);

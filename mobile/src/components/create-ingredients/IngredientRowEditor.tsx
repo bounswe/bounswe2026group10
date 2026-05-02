@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 import { FormDropdown } from '../shared/FormDropdown';
 import type { IngredientItem } from '../../api/ingredients';
+import { searchStartsWith } from '../../utils/string';
 
 export interface IngredientFormItem {
   id: string;
@@ -41,10 +42,10 @@ export function IngredientRowEditor({
   const { t } = useTranslation('common');
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const query = ingredient.name.trim().toLowerCase();
+  const query = ingredient.name.trim();
   const suggestions = query.length > 0
     ? allIngredients
-        .filter((i) => i.name.toLowerCase().startsWith(query))
+        .filter((i) => searchStartsWith(i.name, query))
         .slice(0, 5)
     : [];
 

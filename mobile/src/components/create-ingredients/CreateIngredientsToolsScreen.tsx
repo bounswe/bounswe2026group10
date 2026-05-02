@@ -23,6 +23,7 @@ import { ToolSearchSection } from "./ToolSearchSection";
 import { useTranslation } from "react-i18next";
 import { useRecipeForm } from "../../context/RecipeFormContext";
 import { validateIngredients } from "../../utils/recipeValidation";
+import { searchEquals } from "../../utils/string";
 import { searchIngredients } from "../../api/ingredients";
 import type { IngredientItem } from "../../api/ingredients";
 import { getTools } from "../../api/tools";
@@ -88,7 +89,7 @@ export function CreateIngredientsToolsScreen() {
           prev.map((ing) => {
             if (ing.name.trim() && ing.ingredientId === null) {
               const match = data.find(
-                (ai) => ai.name.toLowerCase() === ing.name.toLowerCase(),
+                (ai) => searchEquals(ai.name, ing.name),
               );
               if (match) return { ...ing, ingredientId: match.id };
               console.warn(
