@@ -160,7 +160,10 @@
     "statDraft": "Taslak",
     "recentRecipes": "Son Tarifler",
     "seeAll": "Tüm {{count}} tarifi gör",
-    "noRecipes": "Henüz tarif yok. Oluşturmaya başla!"
+    "noRecipes": "Henüz tarif yok. Oluşturmaya başla!",
+    "favorites": "Favorilerim",
+    "noFavorites": "Henüz favori yok. Tarifleri keşfet!",
+    "seeAllFavorites": "Tüm {{count}} favoriyi gör"
   },
   "home": {
     "featured": "Öne Çıkan Tarif",
