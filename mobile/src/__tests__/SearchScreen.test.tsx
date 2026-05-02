@@ -14,7 +14,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 const mockNavigate = jest.fn();
-const mockRouteParams: { initialQuery?: string } = {};
+const mockRouteParams: { initialQuery?: string; initialTagName?: string; initialAllergenName?: string } = {};
 
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: mockNavigate }),
@@ -34,10 +34,12 @@ import {
   fetchSearchGenres,
   searchDishVarieties,
   fetchDiscoveryRecipes,
+  fetchDietaryTags,
 } from '../api/search';
 const mockFetchGenres = fetchSearchGenres as jest.MockedFunction<typeof fetchSearchGenres>;
 const mockSearchVarietiesFn = searchDishVarieties as jest.MockedFunction<typeof searchDishVarieties>;
 const mockFetchDiscovery = fetchDiscoveryRecipes as jest.MockedFunction<typeof fetchDiscoveryRecipes>;
+const mockFetchDietaryTags = fetchDietaryTags as jest.MockedFunction<typeof fetchDietaryTags>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -81,9 +83,12 @@ describe('SearchScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRouteParams.initialQuery = undefined;
+    mockRouteParams.initialTagName = undefined;
+    mockRouteParams.initialAllergenName = undefined;
     mockFetchGenres.mockResolvedValue(mockSearchGenres);
     mockSearchVarietiesFn.mockResolvedValue(mockSearchVarieties);
     mockFetchDiscovery.mockResolvedValue(mockRecipes);
+    mockFetchDietaryTags.mockResolvedValue([]);
   });
 
   // ─── Default state ─────────────────────────────────────────────────────────
@@ -130,6 +135,34 @@ describe('SearchScreen', () => {
       const result = render(<SearchScreen />);
       await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
       expect(result.getByDisplayValue('Soups')).toBeTruthy();
+    });
+  });
+
+  // ─── initialTagName / initialAllergenName from route params ──────────────
+
+  describe('initialTagName from route params', () => {
+    it('fetches dietary tags on mount when initialTagName is set', async () => {
+      mockRouteParams.initialTagName = 'VEGAN';
+      mockFetchDietaryTags.mockResolvedValue([{ id: 7, name: 'Vegan', category: 'dietary' }]);
+      const result = render(<SearchScreen />);
+      await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
+      expect(mockFetchDietaryTags).toHaveBeenCalled();
+      result.unmount();
+    });
+
+    it('passes matched dietaryTagId to fetchDiscoveryRecipes when initialTagName matches', async () => {
+      mockRouteParams.initialTagName = 'VEGAN';
+      mockFetchDietaryTags.mockResolvedValue([{ id: 7, name: 'Vegan', category: 'dietary' }]);
+      render(<SearchScreen />);
+      await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
+      expect(mockFetchDiscovery).toHaveBeenCalledWith(
+        expect.objectContaining({ dietaryTagIds: [7] })
+      );
+    });
+
+    it('does not fetch dietary tags when no initial tag params are set', async () => {
+      await renderAndFlush();
+      expect(mockFetchDietaryTags).not.toHaveBeenCalled();
     });
   });
 

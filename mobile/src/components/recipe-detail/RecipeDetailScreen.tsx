@@ -97,6 +97,13 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
           tags={recipe.tags}
           allergens={recipe.allergens}
           onAuthorPress={() => Alert.alert('Profile', t('common.comingSoon'))}
+          onTagPress={(tag, type) => {
+            if (type === 'dietary') {
+              navigation.navigate('SearchTab', { screen: 'Search', params: { initialTagName: tag } });
+            } else {
+              navigation.navigate('SearchTab', { screen: 'Search', params: { initialAllergenName: tag } });
+            }
+          }}
         />
 
         {recipe.story ? <StoryCard story={recipe.story} /> : null}

@@ -16,6 +16,7 @@ import {
   searchDishVarieties,
   fetchSearchGenres,
   fetchDiscoveryRecipes,
+  fetchDietaryTags,
   type DishVarietyResult,
   type Recipe,
   type SortOption,
@@ -108,6 +109,46 @@ export function SearchScreen() {
         setAllVarieties(vars);
       })
       .finally(() => setInitialLoading(false));
+  }, []);
+
+  // ── Apply initial tag/allergen filter from navigation params (tag chip press) ─
+  useEffect(() => {
+    const tagName = route.params?.initialTagName;
+    const allergenName = route.params?.initialAllergenName;
+    if (!tagName && !allergenName) return;
+    fetchDietaryTags().then((allTags) => {
+      const normalize = (code: string) =>
+        code.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).toLowerCase();
+      setFilters((prev) => {
+        let next = { ...prev };
+        if (tagName) {
+          const match = allTags.find(
+            (t) => t.category === 'dietary' && t.name.toLowerCase() === normalize(tagName)
+          );
+          if (match) {
+            next = {
+              ...next,
+              dietaryTagIds: [match.id],
+              dietaryTagNames: [match.name],
+            };
+          }
+        }
+        if (allergenName) {
+          const match = allTags.find(
+            (t) => t.category === 'allergen' && t.name.toLowerCase() === normalize(allergenName)
+          );
+          if (match) {
+            next = {
+              ...next,
+              excludeAllergenIds: [match.id],
+              excludeAllergenNames: [match.name],
+            };
+          }
+        }
+        return next;
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Debounce search input ─────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { User } from '../../types/user';
 import type { RecipeType } from '../../types/common';
@@ -19,6 +19,7 @@ interface RecipeHeaderProps {
   tags: string[];
   allergens: string[];
   onAuthorPress?: () => void;
+  onTagPress?: (tag: string, type: 'dietary' | 'allergen') => void;
 }
 
 const dietaryTagColors: Record<string, string> = {
@@ -47,6 +48,7 @@ export function RecipeHeader({
   tags,
   allergens,
   onAuthorPress,
+  onTagPress,
 }: RecipeHeaderProps) {
   const { t } = useTranslation('common');
   const [bookmarked, setBookmarked] = useState(false);
@@ -88,18 +90,30 @@ export function RecipeHeader({
       {(tags.length > 0 || allergens.length > 0) && (
         <View style={styles.tagRow}>
           {tags.map((tag) => (
-            <Badge
+            <Pressable
               key={tag}
-              label={formatTagLabel(tag)}
-              backgroundColor={dietaryTagColors[tag] ?? '#586330'}
-            />
+              onPress={() => onTagPress?.(tag, 'dietary')}
+              accessibilityRole="button"
+              accessibilityLabel={formatTagLabel(tag)}
+            >
+              <Badge
+                label={formatTagLabel(tag)}
+                backgroundColor={dietaryTagColors[tag] ?? '#586330'}
+              />
+            </Pressable>
           ))}
           {allergens.map((allergen) => (
-            <Badge
+            <Pressable
               key={allergen}
-              label={formatTagLabel(allergen)}
-              backgroundColor={allergenTagColor}
-            />
+              onPress={() => onTagPress?.(allergen, 'allergen')}
+              accessibilityRole="button"
+              accessibilityLabel={formatTagLabel(allergen)}
+            >
+              <Badge
+                label={formatTagLabel(allergen)}
+                backgroundColor={allergenTagColor}
+              />
+            </Pressable>
           ))}
         </View>
       )}
