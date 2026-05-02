@@ -773,3 +773,33 @@
 .rd-subs-modal__close:hover {
   background: rgba(134, 69, 42, 0.06);
 }
+
+/* ── Dietary / allergen tag chips ── */
+
+.recipe-detail__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding: 0 var(--space-lg);
+}
+
+.recipe-detail__tag {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.recipe-detail__tag--dietary {
+  background: rgba(var(--color-main-rgb, 134, 69, 42), 0.08);
+  color: var(--color-main);
+  border: 1px solid rgba(var(--color-main-rgb, 134, 69, 42), 0.2);
+}
+
+.recipe-detail__tag--allergen {
+  background: rgba(192, 57, 43, 0.08);
+  color: #c0392b;
+  border: 1px solid rgba(192, 57, 43, 0.25);
+}

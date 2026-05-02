@@ -378,6 +378,19 @@ export function RecipeDetailPage() {
           )}
         </div>
 
+        {recipe.tags.length > 0 && (
+          <div className="recipe-detail__tags">
+            {recipe.tags.map((tag) => (
+              <span
+                key={tag.id}
+                className={`recipe-detail__tag recipe-detail__tag--${tag.category}`}
+              >
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+
         {extraGalleryImages.length > 0 && (
           <section className="recipe-detail__block recipe-detail__media-gallery-wrap" aria-label={t('recipeDetail.mediaGallery')}>
             <h2 className="recipe-detail__h2">{t('recipeDetail.mediaGallery')}</h2>
