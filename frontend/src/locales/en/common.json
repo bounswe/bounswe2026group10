@@ -431,5 +431,18 @@
       "uploading": "Uploading media…",
       "chooseAria": "Select photos or MP4 video files from your device"
     }
+  },
+  "comments": {
+    "title": "Comments",
+    "empty": "No comments yet. Be the first!",
+    "placeholder": "Write a comment...",
+    "submit": "Post",
+    "delete": "Delete",
+    "loadMore": "Load more",
+    "loginPrompt": "Log in to leave a comment.",
+    "loginLink": "Log in",
+    "rateLabel": "Your rating (optional):",
+    "ratingRequired": "Please rate this recipe before commenting.",
+    "submitError": "Failed to post comment. Please try again."
   }
 }
