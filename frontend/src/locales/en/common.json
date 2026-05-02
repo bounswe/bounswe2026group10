@@ -160,7 +160,10 @@
     "statDraft": "Drafts",
     "recentRecipes": "Recent Recipes",
     "seeAll": "See all {{count}} recipes",
-    "noRecipes": "No recipes yet. Start creating!"
+    "noRecipes": "No recipes yet. Start creating!",
+    "favorites": "Favorites",
+    "noFavorites": "No favorites yet. Explore recipes!",
+    "seeAllFavorites": "See all {{count}} favorites"
   },
   "home": {
     "featured": "Featured Recipe",

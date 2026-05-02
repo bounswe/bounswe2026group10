@@ -5,6 +5,7 @@ import { isAxiosError } from 'axios'
 import { recipeService, type RecipeDetail, type RecipeIngredient, type ScaledRecipeIngredient } from '@/services/recipe-service'
 import { ingredientService, type IngredientSubstitution } from '@/services/ingredient-service'
 import { ratingService } from '@/services/rating-service'
+import { favoriteService } from '@/services/favorite-service'
 import { RecipeRating } from '@/components/RecipeRating/RecipeRating'
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal'
 import { useAppSelector } from '@/store/hooks'
@@ -158,6 +159,7 @@ export function RecipeDetailPage() {
     const b = recipe.servingSize && recipe.servingSize > 0 ? recipe.servingSize : 4
     setServings(b)
     setScaledIngredients(null)
+    setFavorited(recipe.isFavorited ?? false)
   }, [recipe])
 
   // When servings changes, call the scale API (skip if same as base or no base serving size)
@@ -241,6 +243,31 @@ export function RecipeDetailPage() {
     }
   }, [id, recipe, t])
 
+  async function handleFavoriteToggle() {
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
+    }
+    if (!recipe) return
+
+    const prev = favorited
+    setFavorited(!prev)
+
+    try {
+      if (prev) {
+        await favoriteService.remove(recipe.id)
+      } else {
+        await favoriteService.add(recipe.id)
+      }
+    } catch (err) {
+      setFavorited(prev)
+      // 409: already favorited — keep filled
+      if (isAxiosError(err) && err.response?.status === 409) {
+        setFavorited(true)
+      }
+    }
+  }
+
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : ''
     try {
@@ -312,7 +339,7 @@ export function RecipeDetailPage() {
             <button
               type="button"
               className="recipe-detail__hero-btn"
-              onClick={() => setFavorited((v) => !v)}
+              onClick={() => void handleFavoriteToggle()}
               aria-pressed={favorited}
               aria-label={t('recipeDetail.favoriteAria')}
             >

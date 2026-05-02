@@ -61,6 +61,7 @@ export interface RecipeDetail {
   media: RecipeMedia[]
   createdAt: string
   updatedAt: string
+  isFavorited: boolean
 }
 
 export interface UpdateRecipePayload {
@@ -184,6 +185,7 @@ export const recipeService = {
       district: d.district ?? null,
       createdAt: d.createdAt ?? '',
       updatedAt: d.updatedAt ?? '',
+      isFavorited: d.isFavorited ?? false,
     }
   },
 

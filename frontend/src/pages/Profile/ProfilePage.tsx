@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAppSelector } from '@/store/hooks'
 import { recipeService, type MyRecipeSummary } from '@/services/recipe-service'
+import { favoriteService, type FavoriteRecipe } from '@/services/favorite-service'
 import './ProfilePage.css'
 
 function StarIcon() {
@@ -20,6 +21,9 @@ export function ProfilePage() {
 
   const [recipes, setRecipes] = useState<MyRecipeSummary[]>([])
   const [recipesLoading, setRecipesLoading] = useState(true)
+  const [favorites, setFavorites] = useState<FavoriteRecipe[]>([])
+  const [favoritesTotal, setFavoritesTotal] = useState(0)
+  const [favoritesLoading, setFavoritesLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -27,6 +31,20 @@ export function ProfilePage() {
       .then((data) => { if (!cancelled) setRecipes(data) })
       .catch(() => { if (!cancelled) setRecipes([]) })
       .finally(() => { if (!cancelled) setRecipesLoading(false) })
+    return () => { cancelled = true }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    favoriteService.list(1, 5)
+      .then((data) => {
+        if (!cancelled) {
+          setFavorites(data.recipes)
+          setFavoritesTotal(data.pagination.total)
+        }
+      })
+      .catch(() => { if (!cancelled) setFavorites([]) })
+      .finally(() => { if (!cancelled) setFavoritesLoading(false) })
     return () => { cancelled = true }
   }, [])
 
@@ -134,6 +152,57 @@ export function ProfilePage() {
 
       {!recipesLoading && recipes.length === 0 && (
         <p className="profile-page__empty">{t('profileScreen.noRecipes')}</p>
+      )}
+
+      {/* ── Favorites ── */}
+      {!favoritesLoading && favorites.length > 0 && (
+        <section className="profile-page__section">
+          <h2 className="profile-page__section-title">{t('profileScreen.favorites')}</h2>
+          <div className="profile-page__recipe-list">
+            {favorites.map((recipe) => (
+              <button
+                key={recipe.id}
+                type="button"
+                className="profile-page__recipe-card"
+                onClick={() => navigate(`/recipes/${recipe.id}`)}
+              >
+                <div className="profile-page__recipe-thumb">
+                  {recipe.coverImageUrl
+                    ? <img src={recipe.coverImageUrl} alt={recipe.title} loading="lazy" />
+                    : <div className="profile-page__recipe-placeholder" />
+                  }
+                </div>
+                <div className="profile-page__recipe-body">
+                  <p className="profile-page__recipe-title">{recipe.title}</p>
+                  <div className="profile-page__recipe-meta">
+                    <span className={`profile-page__type profile-page__type--${recipe.type}`}>
+                      {t(recipe.type === 'cultural' ? 'library.typeCultural' : 'library.typeCommunity')}
+                    </span>
+                    {recipe.averageRating !== null && (
+                      <span className="profile-page__rating">
+                        <StarIcon />
+                        {recipe.averageRating.toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+          {favoritesTotal > 5 && (
+            <button
+              type="button"
+              className="profile-page__see-all"
+              onClick={() => navigate('/library?tab=favorites')}
+            >
+              {t('profileScreen.seeAllFavorites', { count: favoritesTotal })}
+            </button>
+          )}
+        </section>
+      )}
+
+      {!favoritesLoading && favorites.length === 0 && (
+        <p className="profile-page__empty">{t('profileScreen.noFavorites')}</p>
       )}
     </div>
   )
