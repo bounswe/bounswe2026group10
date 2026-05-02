@@ -14,17 +14,28 @@ import {
   persistRefreshToken,
   loadPersistedRefreshToken,
   setRefreshToken,
+  persistUserProfile,
+  loadPersistedUserProfile,
+  registerSessionExpiredHandler,
+  ApiError,
 } from '../api/client';
 
 jest.mock('../api/auth');
-jest.mock('../api/client', () => ({
-  persistToken: jest.fn(),
-  loadPersistedToken: jest.fn(),
-  setToken: jest.fn(),
-  persistRefreshToken: jest.fn(),
-  loadPersistedRefreshToken: jest.fn(),
-  setRefreshToken: jest.fn(),
-}));
+jest.mock('../api/client', () => {
+  const actual = jest.requireActual('../api/client');
+  return {
+    persistToken: jest.fn(),
+    loadPersistedToken: jest.fn(),
+    setToken: jest.fn(),
+    persistRefreshToken: jest.fn(),
+    loadPersistedRefreshToken: jest.fn(),
+    setRefreshToken: jest.fn(),
+    persistUserProfile: jest.fn(),
+    loadPersistedUserProfile: jest.fn(),
+    registerSessionExpiredHandler: jest.fn(),
+    ApiError: actual.ApiError,
+  };
+});
 
 const mockApiLogin = apiLogin as jest.MockedFunction<typeof apiLogin>;
 const mockApiRegister = apiRegister as jest.MockedFunction<typeof apiRegister>;
@@ -34,6 +45,8 @@ const mockPersistToken = persistToken as jest.MockedFunction<typeof persistToken
 const mockLoadPersistedToken = loadPersistedToken as jest.MockedFunction<typeof loadPersistedToken>;
 const mockPersistRefreshToken = persistRefreshToken as jest.MockedFunction<typeof persistRefreshToken>;
 const mockLoadPersistedRefreshToken = loadPersistedRefreshToken as jest.MockedFunction<typeof loadPersistedRefreshToken>;
+const mockPersistUserProfile = persistUserProfile as jest.MockedFunction<typeof persistUserProfile>;
+const mockLoadPersistedUserProfile = loadPersistedUserProfile as jest.MockedFunction<typeof loadPersistedUserProfile>;
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <AuthProvider>{children}</AuthProvider>
@@ -60,11 +73,20 @@ const registerParams = {
 };
 
 describe('AuthContext', () => {
+  const storedProfile = {
+    userId: 'u1',
+    email: 'test@test.com',
+    username: 'testuser',
+    role: 'COOK',
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockPersistToken.mockResolvedValue(undefined);
     mockPersistRefreshToken.mockResolvedValue(undefined);
+    mockPersistUserProfile.mockResolvedValue(undefined);
     mockLoadPersistedRefreshToken.mockResolvedValue(null);
+    mockLoadPersistedUserProfile.mockResolvedValue(null);
   });
 
   // ─── Initial token check ────────────────────────────────────────────────────
@@ -73,26 +95,31 @@ describe('AuthContext', () => {
     it('starts in loading state before the async check resolves', () => {
       mockLoadPersistedToken.mockReturnValue(new Promise(() => {})); // never resolves
       mockLoadPersistedRefreshToken.mockReturnValue(new Promise(() => {})); // never resolves
+      mockLoadPersistedUserProfile.mockReturnValue(new Promise(() => {})); // never resolves
       const { result } = renderHook(() => useAuth(), { wrapper });
       expect(result.current.authState.status).toBe('loading');
     });
 
     it('sets unauthenticated when no token is stored', async () => {
       mockLoadPersistedToken.mockResolvedValue(null);
+      mockLoadPersistedUserProfile.mockResolvedValue(null);
       const { result } = renderHook(() => useAuth(), { wrapper });
       await act(async () => {});
       expect(result.current.authState).toEqual({ status: 'unauthenticated', isGuest: false });
     });
 
-    it('sets authenticated when stored token passes getMe validation', async () => {
+    it('sets unauthenticated when token exists but no stored profile', async () => {
       mockLoadPersistedToken.mockResolvedValue('access123');
-      mockGetMe.mockResolvedValue({
-        userId: 'u1',
-        email: 'test@test.com',
-        username: 'testuser',
-        role: 'COOK',
-        createdAt: '2024-01-01',
-      });
+      mockLoadPersistedUserProfile.mockResolvedValue(null);
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await act(async () => {});
+      expect(result.current.authState).toEqual({ status: 'unauthenticated', isGuest: false });
+    });
+
+    it('sets authenticated immediately from stored profile without waiting for getMe', async () => {
+      mockLoadPersistedToken.mockResolvedValue('access123');
+      mockLoadPersistedUserProfile.mockResolvedValue(storedProfile);
+      mockGetMe.mockResolvedValue({ ...storedProfile, role: 'COOK', createdAt: '2024-01-01' });
       const { result } = renderHook(() => useAuth(), { wrapper });
       await act(async () => {});
       expect(result.current.authState.status).toBe('authenticated');
@@ -102,13 +129,25 @@ describe('AuthContext', () => {
       }
     });
 
-    it('clears token and sets unauthenticated when getMe fails', async () => {
+    it('clears session and sets unauthenticated when getMe fails with ApiError', async () => {
       mockLoadPersistedToken.mockResolvedValue('expired-token');
-      mockGetMe.mockRejectedValue(new Error('Unauthorized'));
+      mockLoadPersistedUserProfile.mockResolvedValue(storedProfile);
+      mockGetMe.mockRejectedValue(new ApiError('UNAUTHORIZED', 'Token invalid'));
       const { result } = renderHook(() => useAuth(), { wrapper });
       await act(async () => {});
       expect(result.current.authState).toEqual({ status: 'unauthenticated', isGuest: false });
       expect(mockPersistToken).toHaveBeenCalledWith(null);
+      expect(mockPersistUserProfile).toHaveBeenCalledWith(null);
+    });
+
+    it('keeps authenticated state when getMe fails with a network error', async () => {
+      mockLoadPersistedToken.mockResolvedValue('access123');
+      mockLoadPersistedUserProfile.mockResolvedValue(storedProfile);
+      mockGetMe.mockRejectedValue(new Error('Network request failed'));
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await act(async () => {});
+      expect(result.current.authState.status).toBe('authenticated');
+      expect(mockPersistToken).not.toHaveBeenCalledWith(null);
     });
   });
 
@@ -117,6 +156,7 @@ describe('AuthContext', () => {
   describe('login()', () => {
     beforeEach(() => {
       mockLoadPersistedToken.mockResolvedValue(null);
+      mockLoadPersistedUserProfile.mockResolvedValue(null);
     });
 
     it('sets authenticated state with returned user on success', async () => {
@@ -132,7 +172,7 @@ describe('AuthContext', () => {
       }
     });
 
-    it('persists the access token to secure storage', async () => {
+    it('persists the access token and user profile to secure storage', async () => {
       mockApiLogin.mockResolvedValue(fakeTokens);
       const { result } = renderHook(() => useAuth(), { wrapper });
       await act(async () => {});
@@ -140,6 +180,12 @@ describe('AuthContext', () => {
         await result.current.login({ email: 'test@test.com', password: 'pass123' });
       });
       expect(mockPersistToken).toHaveBeenCalledWith('access123');
+      expect(mockPersistUserProfile).toHaveBeenCalledWith({
+        userId: fakeTokens.userId,
+        email: fakeTokens.email,
+        username: fakeTokens.username,
+        role: fakeTokens.role,
+      });
     });
 
     it('propagates API errors to the caller', async () => {
@@ -171,6 +217,7 @@ describe('AuthContext', () => {
   describe('register()', () => {
     beforeEach(() => {
       mockLoadPersistedToken.mockResolvedValue(null);
+      mockLoadPersistedUserProfile.mockResolvedValue(null);
     });
 
     it('sets authenticated state with returned user on success', async () => {
@@ -183,7 +230,7 @@ describe('AuthContext', () => {
       expect(result.current.authState.status).toBe('authenticated');
     });
 
-    it('persists the access token to secure storage', async () => {
+    it('persists the access token and user profile to secure storage', async () => {
       mockApiRegister.mockResolvedValue(fakeTokens);
       const { result } = renderHook(() => useAuth(), { wrapper });
       await act(async () => {});
@@ -191,6 +238,12 @@ describe('AuthContext', () => {
         await result.current.register(registerParams);
       });
       expect(mockPersistToken).toHaveBeenCalledWith('access123');
+      expect(mockPersistUserProfile).toHaveBeenCalledWith({
+        userId: fakeTokens.userId,
+        email: fakeTokens.email,
+        username: fakeTokens.username,
+        role: fakeTokens.role,
+      });
     });
 
     it('propagates API errors to the caller', async () => {
@@ -217,6 +270,7 @@ describe('AuthContext', () => {
 
     beforeEach(() => {
       mockLoadPersistedToken.mockResolvedValue(null);
+      mockLoadPersistedUserProfile.mockResolvedValue(null);
     });
 
     it('sets unauthenticated state after logout', async () => {
@@ -228,14 +282,16 @@ describe('AuthContext', () => {
       expect(result.current.authState).toEqual({ status: 'unauthenticated', isGuest: false });
     });
 
-    it('clears the persisted token', async () => {
+    it('clears the persisted token and user profile', async () => {
       mockApiLogout.mockResolvedValue(undefined);
       const { result } = renderHook(() => useAuth(), { wrapper });
       await act(async () => {});
       await loginFirst(result);
       mockPersistToken.mockClear();
+      mockPersistUserProfile.mockClear();
       await act(async () => { await result.current.logout(); });
       expect(mockPersistToken).toHaveBeenCalledWith(null);
+      expect(mockPersistUserProfile).toHaveBeenCalledWith(null);
     });
 
     it('still logs out locally when the server call fails', async () => {
@@ -253,6 +309,7 @@ describe('AuthContext', () => {
   describe('continueAsGuest()', () => {
     it('sets isGuest to true', async () => {
       mockLoadPersistedToken.mockResolvedValue(null);
+      mockLoadPersistedUserProfile.mockResolvedValue(null);
       const { result } = renderHook(() => useAuth(), { wrapper });
       await act(async () => {});
       act(() => { result.current.continueAsGuest(); });
@@ -263,6 +320,7 @@ describe('AuthContext', () => {
   describe('exitGuest()', () => {
     it('sets isGuest back to false', async () => {
       mockLoadPersistedToken.mockResolvedValue(null);
+      mockLoadPersistedUserProfile.mockResolvedValue(null);
       const { result } = renderHook(() => useAuth(), { wrapper });
       await act(async () => {});
       act(() => { result.current.continueAsGuest(); });

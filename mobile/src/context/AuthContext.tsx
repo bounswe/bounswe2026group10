@@ -8,6 +8,10 @@ import {
   persistRefreshToken,
   loadPersistedRefreshToken,
   setRefreshToken,
+  persistUserProfile,
+  loadPersistedUserProfile,
+  registerSessionExpiredHandler,
+  ApiError,
 } from '../api/client';
 
 type AuthState =
@@ -30,33 +34,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({ status: 'loading' });
 
   useEffect(() => {
+    registerSessionExpiredHandler(() => {
+      setAuthState({ status: 'unauthenticated', isGuest: false });
+    });
+
     async function checkStoredToken() {
       try {
-        const [token, refreshToken] = await Promise.all([
+        const [token, refreshToken, profile] = await Promise.all([
           loadPersistedToken(),
           loadPersistedRefreshToken(),
+          loadPersistedUserProfile(),
         ]);
-        if (!token) {
+
+        if (!token || !profile) {
           setAuthState({ status: 'unauthenticated', isGuest: false });
           return;
         }
+
         if (refreshToken) {
           setRefreshToken(refreshToken);
         }
-        const me = await getMe();
+
+        // Restore session immediately from stored data — no network required
         setAuthState({
           status: 'authenticated',
           user: {
-            userId: me.userId,
-            email: me.email,
-            username: me.username,
-            role: me.role,
+            userId: profile.userId,
+            email: profile.email,
+            username: profile.username,
+            role: profile.role as AuthTokens['role'],
             accessToken: token,
             refreshToken: refreshToken ?? '',
           },
         });
+
+        // Verify and refresh profile in the background
+        try {
+          const me = await getMe();
+          setAuthState((prev) => {
+            if (prev.status !== 'authenticated') return prev;
+            return {
+              status: 'authenticated',
+              user: { ...prev.user, userId: me.userId, email: me.email, username: me.username, role: me.role },
+            };
+          });
+          await persistUserProfile({ userId: me.userId, email: me.email, username: me.username, role: me.role });
+        } catch (err) {
+          if (err instanceof ApiError) {
+            // Token is invalid and refresh failed — log out
+            setToken(null);
+            setRefreshToken(null);
+            await Promise.all([persistToken(null), persistRefreshToken(null), persistUserProfile(null)]);
+            setAuthState({ status: 'unauthenticated', isGuest: false });
+          }
+          // Network error: keep the restored auth state — tokens may still be valid
+        }
       } catch {
-        await Promise.all([persistToken(null), persistRefreshToken(null)]);
         setAuthState({ status: 'unauthenticated', isGuest: false });
       }
     }
@@ -68,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await Promise.all([
       persistToken(tokens.accessToken),
       persistRefreshToken(tokens.refreshToken),
+      persistUserProfile({ userId: tokens.userId, email: tokens.email, username: tokens.username, role: tokens.role }),
     ]);
     setAuthState({ status: 'authenticated', user: tokens });
   }
@@ -77,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await Promise.all([
       persistToken(tokens.accessToken),
       persistRefreshToken(tokens.refreshToken),
+      persistUserProfile({ userId: tokens.userId, email: tokens.email, username: tokens.username, role: tokens.role }),
     ]);
     setAuthState({ status: 'authenticated', user: tokens });
   }
@@ -89,7 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setToken(null);
     setRefreshToken(null);
-    await Promise.all([persistToken(null), persistRefreshToken(null)]);
+    await Promise.all([persistToken(null), persistRefreshToken(null), persistUserProfile(null)]);
     setAuthState({ status: 'unauthenticated', isGuest: false });
   }
 
