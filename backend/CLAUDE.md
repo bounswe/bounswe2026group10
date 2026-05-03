@@ -64,9 +64,10 @@ backend/
 │   │   ├── comments.ts          # Recipe comments (create, list, delete)
 │   │   └── parse.ts             # Free-text recipe parser endpoint
 │   ├── types/
-│   │   └── index.ts             # TypeScript interfaces (roles, auth, response)
+│   │   └── index.ts             # TypeScript interfaces (roles, auth, response, SupportedLanguage)
 │   ├── utils/
-│   │   └── response.ts          # successResponse / errorResponse helpers
+│   │   ├── response.ts          # successResponse / errorResponse helpers
+│   │   └── i18n.ts              # parseLangParam, resolveLang — ?lang= query param helpers
 │   └── __tests__/               # Jest test suite
 │       ├── auth.test.ts
 │       ├── middleware.test.ts
@@ -105,13 +106,22 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 
 ### Reference Tables
 
-- **ingredients** — `id`, `name`
+- **ingredients** — `id`, `name`, `name_en`, `name_tr` (`name` mirrors `name_en` for backward compat; see migration 002)
 - **allergens** — `id`, `name`
 - **ingredient_allergens** — `ingredient_id` (FK), `allergen_id` (FK)
 - **ingredient_substitutions** — `id`, `ingredient_id` (FK ingredients), `substitute_id` (FK ingredients), `source_amount` NUMERIC(10,3), `source_unit` TEXT, `sub_amount` NUMERIC(10,3), `sub_unit` TEXT, `confidence` NUMERIC(3,2), `description` TEXT — unique on (ingredient_id, substitute_id), no self-substitution
-- **dietary_tags** — `id`, `name` (unique), `category` (dietary|allergen)
-- **dish_genres** — `id`, `name`, `description`
-- **dish_varieties** — `id`, `name`, `description`, `genre_id` (FK dish_genres)
+- **dietary_tags** — `id`, `name`, `name_en`, `name_tr`, `category` (dietary|allergen)
+- **dish_genres** — `id`, `name`, `name_en`, `name_tr`, `description`, `description_en`, `description_tr`
+- **dish_varieties** — `id`, `name`, `name_en`, `name_tr`, `description`, `description_en`, `description_tr`, `genre_id` (FK dish_genres)
+
+### Language Fields Convention (#412)
+
+All translatable reference fields follow the `<field>_en` / `<field>_tr` naming pattern.  
+Migration `002_en_tr_language_fields.sql` adds these columns and seeds `_en` from the existing value.
+
+- Without `?lang=`: endpoints return all fields including `_en` and `_tr`.
+- With `?lang=en` or `?lang=tr`: endpoints return a single resolved `name`/`description` (preferred language, falling back to the other if null).
+- Invalid `?lang=` values return 400 `VALIDATION_ERROR`.
 
 ### Database Triggers
 
@@ -151,14 +161,25 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 
 ### Dish Genres (`/dish-genres`)
 - `GET /dish-genres` — All genres with nested varieties
+  - Query params: `lang` (optional — "en" or "tr"; returns resolved `name`/`description` instead of `_en`/`_tr` pair)
+  - Without `lang`: each genre includes `name_en`, `name_tr`, `description_en`, `description_tr`; each nested variety includes `name_en`, `name_tr`
 
 ### Dish Varieties (`/dish-varieties`)
-- `GET /dish-varieties` — List varieties (optional: genreId, search filters)
+- `GET /dish-varieties` — List varieties (optional: genreId, search, lang filters)
+  - Query params: `genreId`, `search`, `lang` (optional — "en" or "tr")
+  - Without `lang`: response includes `name_en`, `name_tr`, `description_en`, `description_tr`
 - `GET /dish-varieties/:id` — Single variety with published recipes
+  - Query params: `lang` (optional — "en" or "tr")
 - `GET /dish-varieties/:id/recipes` — Variety recipes split into expertRecipe + communityRecipes
 
 ### Ingredients (`/ingredients`)
-- `GET /ingredients` — List all ingredients with allergens (optional: `?search=<string>`)
+- `GET /ingredients` — List all ingredients (optional: `?search=<string>`, `?lang=<en|tr>`)
+  - Without `lang`: response includes `name`, `name_en`, `name_tr`
+  - With `lang`: response includes only resolved `name` (preferred language, fallback to other)
+- `POST /ingredients` — Create a new ingredient (cook/expert only)
+  - Body: `{ name_en?: string, name_tr?: string }` — at least one field required
+  - Returns 409 if an ingredient with the same primary name already exists
+  - Stores `name_en` and `name_tr`; `name` column mirrors `name_en ?? name_tr` for backward compat
 - `GET /ingredients/:id/substitutions` — Get substitute suggestions for an ingredient (#274)
   - Query params: `amount` (optional, positive number), `unit` (optional, string — e.g. `gr`)
   - Without params: returns all substitutions with base amounts
@@ -169,6 +190,8 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 
 ### Dietary Tags (`/dietary-tags`)
 - `GET /dietary-tags` — List all supported dietary and allergen tags
+  - Query params: `lang` (optional — "en" or "tr")
+  - Without `lang`: response includes `name`, `name_en`, `name_tr`, `category`
 
 ### Discovery (`/discovery`)
 - `GET /discovery/recipes` — Filtered recipe discovery
