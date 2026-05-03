@@ -101,7 +101,7 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - **recipe_media** — `id`, `recipe_id` (FK), `url`, `type` (image|video), `created_at`
 - **ratings** — `id`, `recipe_id` (FK), `user_id` (FK profiles), `score` (1-5), `created_at`, `updated_at` — unique constraint on (recipe_id, user_id)
 - **recipe_dietary_tags** — `recipe_id` (FK recipes), `tag_id` (FK dietary_tags) — composite PK
-- **comments** — `id` (serial PK), `recipe_id` (FK recipes ON DELETE CASCADE), `user_id` (FK profiles ON DELETE CASCADE), `text` (1–2000 chars, CHECK), `created_at`, `updated_at` (nullable). Indexed on `recipe_id`, `user_id`, and `(recipe_id, created_at DESC)`. The API exposes the column as `body`; the route maps `body` ↔ `text` at the DB boundary.
+- **comments** — `id` (serial PK), `recipe_id` (FK recipes ON DELETE CASCADE), `user_id` (FK profiles ON DELETE CASCADE), `text` (1–2000 chars, CHECK), `created_at`, `updated_at` (nullable). Indexed on `recipe_id`, `user_id`, and `(recipe_id, created_at DESC)`. **Unique constraint on `(recipe_id, user_id)`** — one comment per user per recipe; the API enforces this with a pre-insert existence check and also maps Postgres `unique_violation` (23505) on insert to 409 `COMMENT_ALREADY_EXISTS` to handle the race window. The API exposes the column as `body`; the route maps `body` ↔ `text` at the DB boundary.
 
 ### Reference Tables
 
@@ -208,19 +208,20 @@ Database is managed via Supabase (no migration files in repo). Key tables:
   - Returns distinct unit values from `recipe_ingredients`; without `search`, returns all known units; supports autocomplete use case
 
 ### Comments (`/recipes/:id/comments`, `/comments/:id`)
-Comments are coupled to ratings (Amazon-style): a non-creator must have a rating on the recipe to comment, but rating is allowed without commenting.
+Comments are coupled to ratings (Amazon-style): a non-creator must have a rating on the recipe to comment, but rating is allowed without commenting. Each user is limited to **one comment per recipe** — to revise, they edit their existing comment via `PATCH /comments/:id`.
 
 - `POST /recipes/:id/comments` — Create a comment on a recipe (auth required, #419)
   - Body: `{ body: string, score?: number }` — `body` is 1–2000 chars (trimmed); `score` is an optional integer 1–5
   - If `score` is provided, upserts the user's rating on the recipe in the same call
   - If `score` is omitted, requires an existing rating from the user; otherwise returns 400 `RATING_REQUIRED`
+  - Returns 409 `COMMENT_ALREADY_EXISTS` if the user already has a comment on the recipe (the existence check runs before rating side-effects, so a rejected request never mutates the rating)
   - Recipe creators may comment on their own recipe without a rating; passing a `score` as the creator returns 403 (self-rating forbidden, mirroring `POST /recipes/:id/ratings`)
   - Returns 404 if the recipe does not exist
   - Response: `{ comment: {...}, rating: {...} | null }`
 - `GET /recipes/:id/comments` — List comments on a recipe with pagination (public)
   - Query params: `page` (default 1), `limit` (default 20, max 100)
   - Ordered by `created_at` descending (newest first)
-  - Each comment includes the author's `username` (joined from `profiles`)
+  - Each comment includes the author's `username` (joined from `profiles`) and the author's `score` for this recipe (joined from `ratings`, `null` if no rating row — e.g. for the recipe creator)
 - `PATCH /comments/:id` — Edit own comment (auth required, author only)
   - Body: `{ body: string }` (1–2000 chars, trimmed)
   - Returns 403 if the caller is not the author, 404 if the comment does not exist
@@ -273,6 +274,7 @@ Use `successResponse(data)` and `errorResponse(code, message)` from `src/utils/r
 - `NOT_FOUND` (404) — Resource not found
 - `CONFLICT` (409) — Duplicate username/email, already published
 - `RATING_REQUIRED` (400) — Comment attempted without a rating on the recipe
+- `COMMENT_ALREADY_EXISTS` (409) — User attempted to post a second comment on the same recipe (must edit instead)
 - `INCOMPLETE_RECIPE` (400) — Missing fields for publish
 - `PARSE_FAILED` (500) — AI parsing of recipe text failed
 - `STANDARDIZATION_FAILED` (500) — AI unit standardization failed

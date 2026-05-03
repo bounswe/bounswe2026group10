@@ -155,9 +155,15 @@ describe("POST /recipes/:id/comments", () => {
   });
 
   it("returns 400 RATING_REQUIRED when no score and no existing rating", async () => {
+    let commentsCallCount = 0;
     setupAuthAndTables("cook", "profile-123", (table) => {
       if (table === "recipes")
         return chainable({ data: { id: "recipe-1", creator_id: "creator-999" }, error: null });
+      if (table === "comments") {
+        commentsCallCount++;
+        // First call is the existence check; no prior comment from this user.
+        return chainable({ data: null, error: { code: "PGRST116", message: "Not found" } });
+      }
       if (table === "ratings")
         return chainable({ data: null, error: { code: "PGRST116", message: "Not found" } });
       return chainable({ data: null, error: null });
@@ -170,17 +176,26 @@ describe("POST /recipes/:id/comments", () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("RATING_REQUIRED");
+    expect(commentsCallCount).toBeGreaterThanOrEqual(1);
   });
 
   it("returns 201 when score is provided (upserts rating + creates comment)", async () => {
     const ratingsMock = chainable({ data: okRating, error: null });
-    const commentsMock = chainable({ data: okComment, error: null });
+    let commentsCallCount = 0;
+    const insertMock = chainable({ data: okComment, error: null });
 
     setupAuthAndTables("cook", "profile-123", (table) => {
       if (table === "recipes")
         return chainable({ data: { id: "recipe-1", creator_id: "creator-999" }, error: null });
       if (table === "ratings") return ratingsMock;
-      if (table === "comments") return commentsMock;
+      if (table === "comments") {
+        commentsCallCount++;
+        if (commentsCallCount === 1) {
+          // existence check — no prior comment
+          return chainable({ data: null, error: { code: "PGRST116", message: "Not found" } });
+        }
+        return insertMock;
+      }
       return chainable({ data: null, error: null });
     });
 
@@ -210,11 +225,18 @@ describe("POST /recipes/:id/comments", () => {
   });
 
   it("returns 201 when no score but existing rating found", async () => {
+    let commentsCallCount = 0;
     setupAuthAndTables("cook", "profile-123", (table) => {
       if (table === "recipes")
         return chainable({ data: { id: "recipe-1", creator_id: "creator-999" }, error: null });
       if (table === "ratings") return chainable({ data: okRating, error: null });
-      if (table === "comments") return chainable({ data: okComment, error: null });
+      if (table === "comments") {
+        commentsCallCount++;
+        if (commentsCallCount === 1) {
+          return chainable({ data: null, error: { code: "PGRST116", message: "Not found" } });
+        }
+        return chainable({ data: okComment, error: null });
+      }
       return chainable({ data: null, error: null });
     });
 
@@ -245,10 +267,17 @@ describe("POST /recipes/:id/comments", () => {
   });
 
   it("returns 201 when creator comments on own recipe without a score (no rating required)", async () => {
+    let commentsCallCount = 0;
     setupAuthAndTables("cook", "profile-123", (table) => {
       if (table === "recipes")
         return chainable({ data: { id: "recipe-1", creator_id: "profile-123" }, error: null });
-      if (table === "comments") return chainable({ data: okComment, error: null });
+      if (table === "comments") {
+        commentsCallCount++;
+        if (commentsCallCount === 1) {
+          return chainable({ data: null, error: { code: "PGRST116", message: "Not found" } });
+        }
+        return chainable({ data: okComment, error: null });
+      }
       return chainable({ data: null, error: null });
     });
 
@@ -262,12 +291,89 @@ describe("POST /recipes/:id/comments", () => {
     expect(res.body.data.rating).toBeNull();
   });
 
-  it("returns 500 on db error during comment insert", async () => {
+  it("returns 409 COMMENT_ALREADY_EXISTS when the user has already commented", async () => {
+    setupAuthAndTables("cook", "profile-123", (table) => {
+      if (table === "recipes")
+        return chainable({ data: { id: "recipe-1", creator_id: "creator-999" }, error: null });
+      if (table === "comments")
+        return chainable({ data: { id: "existing-comment" }, error: null });
+      return chainable({ data: null, error: null });
+    });
+
+    const res = await request(app)
+      .post("/recipes/recipe-1/comments")
+      .set("Authorization", "Bearer valid_token")
+      .send({ body: "Trying to comment a second time" });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("COMMENT_ALREADY_EXISTS");
+  });
+
+  it("returns 409 COMMENT_ALREADY_EXISTS even when a score is provided", async () => {
+    const ratingsMock = chainable({ data: okRating, error: null });
+    setupAuthAndTables("cook", "profile-123", (table) => {
+      if (table === "recipes")
+        return chainable({ data: { id: "recipe-1", creator_id: "creator-999" }, error: null });
+      if (table === "comments")
+        return chainable({ data: { id: "existing-comment" }, error: null });
+      if (table === "ratings") return ratingsMock;
+      return chainable({ data: null, error: null });
+    });
+
+    const res = await request(app)
+      .post("/recipes/recipe-1/comments")
+      .set("Authorization", "Bearer valid_token")
+      .send({ body: "Trying again with a score", score: 5 });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("COMMENT_ALREADY_EXISTS");
+    // Rating must not be touched when the comment is rejected up front.
+    expect(ratingsMock.upsert).not.toHaveBeenCalled();
+  });
+
+  it("returns 409 when the INSERT hits the DB unique constraint (race with concurrent insert)", async () => {
+    let commentsCallCount = 0;
     setupAuthAndTables("cook", "profile-123", (table) => {
       if (table === "recipes")
         return chainable({ data: { id: "recipe-1", creator_id: "creator-999" }, error: null });
       if (table === "ratings") return chainable({ data: okRating, error: null });
-      if (table === "comments") return chainable({ data: null, error: { message: "DB timeout" } });
+      if (table === "comments") {
+        commentsCallCount++;
+        if (commentsCallCount === 1) {
+          // Existence check — no prior comment yet (concurrent request hasn't committed).
+          return chainable({ data: null, error: { code: "PGRST116", message: "Not found" } });
+        }
+        // INSERT loses the race; Postgres surfaces unique_violation.
+        return chainable({
+          data: null,
+          error: { code: "23505", message: 'duplicate key value violates unique constraint "comments_recipe_user_unique"' },
+        });
+      }
+      return chainable({ data: null, error: null });
+    });
+
+    const res = await request(app)
+      .post("/recipes/recipe-1/comments")
+      .set("Authorization", "Bearer valid_token")
+      .send({ body: "Racing in" });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("COMMENT_ALREADY_EXISTS");
+  });
+
+  it("returns 500 on db error during comment insert", async () => {
+    let commentsCallCount = 0;
+    setupAuthAndTables("cook", "profile-123", (table) => {
+      if (table === "recipes")
+        return chainable({ data: { id: "recipe-1", creator_id: "creator-999" }, error: null });
+      if (table === "ratings") return chainable({ data: okRating, error: null });
+      if (table === "comments") {
+        commentsCallCount++;
+        if (commentsCallCount === 1) {
+          return chainable({ data: null, error: { code: "PGRST116", message: "Not found" } });
+        }
+        return chainable({ data: null, error: { message: "DB timeout" } });
+      }
       return chainable({ data: null, error: null });
     });
 
@@ -284,6 +390,8 @@ describe("POST /recipes/:id/comments", () => {
     setupAuthAndTables("cook", "profile-123", (table) => {
       if (table === "recipes")
         return chainable({ data: { id: "recipe-1", creator_id: "creator-999" }, error: null });
+      if (table === "comments")
+        return chainable({ data: null, error: { code: "PGRST116", message: "Not found" } });
       if (table === "ratings") return chainable({ data: null, error: { message: "DB timeout" } });
       return chainable({ data: null, error: null });
     });
@@ -303,17 +411,30 @@ describe("POST /recipes/:id/comments", () => {
 describe("GET /recipes/:id/comments", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  const setupListMock = (data: any, error: any = null, count: number | null = null) => {
-    const chain: any = {};
-    chain.select = jest.fn().mockReturnValue(chain);
-    chain.eq = jest.fn().mockReturnValue(chain);
-    chain.order = jest.fn().mockReturnValue(chain);
-    chain.range = jest.fn().mockResolvedValue({ data, error, count });
+  const setupListMock = (
+    data: any,
+    error: any = null,
+    count: number | null = null,
+    ratings: { user_id: string; score: number }[] = [],
+    ratingsError: any = null
+  ) => {
+    const commentsChain: any = {};
+    commentsChain.select = jest.fn().mockReturnValue(commentsChain);
+    commentsChain.eq = jest.fn().mockReturnValue(commentsChain);
+    commentsChain.order = jest.fn().mockReturnValue(commentsChain);
+    commentsChain.range = jest.fn().mockResolvedValue({ data, error, count });
+
+    const ratingsChain: any = {};
+    ratingsChain.select = jest.fn().mockReturnValue(ratingsChain);
+    ratingsChain.eq = jest.fn().mockReturnValue(ratingsChain);
+    ratingsChain.in = jest.fn().mockResolvedValue({ data: ratings, error: ratingsError });
+
     (supabase.from as jest.Mock).mockImplementation((table) => {
-      if (table === "comments") return chain;
+      if (table === "comments") return commentsChain;
+      if (table === "ratings") return ratingsChain;
       return {};
     });
-    return chain;
+    return { commentsChain, ratingsChain };
   };
 
   const sampleComments = [
@@ -338,7 +459,10 @@ describe("GET /recipes/:id/comments", () => {
   ];
 
   it("returns 200 with paginated comments", async () => {
-    setupListMock(sampleComments, null, 2);
+    setupListMock(sampleComments, null, 2, [
+      { user_id: "profile-2", score: 5 },
+      { user_id: "profile-1", score: 4 },
+    ]);
     const res = await request(app).get("/recipes/recipe-1/comments");
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -346,8 +470,8 @@ describe("GET /recipes/:id/comments", () => {
     expect(res.body.data.pagination).toMatchObject({ page: 1, limit: 20, total: 2 });
   });
 
-  it("returns the response shape with username from joined profile", async () => {
-    setupListMock([sampleComments[0]], null, 1);
+  it("returns the response shape with username and score from joined data", async () => {
+    setupListMock([sampleComments[0]], null, 1, [{ user_id: "profile-2", score: 5 }]);
     const res = await request(app).get("/recipes/recipe-1/comments");
     expect(res.status).toBe(200);
     expect(res.body.data.comments[0]).toMatchObject({
@@ -356,22 +480,50 @@ describe("GET /recipes/:id/comments", () => {
       userId: "profile-2",
       username: "ayse",
       body: "Made this yesterday — turned out great.",
+      score: 5,
     });
   });
 
-  it("supports pagination query params", async () => {
-    const chain = setupListMock([], null, 0);
-    const res = await request(app).get("/recipes/recipe-1/comments?page=2&limit=5");
+  it("returns null score for commenters who have no rating (e.g. recipe creator)", async () => {
+    // Two comments, but only one user has a rating row.
+    setupListMock(sampleComments, null, 2, [{ user_id: "profile-1", score: 3 }]);
+    const res = await request(app).get("/recipes/recipe-1/comments");
     expect(res.status).toBe(200);
-    expect(chain.range).toHaveBeenCalledWith(5, 9);
+    const byId: Record<string, any> = Object.fromEntries(
+      res.body.data.comments.map((c: any) => [c.id, c])
+    );
+    expect(byId["c2"].score).toBeNull();
+    expect(byId["c1"].score).toBe(3);
   });
 
-  it("returns empty array when recipe has no comments", async () => {
-    setupListMock([], null, 0);
+  it("queries ratings only by the user_ids in the comment list and the recipe id", async () => {
+    const { ratingsChain } = setupListMock(sampleComments, null, 2, [
+      { user_id: "profile-1", score: 4 },
+      { user_id: "profile-2", score: 5 },
+    ]);
+    await request(app).get("/recipes/recipe-1/comments");
+    expect(ratingsChain.eq).toHaveBeenCalledWith("recipe_id", "recipe-1");
+    expect(ratingsChain.in).toHaveBeenCalledWith(
+      "user_id",
+      expect.arrayContaining(["profile-1", "profile-2"])
+    );
+  });
+
+  it("supports pagination query params", async () => {
+    const { commentsChain } = setupListMock([], null, 0);
+    const res = await request(app).get("/recipes/recipe-1/comments?page=2&limit=5");
+    expect(res.status).toBe(200);
+    expect(commentsChain.range).toHaveBeenCalledWith(5, 9);
+  });
+
+  it("returns empty array when recipe has no comments and skips ratings lookup", async () => {
+    const { ratingsChain } = setupListMock([], null, 0);
     const res = await request(app).get("/recipes/recipe-1/comments");
     expect(res.status).toBe(200);
     expect(res.body.data.comments).toHaveLength(0);
     expect(res.body.data.pagination.total).toBe(0);
+    // No commenters → no need to fetch ratings.
+    expect(ratingsChain.in).not.toHaveBeenCalled();
   });
 
   it("returns 400 for invalid page param", async () => {
@@ -382,6 +534,13 @@ describe("GET /recipes/:id/comments", () => {
 
   it("returns 500 on database error", async () => {
     setupListMock(null, { message: "DB timeout" });
+    const res = await request(app).get("/recipes/recipe-1/comments");
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("DB_ERROR");
+  });
+
+  it("returns 500 when the ratings lookup fails", async () => {
+    setupListMock(sampleComments, null, 2, [], { message: "ratings DB timeout" });
     const res = await request(app).get("/recipes/recipe-1/comments");
     expect(res.status).toBe(500);
     expect(res.body.error.code).toBe("DB_ERROR");

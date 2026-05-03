@@ -80,7 +80,32 @@ router.post(
       return;
     }
 
-    // 3. Ensure a rating exists for non-creators (either provided in this call or already on file)
+    // 3. Enforce one comment per user per recipe — the user must edit instead of stacking
+    const { data: existingComment, error: existingCommentError } = await supabase
+      .from("comments")
+      .select("id")
+      .eq("recipe_id", recipeId)
+      .eq("user_id", user.profileId)
+      .single();
+
+    if (existingCommentError && existingCommentError.code !== "PGRST116") {
+      res.status(500).json(errorResponse("DB_ERROR", existingCommentError.message));
+      return;
+    }
+
+    if (existingComment) {
+      res
+        .status(409)
+        .json(
+          errorResponse(
+            "COMMENT_ALREADY_EXISTS",
+            "You have already commented on this recipe. Edit your existing comment instead."
+          )
+        );
+      return;
+    }
+
+    // 4. Ensure a rating exists for non-creators (either provided in this call or already on file)
     let rating: any = null;
 
     if (!isCreator) {
@@ -131,7 +156,7 @@ router.post(
       }
     }
 
-    // 4. Insert the comment
+    // 5. Insert the comment
     const { data: inserted, error: insertError } = await userClient
       .from("comments")
       .insert({
@@ -143,6 +168,19 @@ router.post(
       .single();
 
     if (insertError || !inserted) {
+      // Postgres unique_violation — the existence check above lost a race with a concurrent insert,
+      // or another path created a comment for this user. Map to the same 409 the existence check returns.
+      if (insertError?.code === "23505") {
+        res
+          .status(409)
+          .json(
+            errorResponse(
+              "COMMENT_ALREADY_EXISTS",
+              "You have already commented on this recipe. Edit your existing comment instead."
+            )
+          );
+        return;
+      }
       res
         .status(500)
         .json(errorResponse("DB_ERROR", insertError?.message ?? "Failed to create comment."));
@@ -210,12 +248,35 @@ router.get("/recipes/:id/comments", async (req: Request, res: Response): Promise
     return;
   }
 
+  // Fetch each commenter's rating on this recipe so the response includes the score alongside the body.
+  // Recipe creators are allowed to comment without a rating, so their score may legitimately be null.
+  const userIds = Array.from(new Set((data ?? []).map((c: any) => c.user_id)));
+  const ratingByUser: Record<string, number> = {};
+
+  if (userIds.length > 0) {
+    const { data: ratingsData, error: ratingsError } = await supabase
+      .from("ratings")
+      .select("user_id, score")
+      .eq("recipe_id", recipeId)
+      .in("user_id", userIds);
+
+    if (ratingsError) {
+      res.status(500).json(errorResponse("DB_ERROR", ratingsError.message));
+      return;
+    }
+
+    for (const r of ratingsData ?? []) {
+      ratingByUser[(r as any).user_id] = (r as any).score;
+    }
+  }
+
   const comments = (data ?? []).map((c: any) => ({
     id: c.id,
     recipeId: c.recipe_id,
     userId: c.user_id,
     username: c.author?.username ?? null,
     body: c.text,
+    score: ratingByUser[c.user_id] ?? null,
     createdAt: c.created_at,
     updatedAt: c.updated_at,
   }));
