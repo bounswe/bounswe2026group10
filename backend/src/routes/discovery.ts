@@ -247,6 +247,24 @@ router.get("/recipes", async (req, res) => {
         .json(errorResponse("DB_ERROR", recipesError.message));
     }
 
+    // ── Step 5: Cascade — derive distinct varieties and genres from results ──
+    // Matched recipes' parent variety and genre appear in the aggregated lists,
+    // which lets callers know which categories are represented in the results.
+    const varietyMap = new Map<number, { id: number; name: string; dish_genre: any }>();
+    const genreMap = new Map<number, { id: number; name: string }>();
+
+    for (const r of recipes ?? []) {
+      const v = (r as any).dish_variety;
+      if (v) {
+        if (!varietyMap.has(v.id)) {
+          varietyMap.set(v.id, { id: v.id, name: v.name, dish_genre: v.dish_genre ?? null });
+        }
+        if (v.dish_genre && !genreMap.has(v.dish_genre.id)) {
+          genreMap.set(v.dish_genre.id, { id: v.dish_genre.id, name: v.dish_genre.name });
+        }
+      }
+    }
+
     return res.status(200).json(
       successResponse({
         recipes: (recipes ?? []).map((r: any) => {
@@ -254,6 +272,8 @@ router.get("/recipes", async (req, res) => {
           const { recipe_media, ...rest } = r;
           return { ...rest, image_url: firstImage?.url ?? null };
         }),
+        varieties: [...varietyMap.values()],
+        genres: [...genreMap.values()],
         pagination: {
           page,
           limit,

@@ -830,6 +830,164 @@ describe("GET /discovery/recipes", () => {
     expect(chain.ilike).toHaveBeenCalledWith("country", "Narnia");
     expect(chain.or).not.toHaveBeenCalled();
   });
+
+  // ─── Origin filter cascade (#401) ────────────────────────────────────────
+  // Matched recipes cascade up: their parent variety and genre are collected
+  // into distinct `varieties` and `genres` arrays in the response.
+
+  it("response always includes varieties and genres fields", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockRecipes, error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveProperty("varieties");
+    expect(res.body.data).toHaveProperty("genres");
+  });
+
+  it("cascade: recipe variety appears in varieties list", async () => {
+    const recipe = {
+      ...mockRecipes[0],
+      country: "Turkey",
+      dish_variety: { id: 1, name: "Adana Kebap", dish_genre: { id: 1, name: "Kebap" } },
+    };
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: [recipe], error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?country=Turkey");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.varieties).toHaveLength(1);
+    expect(res.body.data.varieties[0].id).toBe(1);
+    expect(res.body.data.varieties[0].name).toBe("Adana Kebap");
+  });
+
+  it("cascade: recipe genre appears in genres list", async () => {
+    const recipe = {
+      ...mockRecipes[0],
+      country: "Turkey",
+      dish_variety: { id: 1, name: "Adana Kebap", dish_genre: { id: 1, name: "Kebap" } },
+    };
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: [recipe], error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?country=Turkey");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.genres).toHaveLength(1);
+    expect(res.body.data.genres[0].id).toBe(1);
+    expect(res.body.data.genres[0].name).toBe("Kebap");
+  });
+
+  it("cascade: multiple recipes from the same variety yield a single variety entry", async () => {
+    const sharedVariety = { id: 1, name: "Adana Kebap", dish_genre: { id: 1, name: "Kebap" } };
+    const recipes = [
+      { ...mockRecipes[0], id: 1, country: "Turkey", dish_variety: sharedVariety },
+      { ...mockRecipes[0], id: 2, country: "Turkey", dish_variety: sharedVariety },
+    ];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: recipes, error: null, count: 2 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?country=Turkey");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.varieties).toHaveLength(1);
+  });
+
+  it("cascade: multiple varieties from the same genre yield a single genre entry", async () => {
+    const genre = { id: 1, name: "Kebap" };
+    const recipes = [
+      { ...mockRecipes[0], id: 1, country: "Turkey", dish_variety: { id: 1, name: "Adana Kebap", dish_genre: genre } },
+      { ...mockRecipes[0], id: 2, country: "Turkey", dish_variety: { id: 2, name: "Urfa Kebap", dish_genre: genre } },
+    ];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: recipes, error: null, count: 2 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?country=Turkey");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.varieties).toHaveLength(2);
+    expect(res.body.data.genres).toHaveLength(1);
+  });
+
+  it("cascade: multiple genres appear when recipes span different genres", async () => {
+    const recipes = [
+      { ...mockRecipes[0], id: 1, dish_variety: { id: 1, name: "Adana Kebap", dish_genre: { id: 1, name: "Kebap" } } },
+      { ...mockRecipes[0], id: 2, dish_variety: { id: 2, name: "Mercimek", dish_genre: { id: 2, name: "Çorba" } } },
+    ];
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: recipes, error: null, count: 2 })
+    );
+
+    const res = await request(app).get("/discovery/recipes");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.varieties).toHaveLength(2);
+    expect(res.body.data.genres).toHaveLength(2);
+  });
+
+  it("cascade: empty varieties and genres when no recipes match", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: [], error: null, count: 0 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?country=Narnia");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.varieties).toHaveLength(0);
+    expect(res.body.data.genres).toHaveLength(0);
+  });
+
+  it("cascade: recipe with null dish_variety produces no variety or genre entry", async () => {
+    const recipe = { ...mockRecipes[0], dish_variety: null };
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: [recipe], error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.varieties).toHaveLength(0);
+    expect(res.body.data.genres).toHaveLength(0);
+  });
+
+  it("cascade: variety with null dish_genre produces no genre entry but variety is included", async () => {
+    const recipe = {
+      ...mockRecipes[0],
+      dish_variety: { id: 1, name: "Adana Kebap", dish_genre: null },
+    };
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: [recipe], error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.varieties).toHaveLength(1);
+    expect(res.body.data.genres).toHaveLength(0);
+  });
+
+  it("cascade: variety object in response includes dish_genre field", async () => {
+    const recipe = {
+      ...mockRecipes[0],
+      country: "Turkey",
+      dish_variety: { id: 1, name: "Adana Kebap", dish_genre: { id: 1, name: "Kebap" } },
+    };
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: [recipe], error: null, count: 1 })
+    );
+
+    const res = await request(app).get("/discovery/recipes?country=Turkey");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.varieties[0].dish_genre).toMatchObject({ id: 1, name: "Kebap" });
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
