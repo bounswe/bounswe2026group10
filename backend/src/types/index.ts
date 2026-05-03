@@ -1,5 +1,9 @@
 import type { Request } from "express";
 
+// ─── Language ─────────────────────────────────────────────────────────────────
+
+export type { SupportedLanguage } from "../utils/i18n.js";
+
 // ─── User Roles ────────────────────────────────────────────────────────────────
 
 export type UserRole = "learner" | "cook" | "expert";

@@ -1,21 +1,33 @@
 import { Router } from "express";
 import { supabase } from "../config/supabase.js";
 import { successResponse, errorResponse } from "../utils/response.js";
+import { parseLangParam, resolveLang } from "../utils/i18n.js";
 
 const router = Router();
 
 // ─── GET /dish-varieties ──────────────────────────────────────────────────────
 // Returns all dish varieties. Optionally filtered by genreId and/or search.
-// Query params: ?genreId=<number> ?search=<string>
+// Query params:
+//   genreId — filter by genre (positive integer, optional)
+//   search  — partial name match (optional)
+//   lang    — "en" or "tr"; when provided returns resolved name/description
+//             instead of the full _en / _tr pair
 router.get("/", async (req, res) => {
   const genreId = req.query["genreId"];
   const search = req.query["search"];
+  const lang = parseLangParam(req.query["lang"]);
+
+  if (lang === "invalid") {
+    return res
+      .status(400)
+      .json(errorResponse("VALIDATION_ERROR", "lang must be 'en' or 'tr'."));
+  }
 
   let query = supabase
     .from("dish_varieties")
     .select(
-      `id, name, description, genre_id,
-       dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name)`
+      `id, name, name_en, name_tr, description, description_en, description_tr, genre_id,
+       dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name, name_en, name_tr)`
     )
     .order("name");
 
@@ -42,25 +54,50 @@ router.get("/", async (req, res) => {
     return res.status(500).json(errorResponse("DB_ERROR", error.message));
   }
 
+  if (lang) {
+    return res.status(200).json(successResponse(
+      (data as any[]).map((v) => ({
+        id: v.id,
+        genre_id: v.genre_id,
+        name: resolveLang(v.name_en, v.name_tr, lang) ?? v.name,
+        description: resolveLang(v.description_en, v.description_tr, lang) ?? v.description,
+        dish_genre: v.dish_genre
+          ? {
+              id: v.dish_genre.id,
+              name: resolveLang(v.dish_genre.name_en, v.dish_genre.name_tr, lang) ?? v.dish_genre.name,
+            }
+          : null,
+      }))
+    ));
+  }
+
   return res.status(200).json(successResponse(data));
 });
 
 // ─── GET /dish-varieties/:id ──────────────────────────────────────────────────
 // Returns a single dish variety with its published recipes.
+// Query params:
+//   lang — "en" or "tr" (optional)
 router.get("/:id", async (req, res) => {
   const id = Number(req.params["id"]);
+  const lang = parseLangParam(req.query["lang"]);
 
   if (!Number.isInteger(id) || id <= 0) {
     return res
       .status(400)
       .json(errorResponse("VALIDATION_ERROR", "id must be a positive integer."));
   }
+  if (lang === "invalid") {
+    return res
+      .status(400)
+      .json(errorResponse("VALIDATION_ERROR", "lang must be 'en' or 'tr'."));
+  }
 
   const { data: variety, error: varietyError } = await supabase
     .from("dish_varieties")
     .select(
-      `id, name, description, genre_id,
-       dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name)`
+      `id, name, name_en, name_tr, description, description_en, description_tr, genre_id,
+       dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name, name_en, name_tr)`
     )
     .eq("id", id)
     .single();
@@ -85,7 +122,24 @@ router.get("/:id", async (req, res) => {
     return res.status(500).json(errorResponse("DB_ERROR", recipesError.message));
   }
 
-  return res.status(200).json(successResponse({ ...variety, recipes }));
+  if (lang) {
+    const v = variety as any;
+    return res.status(200).json(successResponse({
+      id: v.id,
+      genre_id: v.genre_id,
+      name: resolveLang(v.name_en, v.name_tr, lang) ?? v.name,
+      description: resolveLang(v.description_en, v.description_tr, lang) ?? v.description,
+      dish_genre: v.dish_genre
+        ? {
+            id: v.dish_genre.id,
+            name: resolveLang(v.dish_genre.name_en, v.dish_genre.name_tr, lang) ?? v.dish_genre.name,
+          }
+        : null,
+      recipes,
+    }));
+  }
+
+  return res.status(200).json(successResponse({ ...(variety as any), recipes }));
 });
 
 // ─── GET /dish-varieties/:id/recipes ─────────────────────────────────────────

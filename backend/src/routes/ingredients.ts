@@ -4,19 +4,27 @@ import { supabase, createUserClient } from "../config/supabase.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import { successResponse, errorResponse } from "../utils/response.js";
+import { parseLangParam, resolveLang } from "../utils/i18n.js";
 import type { AuthenticatedRequest } from "../types/index.js";
 
 const router = Router();
 
-// ─── GET /ingredients ───────────────────────────────────────────────────────
+// ─── GET /ingredients ────────────────────────────────────────────────────────
 // Search ingredients by partial name match (case-insensitive).
 // Query params:
 //   search — partial ingredient name (optional)
+//   lang   — "en" or "tr"; when provided returns a single resolved `name` field
+//             instead of the full name_en / name_tr pair
 
 router.get("/", async (req, res) => {
+  const lang = parseLangParam(req.query["lang"]);
+  if (lang === "invalid") {
+    return res.status(400).json(errorResponse("VALIDATION_ERROR", "lang must be 'en' or 'tr'."));
+  }
+
   const search = (req.query["search"] as string | undefined)?.trim();
 
-  let query = supabase.from("ingredients").select("id, name");
+  let query = supabase.from("ingredients").select("id, name, name_en, name_tr");
 
   if (search) {
     query = query.ilike("name", `%${search}%`);
@@ -28,20 +36,33 @@ router.get("/", async (req, res) => {
     return res.status(500).json(errorResponse("DB_ERROR", error.message));
   }
 
+  if (lang) {
+    return res.status(200).json(successResponse(
+      (data as any[]).map((row) => ({
+        id: row.id,
+        name: resolveLang(row.name_en, row.name_tr, lang) ?? row.name,
+      }))
+    ));
+  }
+
   return res.status(200).json(successResponse(data));
 });
 
-// ─── POST /ingredients ──────────────────────────────────────────────────────
+// ─── POST /ingredients ───────────────────────────────────────────────────────
+// Create a new ingredient.
+// Restricted to cook and expert roles.
+// Body: { name_en?: string, name_tr?: string } — at least one field required.
+// Returns 409 if an ingredient with the same primary name already exists.
 
-const createIngredientSchema = z.object({
-  name: z.string({ message: "Name is required." }).trim().min(1, { message: "Name cannot be empty." }),
-});
+const createIngredientSchema = z
+  .object({
+    name_en: z.string().trim().min(1, { message: "name_en cannot be empty." }).optional(),
+    name_tr: z.string().trim().min(1, { message: "name_tr cannot be empty." }).optional(),
+  })
+  .refine((d) => !!(d.name_en || d.name_tr), {
+    message: "At least one of name_en or name_tr must be provided.",
+  });
 
-/**
- * Create a new ingredient.
- * Restricted to cook and expert roles.
- * Returns 409 if an ingredient with the same name already exists (case-insensitive).
- */
 router.post(
   "/",
   requireAuth,
@@ -49,13 +70,16 @@ router.post(
   validate(createIngredientSchema),
   async (req, res) => {
     const user = (req as AuthenticatedRequest).user;
-    const { name } = req.body as z.infer<typeof createIngredientSchema>;
+    const { name_en, name_tr } = req.body as z.infer<typeof createIngredientSchema>;
     const userClient = createUserClient(user.accessToken);
+
+    // Derive the canonical name (used for the legacy `name` column and duplicate check)
+    const primaryName = (name_en ?? name_tr!).toLowerCase();
 
     const { data: existing } = await supabase
       .from("ingredients")
       .select("id")
-      .ilike("name", name)
+      .ilike("name", primaryName)
       .maybeSingle();
 
     if (existing) {
@@ -64,8 +88,8 @@ router.post(
 
     const { data, error } = await userClient
       .from("ingredients")
-      .insert({ name: name.toLowerCase() })
-      .select("id, name")
+      .insert({ name: primaryName, name_en: name_en?.toLowerCase(), name_tr: name_tr?.toLowerCase() })
+      .select("id, name, name_en, name_tr")
       .single();
 
     if (error) {

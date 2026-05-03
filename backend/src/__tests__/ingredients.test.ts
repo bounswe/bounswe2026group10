@@ -5,10 +5,15 @@ import { supabase } from "../config/supabase.js";
 jest.mock("../config/supabase.js", () => {
   const mockFrom = jest.fn();
   return {
-    supabase: { from: mockFrom },
+    supabase: {
+      auth: { getUser: jest.fn() },
+      from: mockFrom,
+    },
     createUserClient: jest.fn(() => ({ from: mockFrom })),
   };
 });
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const chainable = (resolved: { data: any; error: any }) => {
   const mock: any = {};
@@ -20,6 +25,84 @@ const chainable = (resolved: { data: any; error: any }) => {
   mock.catch = (reject: any) => Promise.resolve(resolved).catch(reject);
   return mock;
 };
+
+const setupCookAuth = (role = "cook") => {
+  (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+    data: { user: { id: "auth-user-1" } },
+    error: null,
+  });
+
+  let ingredientsCalls = 0;
+
+  (supabase.from as jest.Mock).mockImplementation((table: string) => {
+    if (table === "profiles") {
+      const chain: any = {};
+      chain.select = jest.fn().mockReturnValue(chain);
+      chain.eq = jest.fn().mockReturnValue(chain);
+      chain.single = jest.fn().mockResolvedValue({
+        data: { id: "profile-1", username: "cook1", role },
+        error: null,
+      });
+      return chain;
+    }
+    if (table === "ingredients") {
+      ingredientsCalls++;
+      if (ingredientsCalls === 1) {
+        // Duplicate check: .select().ilike().maybeSingle()
+        const check: any = {};
+        check.select = jest.fn().mockReturnValue(check);
+        check.ilike = jest.fn().mockReturnValue(check);
+        check.maybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
+        return check;
+      }
+      // Insert: .insert().select().single()
+      const insert: any = {};
+      insert.insert = jest.fn().mockReturnValue(insert);
+      insert.select = jest.fn().mockReturnValue(insert);
+      insert.single = jest.fn().mockResolvedValue({
+        data: { id: 1, name: "salt", name_en: "Salt", name_tr: null },
+        error: null,
+      });
+      return insert;
+    }
+    return {};
+  });
+};
+
+const setupCookAuthWithDuplicate = () => {
+  (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+    data: { user: { id: "auth-user-1" } },
+    error: null,
+  });
+
+  let ingredientsCalls = 0;
+  (supabase.from as jest.Mock).mockImplementation((table: string) => {
+    if (table === "profiles") {
+      const chain: any = {};
+      chain.select = jest.fn().mockReturnValue(chain);
+      chain.eq = jest.fn().mockReturnValue(chain);
+      chain.single = jest.fn().mockResolvedValue({
+        data: { id: "profile-1", username: "cook1", role: "cook" },
+        error: null,
+      });
+      return chain;
+    }
+    if (table === "ingredients") {
+      ingredientsCalls++;
+      if (ingredientsCalls === 1) {
+        const check: any = {};
+        check.select = jest.fn().mockReturnValue(check);
+        check.ilike = jest.fn().mockReturnValue(check);
+        check.maybeSingle = jest.fn().mockResolvedValue({ data: { id: 1 }, error: null });
+        return check;
+      }
+      return {};
+    }
+    return {};
+  });
+};
+
+// ─── GET /ingredients (existing) ─────────────────────────────────────────────
 
 describe("GET /ingredients", () => {
   beforeEach(() => jest.clearAllMocks());
@@ -79,5 +162,228 @@ describe("GET /ingredients", () => {
 
     expect(res.status).toBe(500);
     expect(res.body.error.code).toBe("DB_ERROR");
+  });
+});
+
+// ─── GET /ingredients — language fields (#412) ───────────────────────────────
+
+describe("GET /ingredients — language fields (#412)", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  const mockWithLangFields = [
+    { id: 1, name: "salt", name_en: "Salt", name_tr: "Tuz" },
+    { id: 2, name: "pepper", name_en: "Pepper", name_tr: "Biber" },
+  ];
+
+  it("returns name_en and name_tr fields in default response", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockWithLangFields, error: null })
+    );
+
+    const res = await request(app).get("/ingredients");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0].name_en).toBe("Salt");
+    expect(res.body.data[0].name_tr).toBe("Tuz");
+  });
+
+  it("?lang=en returns resolved name without name_en / name_tr fields", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockWithLangFields, error: null })
+    );
+
+    const res = await request(app).get("/ingredients?lang=en");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0].name).toBe("Salt");
+    expect(res.body.data[0].name_en).toBeUndefined();
+    expect(res.body.data[0].name_tr).toBeUndefined();
+  });
+
+  it("?lang=tr returns resolved TR name", async () => {
+    (supabase.from as jest.Mock).mockReturnValue(
+      chainable({ data: mockWithLangFields, error: null })
+    );
+
+    const res = await request(app).get("/ingredients?lang=tr");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0].name).toBe("Tuz");
+    expect(res.body.data[0].name_en).toBeUndefined();
+  });
+
+  it("?lang=tr falls back to name_en when name_tr is null", async () => {
+    const noTr = [{ id: 1, name: "salt", name_en: "Salt", name_tr: null }];
+    (supabase.from as jest.Mock).mockReturnValue(chainable({ data: noTr, error: null }));
+
+    const res = await request(app).get("/ingredients?lang=tr");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0].name).toBe("Salt");
+  });
+
+  it("?lang=de returns 400 VALIDATION_ERROR", async () => {
+    const res = await request(app).get("/ingredients?lang=de");
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+});
+
+// ─── POST /ingredients (#412) ────────────────────────────────────────────────
+
+describe("POST /ingredients (#412)", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("returns 401 when no token provided", async () => {
+    const res = await request(app)
+      .post("/ingredients")
+      .send({ name_en: "Salt" });
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 403 when user has learner role", async () => {
+    setupCookAuth("learner");
+
+    const res = await request(app)
+      .post("/ingredients")
+      .set("Authorization", "Bearer test-token")
+      .send({ name_en: "Salt" });
+
+    expect(res.status).toBe(403);
+  });
+
+  it("returns 400 when neither name_en nor name_tr is provided", async () => {
+    setupCookAuth();
+
+    const res = await request(app)
+      .post("/ingredients")
+      .set("Authorization", "Bearer test-token")
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("creates ingredient with name_en only and returns 201", async () => {
+    setupCookAuth();
+
+    const res = await request(app)
+      .post("/ingredients")
+      .set("Authorization", "Bearer test-token")
+      .send({ name_en: "Salt" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.name_en).toBe("Salt");
+  });
+
+  it("creates ingredient with name_tr only and returns 201", async () => {
+    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "auth-user-1" } },
+      error: null,
+    });
+
+    let ingredientsCalls = 0;
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "profiles") {
+        const chain: any = {};
+        chain.select = jest.fn().mockReturnValue(chain);
+        chain.eq = jest.fn().mockReturnValue(chain);
+        chain.single = jest.fn().mockResolvedValue({
+          data: { id: "profile-1", username: "cook1", role: "cook" },
+          error: null,
+        });
+        return chain;
+      }
+      if (table === "ingredients") {
+        ingredientsCalls++;
+        if (ingredientsCalls === 1) {
+          const check: any = {};
+          check.select = jest.fn().mockReturnValue(check);
+          check.ilike = jest.fn().mockReturnValue(check);
+          check.maybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
+          return check;
+        }
+        const insert: any = {};
+        insert.insert = jest.fn().mockReturnValue(insert);
+        insert.select = jest.fn().mockReturnValue(insert);
+        insert.single = jest.fn().mockResolvedValue({
+          data: { id: 2, name: "tuz", name_en: null, name_tr: "Tuz" },
+          error: null,
+        });
+        return insert;
+      }
+      return {};
+    });
+
+    const res = await request(app)
+      .post("/ingredients")
+      .set("Authorization", "Bearer test-token")
+      .send({ name_tr: "Tuz" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.name_tr).toBe("Tuz");
+  });
+
+  it("creates ingredient with both name_en and name_tr and returns 201", async () => {
+    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "auth-user-1" } },
+      error: null,
+    });
+
+    let ingredientsCalls = 0;
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "profiles") {
+        const chain: any = {};
+        chain.select = jest.fn().mockReturnValue(chain);
+        chain.eq = jest.fn().mockReturnValue(chain);
+        chain.single = jest.fn().mockResolvedValue({
+          data: { id: "profile-1", username: "cook1", role: "cook" },
+          error: null,
+        });
+        return chain;
+      }
+      if (table === "ingredients") {
+        ingredientsCalls++;
+        if (ingredientsCalls === 1) {
+          const check: any = {};
+          check.select = jest.fn().mockReturnValue(check);
+          check.ilike = jest.fn().mockReturnValue(check);
+          check.maybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
+          return check;
+        }
+        const insert: any = {};
+        insert.insert = jest.fn().mockReturnValue(insert);
+        insert.select = jest.fn().mockReturnValue(insert);
+        insert.single = jest.fn().mockResolvedValue({
+          data: { id: 3, name: "salt", name_en: "Salt", name_tr: "Tuz" },
+          error: null,
+        });
+        return insert;
+      }
+      return {};
+    });
+
+    const res = await request(app)
+      .post("/ingredients")
+      .set("Authorization", "Bearer test-token")
+      .send({ name_en: "Salt", name_tr: "Tuz" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.name_en).toBe("Salt");
+    expect(res.body.data.name_tr).toBe("Tuz");
+  });
+
+  it("returns 409 when ingredient with same name already exists", async () => {
+    setupCookAuthWithDuplicate();
+
+    const res = await request(app)
+      .post("/ingredients")
+      .set("Authorization", "Bearer test-token")
+      .send({ name_en: "Salt" });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("CONFLICT");
   });
 });
