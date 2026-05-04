@@ -214,7 +214,30 @@ router.get("/recipes", async (req, res) => {
     }
 
     // ── Step 3: Build the main recipe query ───────────────────────────────────
-    let query = supabase
+    // Apply every filter shared between the paginated list and the cascade
+    // aggregation. Origin filters tolerate casing/whitespace differences and
+    // known aliases (e.g. "tr"/"Türkiye" → "Turkey") via applyLocationFilter
+    // (issue #398).
+    const applyFilters = (q: any): any => {
+      if (search) q = applyTextSearch(q, "title", search);
+      if (country) q = applyLocationFilter(q, "country", country);
+      if (city) q = applyLocationFilter(q, "city", city);
+      if (district) q = applyLocationFilter(q, "district", district);
+      if (varietyId !== undefined) {
+        q = q.eq("dish_variety_id", varietyId);
+      } else if (varietyIdsForGenre !== null) {
+        q = q.in("dish_variety_id", varietyIdsForGenre);
+      }
+      if (excludedRecipeIds.length > 0) {
+        q = q.not("id", "in", `(${excludedRecipeIds.join(",")})`);
+      }
+      if (tagFilteredRecipeIds !== null) {
+        q = q.in("id", tagFilteredRecipeIds);
+      }
+      return q;
+    };
+
+    let recipeQuery = supabase
       .from("recipes")
       .select(
         `id, title, type, average_rating, rating_count,
@@ -230,51 +253,48 @@ router.get("/recipes", async (req, res) => {
       )
       .eq("is_published", true);
 
-    if (search) {
-      query = applyTextSearch(query, "title", search);
-    }
-
-    // Origin filters tolerate casing/whitespace differences and known
-    // aliases (e.g. "tr"/"Türkiye" → "Turkey") via applyLocationFilter
-    // (issue #398).
-    if (country) query = applyLocationFilter(query, "country", country);
-    if (city) query = applyLocationFilter(query, "city", city);
-    if (district) query = applyLocationFilter(query, "district", district);
-
-    if (varietyId !== undefined) {
-      query = query.eq("dish_variety_id", varietyId);
-    } else if (varietyIdsForGenre !== null) {
-      query = query.in("dish_variety_id", varietyIdsForGenre);
-    }
-
-    if (excludedRecipeIds.length > 0) {
-      query = query.not("id", "in", `(${excludedRecipeIds.join(",")})`);
-    }
-
-    if (tagFilteredRecipeIds !== null) {
-      query = query.in("id", tagFilteredRecipeIds);
-    }
+    recipeQuery = applyFilters(recipeQuery);
 
     // ── Step 4: Pagination ────────────────────────────────────────────────────
     const from = (page - 1) * limit;
     const to = from + limit - 1;
-    query = query.range(from, to).order("average_rating", { ascending: false });
+    recipeQuery = recipeQuery.range(from, to).order("average_rating", { ascending: false });
 
-    const { data: recipes, error: recipesError, count } = await query;
+    // ── Step 5: Cascade aggregation — same filters, no pagination ─────────────
+    // Cascade reflects every filtered recipe's parent variety and genre, not
+    // just the current page. Issue #463.
+    let cascadeQuery = supabase
+      .from("recipes")
+      .select(
+        `dish_variety:dish_varieties!recipes_dish_variety_id_fkey(
+           id, name,
+           dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name)
+         )`
+      )
+      .eq("is_published", true);
+
+    cascadeQuery = applyFilters(cascadeQuery);
+
+    const [
+      { data: recipes, error: recipesError, count },
+      { data: cascadeRows, error: cascadeError },
+    ] = await Promise.all([recipeQuery, cascadeQuery]);
 
     if (recipesError) {
       return res
         .status(500)
         .json(errorResponse("DB_ERROR", recipesError.message));
     }
+    if (cascadeError) {
+      return res
+        .status(500)
+        .json(errorResponse("DB_ERROR", cascadeError.message));
+    }
 
-    // ── Step 5: Cascade — derive distinct varieties and genres from results ──
-    // Matched recipes' parent variety and genre appear in the aggregated lists,
-    // which lets callers know which categories are represented in the results.
     const varietyMap = new Map<number, { id: number; name: string; dish_genre: any }>();
     const genreMap = new Map<number, { id: number; name: string }>();
 
-    for (const r of recipes ?? []) {
+    for (const r of cascadeRows ?? []) {
       const v = (r as any).dish_variety;
       if (v) {
         if (!varietyMap.has(v.id)) {
