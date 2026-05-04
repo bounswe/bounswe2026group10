@@ -39,11 +39,20 @@ function StarInput({ value, onChange }: { value: number; onChange: (v: number) =
   )
 }
 
+function ScoreBadge({ score }: { score: number }) {
+  return (
+    <span className="comment-item__score" aria-label={`${score} star rating`}>
+      <span className="comment-item__score-star">★</span>
+      <span className="comment-item__score-value">{score}</span>
+    </span>
+  )
+}
+
 export function CommentsSection({ recipeId, isOwnRecipe, myRatingScore }: Props) {
   const { t } = useTranslation('common')
   const navigate = useNavigate()
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated)
-  const currentUserId = useAppSelector((s) => s.profile.userId)
+  const currentUsername = useAppSelector((s) => s.profile.username)
 
   const [comments, setComments] = useState<Comment[]>([])
   const [total, setTotal] = useState(0)
@@ -55,6 +64,10 @@ export function CommentsSection({ recipeId, isOwnRecipe, myRatingScore }: Props)
   const [score, setScore] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editBody, setEditBody] = useState('')
+  const [editError, setEditError] = useState<string | null>(null)
 
   const LIMIT = 10
 
@@ -73,6 +86,11 @@ export function CommentsSection({ recipeId, isOwnRecipe, myRatingScore }: Props)
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [recipeId])
+
+  const myComment =
+    currentUsername != null
+      ? comments.find((c) => c.username === currentUsername) ?? null
+      : null
 
   async function handleLoadMore() {
     const nextPage = page + 1
@@ -108,10 +126,39 @@ export function CommentsSection({ recipeId, isOwnRecipe, myRatingScore }: Props)
         const code = (err.response?.data as { error?: { code?: string } } | undefined)?.error?.code
         if (code === 'RATING_REQUIRED') {
           setFormError(t('comments.ratingRequired'))
+        } else if (code === 'COMMENT_ALREADY_EXISTS') {
+          setFormError(t('comments.alreadyCommented'))
         } else {
           setFormError(t('comments.submitError'))
         }
       }
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  function startEditing(comment: Comment) {
+    setEditingId(comment.id)
+    setEditBody(comment.body)
+    setEditError(null)
+  }
+
+  function cancelEditing() {
+    setEditingId(null)
+    setEditBody('')
+    setEditError(null)
+  }
+
+  async function handleSaveEdit() {
+    if (!editingId || !editBody.trim()) return
+    setEditError(null)
+    setSubmitting(true)
+    try {
+      const updated = await commentService.edit(editingId, editBody.trim())
+      setComments((prev) => prev.map((c) => (c.id === editingId ? { ...c, ...updated } : c)))
+      cancelEditing()
+    } catch {
+      setEditError(t('comments.submitError'))
     } finally {
       setSubmitting(false)
     }
@@ -122,6 +169,7 @@ export function CommentsSection({ recipeId, isOwnRecipe, myRatingScore }: Props)
       await commentService.remove(commentId)
       setComments((prev) => prev.filter((c) => c.id !== commentId))
       setTotal((n) => n - 1)
+      if (editingId === commentId) cancelEditing()
     } catch {
       // ignore
     }
@@ -142,26 +190,70 @@ export function CommentsSection({ recipeId, isOwnRecipe, myRatingScore }: Props)
         <p className="comments__empty">{t('comments.empty')}</p>
       ) : (
         <div className="comments__list">
-          {comments.map((c) => (
-            <div key={c.id} className="comment-item">
-              <div className="comment-item__header">
-                <div className="comment-item__meta">
-                  <span className="comment-item__username">{c.username}</span>
-                  <span className="comment-item__date">{formatDate(c.createdAt)}</span>
+          {comments.map((c) => {
+            const isMine = currentUsername != null && c.username === currentUsername
+            const isEditing = editingId === c.id
+            return (
+              <div key={c.id} className="comment-item">
+                <div className="comment-item__header">
+                  <div className="comment-item__meta">
+                    <span className="comment-item__username">{c.username}</span>
+                    {c.score !== null && <ScoreBadge score={c.score} />}
+                    <span className="comment-item__date">{formatDate(c.createdAt)}</span>
+                  </div>
+                  {isMine && !isEditing && (
+                    <div className="comment-item__actions">
+                      <button
+                        type="button"
+                        className="comment-item__edit"
+                        onClick={() => startEditing(c)}
+                      >
+                        {t('comments.edit')}
+                      </button>
+                      <button
+                        type="button"
+                        className="comment-item__delete"
+                        onClick={() => void handleDelete(c.id)}
+                      >
+                        {t('comments.delete')}
+                      </button>
+                    </div>
+                  )}
                 </div>
-                {String(c.userId) === String(currentUserId) && (
-                  <button
-                    type="button"
-                    className="comment-item__delete"
-                    onClick={() => void handleDelete(c.id)}
-                  >
-                    {t('comments.delete')}
-                  </button>
+                {isEditing ? (
+                  <div className="comment-item__edit-form">
+                    <textarea
+                      className="comments__textarea"
+                      value={editBody}
+                      onChange={(e) => setEditBody(e.target.value)}
+                      maxLength={2000}
+                    />
+                    {editError && <p className="comments__form-error">{editError}</p>}
+                    <div className="comments__form-actions">
+                      <button
+                        type="button"
+                        className="comments__cancel"
+                        onClick={cancelEditing}
+                        disabled={submitting}
+                      >
+                        {t('comments.cancel')}
+                      </button>
+                      <button
+                        type="button"
+                        className="comments__submit"
+                        onClick={() => void handleSaveEdit()}
+                        disabled={submitting || !editBody.trim() || editBody.trim() === c.body}
+                      >
+                        {submitting ? t('common.loading') : t('comments.save')}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="comment-item__body">{c.body}</p>
                 )}
               </div>
-              <p className="comment-item__body">{c.body}</p>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -176,7 +268,7 @@ export function CommentsSection({ recipeId, isOwnRecipe, myRatingScore }: Props)
         </button>
       )}
 
-      {/* Comment form */}
+      {/* Comment form — hidden if the user already has a comment (use edit button on their item instead) */}
       {!isAuthenticated ? (
         <p className="comments__login-prompt">
           {t('comments.loginPrompt')}{' '}
@@ -184,7 +276,7 @@ export function CommentsSection({ recipeId, isOwnRecipe, myRatingScore }: Props)
             {t('comments.loginLink')}
           </button>
         </p>
-      ) : (
+      ) : myComment ? null : (
         <form className="comments__form" onSubmit={(e) => void handleSubmit(e)}>
           {!isOwnRecipe && myRatingScore === null && (
             <div className="comments__form-rating">
