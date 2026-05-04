@@ -38,6 +38,10 @@ export function DiscoveryPage() {
   const [recipeLoading, setRecipeLoading] = useState(true)
   const [recipePage, setRecipePage] = useState(1)
   const [recipeTotal, setRecipeTotal] = useState(0)
+  /** Genre/variety IDs derived from the active filter set (#399, #463). Null when no
+   * filter is applied — in that case we show every loaded genre/variety. */
+  const [cascadeGenreIds, setCascadeGenreIds] = useState<Set<string> | null>(null)
+  const [cascadeVarietyIds, setCascadeVarietyIds] = useState<Set<string> | null>(null)
 
   // Recipe filters (only apply to recipe section)
   const [allTags, setAllTags] = useState<DietaryTag[]>([])
@@ -110,16 +114,20 @@ export function DiscoveryPage() {
         page: recipePage,
         limit: RECIPES_PER_PAGE,
       })
-      .then(({ recipes: recipeData, pagination }) => {
+      .then(({ recipes: recipeData, pagination, cascadeGenres, cascadeVarieties }) => {
         if (!cancelled) {
           setRecipes(recipeData)
           setRecipeTotal(pagination.total)
+          setCascadeGenreIds(new Set(cascadeGenres.map((g) => g.id)))
+          setCascadeVarietyIds(new Set(cascadeVarieties.map((v) => v.id)))
         }
       })
       .catch(() => {
         if (!cancelled) {
           setRecipes([])
           setRecipeTotal(0)
+          setCascadeGenreIds(null)
+          setCascadeVarietyIds(null)
         }
       })
       .finally(() => {
@@ -133,16 +141,35 @@ export function DiscoveryPage() {
 
   const normalizedSearch = debouncedSearch.trim().toLowerCase()
 
+  /** Cascade narrows genre/variety lists to those represented in recipes that
+   * match the active recipe filters (origin / tags / allergens / search). */
+  const cascadeActive =
+    Boolean(selectedCountry) ||
+    Boolean(selectedCity) ||
+    selectedTagIds.length > 0 ||
+    excludedAllergenIds.length > 0 ||
+    Boolean(recipeSearchQuery)
+
   const filteredGenres = useMemo(() => {
-    if (!normalizedSearch) return genres
-    return genres.filter((genre) => genre.name.toLowerCase().includes(normalizedSearch))
-  }, [genres, normalizedSearch])
+    let result = genres
+    if (cascadeActive && cascadeGenreIds) {
+      result = result.filter((genre) => cascadeGenreIds.has(genre.id))
+    }
+    if (normalizedSearch) {
+      result = result.filter((genre) => genre.name.toLowerCase().includes(normalizedSearch))
+    }
+    return result
+  }, [genres, normalizedSearch, cascadeActive, cascadeGenreIds])
 
   const filteredVarieties = useMemo(() => {
     let result = allVarieties
 
     if (selectedGenreId) {
       result = result.filter((variety) => variety.genreId === selectedGenreId)
+    }
+
+    if (cascadeActive && cascadeVarietyIds) {
+      result = result.filter((variety) => cascadeVarietyIds.has(variety.id))
     }
 
     if (normalizedSearch) {
@@ -159,7 +186,7 @@ export function DiscoveryPage() {
     }
 
     return result
-  }, [allVarieties, normalizedSearch, selectedGenreId])
+  }, [allVarieties, normalizedSearch, selectedGenreId, cascadeActive, cascadeVarietyIds])
 
   const totalRecipePages = Math.max(1, Math.ceil(recipeTotal / RECIPES_PER_PAGE))
 
@@ -240,7 +267,20 @@ export function DiscoveryPage() {
             </button>
           </span>
         </label>
+      </section>
 
+      <div className="discovery-page__filter-bar">
+        <button
+          type="button"
+          className={`discovery-page__filter-btn${filtersOpen ? ' discovery-page__filter-btn--open' : ''}`}
+          onClick={() => setFiltersOpen((o) => !o)}
+          aria-expanded={filtersOpen}
+        >
+          {t('discovery.filters')}
+          {activeFilterCount > 0 && (
+            <span className="discovery-page__filter-badge">{activeFilterCount}</span>
+          )}
+        </button>
         {hasAnyFilters && (
           <button
             type="button"
@@ -250,7 +290,92 @@ export function DiscoveryPage() {
             {t('discovery.clearFilters')}
           </button>
         )}
-      </section>
+      </div>
+
+      {filtersOpen && (
+        <div className="discovery-page__filter-panel">
+          <div className="discovery-page__filter-group">
+            <p className="discovery-page__filter-group-label">{t('discovery.location')}</p>
+            <div className="discovery-page__filter-location">
+              <select
+                className="discovery-page__filter-location-select"
+                value={selectedCountry}
+                onChange={(e) => {
+                  setSelectedCountry(e.target.value)
+                  setSelectedCity('')
+                }}
+                aria-label={t('discovery.countryPlaceholder')}
+              >
+                <option value="">{t('discovery.countryPlaceholder')}</option>
+                {locationOptions.countries.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+
+              <select
+                className="discovery-page__filter-location-select"
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                aria-label={t('discovery.cityPlaceholder')}
+              >
+                <option value="">{t('discovery.cityPlaceholder')}</option>
+                {(locationOptions.citiesByCountry[selectedCountry] ?? []).map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {dietaryTags.length > 0 && (
+            <div className="discovery-page__filter-group">
+              <p className="discovery-page__filter-group-label">{t('discovery.dietaryTags')}</p>
+              <div className="discovery-page__filter-chips">
+                {dietaryTags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    className={`discovery-page__filter-chip${selectedTagIds.includes(tag.id) ? ' discovery-page__filter-chip--active' : ''}`}
+                    onClick={() => toggleTag(tag.id)}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {allergenTags.length > 0 && (
+            <div className="discovery-page__filter-group">
+              <p className="discovery-page__filter-group-label">{t('discovery.allergens')}</p>
+              <div className="discovery-page__filter-chips">
+                {allergenTags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    className={`discovery-page__filter-chip${excludedAllergenIds.includes(tag.id) ? ' discovery-page__filter-chip--active' : ''}`}
+                    onClick={() => toggleAllergen(tag.id)}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              className="discovery-page__filter-clear"
+              onClick={() => {
+                setSelectedTagIds([])
+                setExcludedAllergenIds([])
+                setSelectedCountry('')
+                setSelectedCity('')
+              }}
+            >
+              {t('discovery.clearFilters')}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Genres — horizontal scroll */}
       <section className="discovery-page__section">
@@ -359,103 +484,7 @@ export function DiscoveryPage() {
               )
             )}
           </div>
-          <button
-            type="button"
-            className={`discovery-page__filter-btn${filtersOpen ? ' discovery-page__filter-btn--open' : ''}`}
-            onClick={() => setFiltersOpen((o) => !o)}
-            aria-expanded={filtersOpen}
-          >
-            {t('discovery.filters')}
-            {activeFilterCount > 0 && (
-              <span className="discovery-page__filter-badge">{activeFilterCount}</span>
-            )}
-          </button>
         </div>
-
-        {filtersOpen && (
-          <div className="discovery-page__filter-panel">
-            <div className="discovery-page__filter-group">
-              <p className="discovery-page__filter-group-label">{t('discovery.location')}</p>
-              <div className="discovery-page__filter-location">
-                <select
-                  className="discovery-page__filter-location-select"
-                  value={selectedCountry}
-                  onChange={(e) => {
-                    setSelectedCountry(e.target.value)
-                    setSelectedCity('')
-                  }}
-                  aria-label={t('discovery.countryPlaceholder')}
-                >
-                  <option value="">{t('discovery.countryPlaceholder')}</option>
-                  {locationOptions.countries.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-
-                <select
-                  className="discovery-page__filter-location-select"
-                  value={selectedCity}
-                  onChange={(e) => setSelectedCity(e.target.value)}
-                  aria-label={t('discovery.cityPlaceholder')}
-                >
-                  <option value="">{t('discovery.cityPlaceholder')}</option>
-                  {(locationOptions.citiesByCountry[selectedCountry] ?? []).map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            {dietaryTags.length > 0 && (
-              <div className="discovery-page__filter-group">
-                <p className="discovery-page__filter-group-label">{t('discovery.dietaryTags')}</p>
-                <div className="discovery-page__filter-chips">
-                  {dietaryTags.map((tag) => (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      className={`discovery-page__filter-chip${selectedTagIds.includes(tag.id) ? ' discovery-page__filter-chip--active' : ''}`}
-                      onClick={() => toggleTag(tag.id)}
-                    >
-                      {tag.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {allergenTags.length > 0 && (
-              <div className="discovery-page__filter-group">
-                <p className="discovery-page__filter-group-label">{t('discovery.allergens')}</p>
-                <div className="discovery-page__filter-chips">
-                  {allergenTags.map((tag) => (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      className={`discovery-page__filter-chip${excludedAllergenIds.includes(tag.id) ? ' discovery-page__filter-chip--active' : ''}`}
-                      onClick={() => toggleAllergen(tag.id)}
-                    >
-                      {tag.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeFilterCount > 0 && (
-              <button
-                type="button"
-                className="discovery-page__filter-clear"
-                onClick={() => {
-                  setSelectedTagIds([])
-                  setExcludedAllergenIds([])
-                  setSelectedCountry('')
-                  setSelectedCity('')
-                }}
-              >
-                {t('discovery.clearFilters')}
-              </button>
-            )}
-          </div>
-        )}
 
         {recipeLoading ? (
           <div className="discovery-page__recipe-grid">

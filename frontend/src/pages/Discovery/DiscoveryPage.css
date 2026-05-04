@@ -134,6 +134,15 @@
   color: var(--color-main);
 }
 
+.discovery-page__filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
+}
+
 /* ── Genre horizontal scroll ───────────────────────────────────────────────── */
 
 .discovery-page__genre-scroll {
