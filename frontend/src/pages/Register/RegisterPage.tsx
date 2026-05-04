@@ -37,6 +37,18 @@ interface FieldErrors {
 const REGIONS = ['Turkey', 'Greece', 'Italy', 'Mexico', 'India', 'Japan']
 const LANGUAGES = ['English', 'Türkçe']
 
+/** Fold Turkish characters to ASCII for backend username regex (^[a-zA-Z0-9_]+$). */
+function asciiSlug(value: string): string {
+  return value
+    .normalize('NFC')
+    .replace(/İ/g, 'I')
+    .replace(/ı/g, 'i')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+}
+
 const PW_STRENGTH_KEYS = ['weak', 'fair', 'good', 'strong'] as const
 
 function getPasswordStrengthLevel(pw: string): number {
@@ -119,7 +131,7 @@ export function RegisterPage() {
     ev.preventDefault()
     if (!validate()) return
 
-    const username = `${form.firstName.trim().toLowerCase()}_${form.lastName.trim().toLowerCase()}`
+    const username = `${asciiSlug(form.firstName)}_${asciiSlug(form.lastName)}`
     try {
       await dispatch(
         registerAsync({
