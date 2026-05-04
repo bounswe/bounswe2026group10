@@ -8,6 +8,7 @@ import { ratingService } from '@/services/rating-service'
 import { favoriteService } from '@/services/favorite-service'
 import { RecipeRating } from '@/components/RecipeRating/RecipeRating'
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal'
+import { CommentsSection } from '@/components/Comments/CommentsSection'
 import { useAppSelector } from '@/store/hooks'
 import './RecipeDetailPage.css'
 
@@ -377,6 +378,19 @@ export function RecipeDetailPage() {
           )}
         </div>
 
+        {recipe.tags.length > 0 && (
+          <div className="recipe-detail__tags">
+            {recipe.tags.map((tag) => (
+              <span
+                key={tag.id}
+                className={`recipe-detail__tag recipe-detail__tag--${tag.category}`}
+              >
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+
         {extraGalleryImages.length > 0 && (
           <section className="recipe-detail__block recipe-detail__media-gallery-wrap" aria-label={t('recipeDetail.mediaGallery')}>
             <h2 className="recipe-detail__h2">{t('recipeDetail.mediaGallery')}</h2>
@@ -567,6 +581,14 @@ export function RecipeDetailPage() {
         <section className="recipe-detail__block recipe-detail__alternatives">
           <h2 className="recipe-detail__h2">{t('recipeDetail.alternativeRecipes')}</h2>
           <p className="recipe-detail__alternatives-empty">{t('recipeDetail.noAlternatives')}</p>
+        </section>
+
+        <section className="recipe-detail__block">
+          <CommentsSection
+            recipeId={recipe.id}
+            isOwnRecipe={isOwnRecipe}
+            myRatingScore={myRatingScore}
+          />
         </section>
       </div>
 

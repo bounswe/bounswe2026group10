@@ -431,5 +431,18 @@
       "uploading": "Medyalar yükleniyor…",
       "chooseAria": "Cihazınızdan fotoğraf veya MP4 video dosyası seçin"
     }
+  },
+  "comments": {
+    "title": "Yorumlar",
+    "empty": "Henüz yorum yok. İlk yorumu sen yap!",
+    "placeholder": "Yorum yaz...",
+    "submit": "Gönder",
+    "delete": "Sil",
+    "loadMore": "Daha fazla",
+    "loginPrompt": "Yorum yapmak için giriş yap.",
+    "loginLink": "Giriş yap",
+    "rateLabel": "Puanın (isteğe bağlı):",
+    "ratingRequired": "Yorum yapmadan önce bu tarifi puanlamanız gerekiyor.",
+    "submitError": "Yorum gönderilemedi. Tekrar deneyin."
   }
 }

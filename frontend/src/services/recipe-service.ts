@@ -59,6 +59,7 @@ export interface RecipeDetail {
   steps: RecipeStep[]
   tools: RecipeTool[]
   media: RecipeMedia[]
+  tags: { id: string; name: string; category: 'dietary' | 'allergen' }[]
   createdAt: string
   updatedAt: string
   isFavorited: boolean
@@ -179,6 +180,11 @@ export const recipeService = {
         id: String(m.id),
         url: m.url,
         type: m.type,
+      })),
+      tags: (d.tags ?? []).map((tag: any) => ({
+        id: String(tag.id),
+        name: tag.name ?? '',
+        category: tag.category === 'allergen' ? 'allergen' : 'dietary',
       })),
       country: d.country ?? null,
       city: d.city ?? null,
