@@ -12,6 +12,7 @@ export interface Comment {
   userId: string
   username: string
   body: string
+  score: number | null
   createdAt: string
   updatedAt: string
 }
@@ -31,11 +32,16 @@ export const commentService = {
   },
 
   async create(recipeId: string, body: string, score?: number): Promise<Comment> {
-    const { data } = await httpClient.post<ApiEnvelope<{ comment: Comment; rating: unknown }>>(
+    const { data } = await httpClient.post<
+      ApiEnvelope<{
+        comment: Omit<Comment, 'score'>
+        rating: { score: number } | null
+      }>
+    >(
       `/recipes/${recipeId}/comments`,
       { body, ...(score !== undefined ? { score } : {}) }
     )
-    return data.data.comment
+    return { ...data.data.comment, score: data.data.rating?.score ?? null }
   },
 
   async remove(commentId: string): Promise<void> {

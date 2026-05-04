@@ -242,7 +242,8 @@
   "common": {
     "retry": "Try again",
     "errorRetry": "Something went wrong. Please try again.",
-    "goBack": "Go back"
+    "goBack": "Go back",
+    "loading": "Loading…"
   },
   "recipeDetail": {
     "notFound": "Recipe not found.",
@@ -443,6 +444,10 @@
     "loginLink": "Log in",
     "rateLabel": "Your rating (optional):",
     "ratingRequired": "Please rate this recipe before commenting.",
-    "submitError": "Failed to post comment. Please try again."
+    "submitError": "Failed to post comment. Please try again.",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "alreadyCommented": "You have already commented on this recipe. Edit your existing comment instead."
   }
 }

@@ -242,7 +242,8 @@
   "common": {
     "retry": "Tekrar dene",
     "errorRetry": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
-    "goBack": "Geri dön"
+    "goBack": "Geri dön",
+    "loading": "Yükleniyor…"
   },
   "recipeDetail": {
     "notFound": "Tarif bulunamadı.",
@@ -443,6 +444,10 @@
     "loginLink": "Giriş yap",
     "rateLabel": "Puanın (isteğe bağlı):",
     "ratingRequired": "Yorum yapmadan önce bu tarifi puanlamanız gerekiyor.",
-    "submitError": "Yorum gönderilemedi. Tekrar deneyin."
+    "submitError": "Yorum gönderilemedi. Tekrar deneyin.",
+    "edit": "Düzenle",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "alreadyCommented": "Bu tarife zaten yorum yapmışsınız. Mevcut yorumunuzu düzenleyebilirsiniz."
   }
 }
