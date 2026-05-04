@@ -14,7 +14,7 @@ jest.mock("../config/supabase.js", () => {
 
 const chainable = (resolved: { data: any; error: any }) => {
   const mock: any = {};
-  const methods = ["select", "eq", "ilike", "order"];
+  const methods = ["select", "eq", "ilike", "or", "order"];
   methods.forEach((m) => {
     mock[m] = jest.fn().mockReturnValue(mock);
   });
@@ -115,7 +115,13 @@ describe("GET /dish-varieties", () => {
     const res = await request(app).get("/dish-varieties?search=adana");
 
     expect(res.status).toBe(200);
-    expect(chain.ilike).toHaveBeenCalledWith("name", "%adana%");
+    // Search now expands across name/name_en/name_tr with Turkish-aware
+    // variants ORed together (#402).
+    expect(chain.or).toHaveBeenCalled();
+    const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
+    expect(orArg).toContain("name.ilike.%adana%");
+    expect(orArg).toContain("name_en.ilike.%adana%");
+    expect(orArg).toContain("name_tr.ilike.%adana%");
   });
 
   it("returns 500 on database error", async () => {

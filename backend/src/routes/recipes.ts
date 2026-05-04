@@ -6,6 +6,7 @@ import { validate } from "../middleware/validate.js";
 import type { AuthenticatedRequest } from "../types/index.js";
 import { errorResponse, successResponse } from "../utils/response.js";
 import { canonicalizeLocationForWrite } from "../utils/locations.js";
+import { normalizeText } from "../utils/text.js";
 import { translateRecipe } from "../services/translationService.js";
 
 const router = Router();
@@ -464,14 +465,19 @@ router.post(
     const normalizedCity = canonicalizeLocationForWrite(body.city);
     const normalizedDistrict = canonicalizeLocationForWrite(body.district);
 
+    // NFC-normalize free-text fields so Turkish characters are stored in a
+    // single canonical encoding regardless of input source (#402).
+    const normalizedTitle = normalizeText(body.title) ?? body.title;
+    const normalizedStory = normalizeText(body.story);
+
     // 1. Insert Core Recipe
     const { data: recipe, error: recipeError } = await userClient
       .from("recipes")
       .insert({
         creator_id: user.profileId,
         dish_variety_id: body.dishVarietyId ?? null,
-        title: body.title,
-        story: body.story,
+        title: normalizedTitle,
+        story: normalizedStory,
         video_url: body.videoUrl,
         serving_size: body.servingSize ?? null,
         type: body.type,
@@ -559,8 +565,8 @@ router.post(
         id: recipeId,
         creatorId: user.profileId,
         dishVarietyId: body.dishVarietyId ?? null,
-        title: body.title,
-        story: body.story ?? null,
+        title: normalizedTitle,
+        story: normalizedStory ?? null,
         videoUrl: body.videoUrl ?? null,
         servingSize: body.servingSize ?? null,
         type: body.type,
@@ -627,8 +633,8 @@ router.patch(
 
     // 2. Update Core Recipe
     const updateData: any = {};
-    if (body.title !== undefined) updateData.title = body.title;
-    if (body.story !== undefined) updateData.story = body.story;
+    if (body.title !== undefined) updateData.title = normalizeText(body.title) ?? body.title;
+    if (body.story !== undefined) updateData.story = normalizeText(body.story);
     if (body.videoUrl !== undefined) updateData.video_url = body.videoUrl;
     if (body.servingSize !== undefined) updateData.serving_size = body.servingSize;
     if (body.type !== undefined) updateData.type = body.type;

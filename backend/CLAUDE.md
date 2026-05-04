@@ -67,7 +67,9 @@ backend/
 │   │   └── index.ts             # TypeScript interfaces (roles, auth, response, SupportedLanguage)
 │   ├── utils/
 │   │   ├── response.ts          # successResponse / errorResponse helpers
-│   │   └── i18n.ts              # parseLangParam, resolveLang — ?lang= query param helpers
+│   │   ├── i18n.ts              # parseLangParam, resolveLang — ?lang= query param helpers
+│   │   ├── locations.ts         # location normalization + alias expansion (#398)
+│   │   └── text.ts              # Turkish-aware text helpers (#402)
 │   └── __tests__/               # Jest test suite
 │       ├── auth.test.ts
 │       ├── middleware.test.ts
@@ -365,6 +367,44 @@ How they're wired:
 The alias table currently covers Turkey, United States, United Kingdom,
 Germany, Italy, France, Spain, Japan, Greece, and Azerbaijan. Add countries
 to `LOCATION_ALIASES` in `src/utils/locations.ts` as new mismatches surface.
+
+### Turkish Character Handling (issue #402)
+
+Turkish locale has case rules that diverge from default Unicode (`I` ↔ `ı`,
+`İ` ↔ `i`). Combined with optional diacritics (`ğ ü ş ö ç`) and the fact
+that some clients emit decomposed Unicode (`c` + combining cedilla) where
+others emit precomposed (`ç`), Postgres `ILIKE` alone cannot reliably match
+user search input against stored values.
+
+The helpers live in `src/utils/text.ts`:
+
+- `normalizeText()` — NFC + collapse whitespace + trim, returns `null` for
+  empty input. Preserves Turkish characters intact. Used on the write path
+  to ensure stored text has stable encoding.
+- `turkishFold()` — case- and diacritic-insensitive comparison key. NFC
+  → pair Turkish dotted-i (`İ`→`I`, `ı`→`i`) → strip combining marks via
+  NFD → lowercase. Use for JS-side dedupe / equality.
+- `buildSearchVariants()` — expands a search input into a deduped list of
+  variants (raw, Turkish-locale lowercase, default lowercase, fully folded)
+  for an OR-of-ilikes query. Empty input returns `[]`.
+
+Wired into:
+
+- **Search (read)**: `GET /discovery/recipes` (title), `GET /dish-varieties`
+  (name/name_en/name_tr), `GET /ingredients` (name/name_en/name_tr),
+  `GET /tools` (name), `GET /units` (unit). Each route ORs `ilike` over
+  the variants so a search for `kofte` still hits rows stored as `Köfte`,
+  and `ISTANBUL` hits both `İstanbul` and `Istanbul`.
+- **Storage (write)**: `POST /recipes` and `PATCH /recipes/:id`
+  (title, story), `POST /recipes/:id/comments` and `PATCH /comments/:id`
+  (body), `POST /ingredients` (name_en, name_tr) — all NFC-normalize free
+  text before insert/update.
+- **Dedup**: `GET /tools` and `GET /units` collapse rows by `turkishFold`
+  so `Kaşık` and `kaşık` show up as one entry.
+
+The `POST /ingredients` duplicate check uses Turkish-locale lowercase
+(`toLocaleLowerCase("tr-TR")`) on the primary name before the `ilike`
+existence query so `BİBER` and `biber` collide as expected.
 
 ### Naming Conventions
 - **Files:** kebab-case (`dish-varieties.ts`)

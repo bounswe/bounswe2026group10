@@ -2,6 +2,8 @@ import { Router } from "express";
 import { supabase } from "../config/supabase.js";
 import { successResponse, errorResponse } from "../utils/response.js";
 import { parseLangParam, resolveLang } from "../utils/i18n.js";
+import { buildSearchVariants } from "../utils/text.js";
+import { escapeLikePattern } from "../utils/locations.js";
 
 const router = Router();
 
@@ -44,7 +46,19 @@ router.get("/", async (req, res) => {
   if (search !== undefined) {
     const trimmed = typeof search === "string" ? search.trim() : "";
     if (trimmed.length > 0) {
-      query = query.ilike("name", `%${trimmed}%`);
+      // Turkish-aware partial match across `name`, `name_en`, `name_tr` so a
+      // search for "borek" or "BÖREK" still matches "Börek" stored in either
+      // language column (#402).
+      const variants = buildSearchVariants(trimmed);
+      if (variants.length > 0) {
+        const columns = ["name", "name_en", "name_tr"] as const;
+        const orFilter = variants
+          .flatMap((v) =>
+            columns.map((c) => `${c}.ilike.%${escapeLikePattern(v)}%`)
+          )
+          .join(",");
+        query = query.or(orFilter);
+      }
     }
   }
 

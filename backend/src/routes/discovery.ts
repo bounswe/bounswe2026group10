@@ -7,6 +7,7 @@ import {
   dedupeLocationLabels,
   getLocationVariants,
 } from "../utils/locations.js";
+import { buildSearchVariants } from "../utils/text.js";
 
 // Apply a case-insensitive location filter that also expands known aliases
 // (so a filter for "tr"/"Türkiye" still matches recipes stored as "Turkey").
@@ -24,6 +25,26 @@ function applyLocationFilter(
   }
   const orFilter = variants
     .map((v) => `${column}.ilike.${escapeLikePattern(v)}`)
+    .join(",");
+  return query.or(orFilter);
+}
+
+// Apply a Turkish-aware partial-text search across a column. Expands the
+// input into Turkish/ASCII-folded variants so a query for "kofte" still
+// hits rows stored as "Köfte" and "istanbul" hits "İstanbul" regardless
+// of database collation (#402).
+function applyTextSearch(
+  query: any,
+  column: string,
+  rawValue: string
+): any {
+  const variants = buildSearchVariants(rawValue);
+  if (variants.length === 0) return query;
+  if (variants.length === 1) {
+    return query.ilike(column, `%${escapeLikePattern(variants[0]!)}%`);
+  }
+  const orFilter = variants
+    .map((v) => `${column}.ilike.%${escapeLikePattern(v)}%`)
     .join(",");
   return query.or(orFilter);
 }
@@ -210,7 +231,7 @@ router.get("/recipes", async (req, res) => {
       .eq("is_published", true);
 
     if (search) {
-      query = query.ilike("title", `%${search}%`);
+      query = applyTextSearch(query, "title", search);
     }
 
     // Origin filters tolerate casing/whitespace differences and known

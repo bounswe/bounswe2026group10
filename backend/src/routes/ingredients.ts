@@ -5,6 +5,8 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import { successResponse, errorResponse } from "../utils/response.js";
 import { parseLangParam, resolveLang } from "../utils/i18n.js";
+import { buildSearchVariants, normalizeText } from "../utils/text.js";
+import { escapeLikePattern } from "../utils/locations.js";
 import type { AuthenticatedRequest } from "../types/index.js";
 
 const router = Router();
@@ -26,8 +28,20 @@ router.get("/", async (req, res) => {
 
   let query = supabase.from("ingredients").select("id, name, name_en, name_tr");
 
+  // Turkish-aware partial match across `name`, `name_en`, `name_tr` so a
+  // search for "biber" or "BIBER" still matches rows stored only as
+  // "Biber"/"biber" in either language column (#402).
   if (search) {
-    query = query.ilike("name", `%${search}%`);
+    const variants = buildSearchVariants(search);
+    if (variants.length > 0) {
+      const columns = ["name", "name_en", "name_tr"] as const;
+      const orFilter = variants
+        .flatMap((v) =>
+          columns.map((c) => `${c}.ilike.%${escapeLikePattern(v)}%`)
+        )
+        .join(",");
+      query = query.or(orFilter);
+    }
   }
 
   const { data, error } = await query.order("name");
@@ -73,8 +87,14 @@ router.post(
     const { name_en, name_tr } = req.body as z.infer<typeof createIngredientSchema>;
     const userClient = createUserClient(user.accessToken);
 
-    // Derive the canonical name (used for the legacy `name` column and duplicate check)
-    const primaryName = (name_en ?? name_tr!).toLowerCase();
+    // NFC-normalize so e.g. decomposed "c"+combining-cedilla and precomposed
+    // "ç" hash to the same row (#402).
+    const normalizedEn = normalizeText(name_en);
+    const normalizedTr = normalizeText(name_tr);
+
+    // Derive the canonical name (used for the legacy `name` column and duplicate check).
+    // Lowercase via Turkish locale so `İ → i` and `I → ı` instead of the en-locale `I → i`.
+    const primaryName = (normalizedEn ?? normalizedTr!).toLocaleLowerCase("tr-TR");
 
     const { data: existing } = await supabase
       .from("ingredients")
@@ -88,7 +108,11 @@ router.post(
 
     const { data, error } = await userClient
       .from("ingredients")
-      .insert({ name: primaryName, name_en: name_en?.toLowerCase(), name_tr: name_tr?.toLowerCase() })
+      .insert({
+        name: primaryName,
+        name_en: normalizedEn?.toLocaleLowerCase("tr-TR") ?? null,
+        name_tr: normalizedTr?.toLocaleLowerCase("tr-TR") ?? null,
+      })
       .select("id, name, name_en, name_tr")
       .single();
 
