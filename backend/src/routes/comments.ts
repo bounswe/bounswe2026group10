@@ -5,6 +5,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import type { AuthenticatedRequest } from "../types/index.js";
 import { errorResponse, successResponse } from "../utils/response.js";
+import { normalizeText } from "../utils/text.js";
 
 const router = Router();
 
@@ -156,13 +157,15 @@ router.post(
       }
     }
 
-    // 5. Insert the comment
+    // 5. Insert the comment — NFC-normalize so Turkish characters are stored
+    // in a single canonical encoding regardless of input source (#402).
+    const normalizedBody = normalizeText(body) ?? body;
     const { data: inserted, error: insertError } = await userClient
       .from("comments")
       .insert({
         recipe_id: recipeId,
         user_id: user.profileId,
-        text: body,
+        text: normalizedBody,
       })
       .select("id, recipe_id, user_id, text, created_at, updated_at")
       .single();
@@ -328,10 +331,11 @@ router.patch(
       return;
     }
 
-    // 2. Update
+    // 2. Update — NFC-normalize so Turkish characters are stored canonically (#402).
+    const normalizedBody = normalizeText(body) ?? body;
     const { data: updated, error: updateError } = await userClient
       .from("comments")
-      .update({ text: body, updated_at: new Date().toISOString() })
+      .update({ text: normalizedBody, updated_at: new Date().toISOString() })
       .eq("id", commentId)
       .select("id, recipe_id, user_id, text, created_at, updated_at")
       .single();

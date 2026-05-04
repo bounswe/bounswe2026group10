@@ -12,7 +12,7 @@ jest.mock("../config/supabase.js", () => {
 
 const chainable = (resolved: { data: any; error: any }) => {
   const mock: any = {};
-  const methods = ["select", "ilike", "order"];
+  const methods = ["select", "ilike", "or", "order"];
   methods.forEach((m) => {
     mock[m] = jest.fn().mockReturnValue(mock);
   });

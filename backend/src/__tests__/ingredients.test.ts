@@ -17,7 +17,7 @@ jest.mock("../config/supabase.js", () => {
 
 const chainable = (resolved: { data: any; error: any }) => {
   const mock: any = {};
-  const methods = ["select", "ilike", "order"];
+  const methods = ["select", "ilike", "or", "order"];
   methods.forEach((m) => {
     mock[m] = jest.fn().mockReturnValue(mock);
   });
@@ -162,6 +162,39 @@ describe("GET /ingredients", () => {
 
     expect(res.status).toBe(500);
     expect(res.body.error.code).toBe("DB_ERROR");
+  });
+
+  // Issue #402 — Turkish character handling in search.
+  it("expands Turkish search input across name/name_en/name_tr with folded variants", async () => {
+    const chain = chainable({
+      data: [{ id: 1, name: "biber", name_en: "Pepper", name_tr: "Biber" }],
+      error: null,
+    });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    // "biber" (no accents) should still match "Biber" via Turkish-aware ilike.
+    const res = await request(app).get("/ingredients?search=biber");
+
+    expect(res.status).toBe(200);
+    expect(chain.or).toHaveBeenCalled();
+    const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
+    // OR clause covers all three name columns and includes the lowercased input.
+    expect(orArg).toContain("name.ilike.%biber%");
+    expect(orArg).toContain("name_en.ilike.%biber%");
+    expect(orArg).toContain("name_tr.ilike.%biber%");
+  });
+
+  it("handles Turkish dotted-i: 'ISTANBUL' search expands to both 'istanbul' and 'ıstanbul'", async () => {
+    const chain = chainable({ data: [], error: null });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/ingredients?search=ISTANBUL");
+
+    expect(res.status).toBe(200);
+    const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
+    // Turkish-locale lowercase: I → ı; default lowercase: I → i. Both should appear.
+    expect(orArg).toContain("ıstanbul");
+    expect(orArg).toContain("istanbul");
   });
 });
 
