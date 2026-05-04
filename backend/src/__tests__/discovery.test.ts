@@ -472,6 +472,40 @@ describe("GET /discovery/recipes", () => {
     expect(res.body.data.pagination).toMatchObject({ page: 2, limit: 10, total: 50 });
   });
 
+  it("cascade reflects all filtered recipes, not just the current page (#463)", async () => {
+    // Page 1 only returns the first recipe, but the cascade aggregation sees
+    // every filtered recipe — so genres/varieties from later pages still
+    // appear in the response.
+    const pagedRecipes = [
+      {
+        id: 1, title: "Adana Kebap", type: "community",
+        average_rating: 4.8, rating_count: 20, created_at: "2024-01-01", updated_at: "2024-01-01",
+        dish_variety: { id: 1, name: "Adana Kebap", dish_genre: { id: 1, name: "Kebap" } },
+        profile: { id: "p1", username: "cook1" },
+      },
+    ];
+    const cascadeRecipes = [
+      { dish_variety: { id: 1, name: "Adana Kebap", dish_genre: { id: 1, name: "Kebap" } } },
+      { dish_variety: { id: 2, name: "Mercimek Çorbası", dish_genre: { id: 2, name: "Soup" } } },
+      { dish_variety: { id: 3, name: "Baklava", dish_genre: { id: 3, name: "Pastries" } } },
+    ];
+    let call = 0;
+    (supabase.from as jest.Mock).mockImplementation(() => {
+      call += 1;
+      // First .from("recipes") call is the paginated list, second is the cascade aggregation.
+      return call === 1
+        ? chainable({ data: pagedRecipes, error: null, count: 30 })
+        : chainable({ data: cascadeRecipes, error: null });
+    });
+
+    const res = await request(app).get("/discovery/recipes?country=Turkey&page=1&limit=1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(res.body.data.varieties.map((v: any) => v.id).sort()).toEqual([1, 2, 3]);
+    expect(res.body.data.genres.map((g: any) => g.id).sort()).toEqual([1, 2, 3]);
+  });
+
   it("returns 500 on database error", async () => {
     (supabase.from as jest.Mock).mockReturnValue(
       chainable({ data: null, error: { message: "DB timeout" }, count: null })
@@ -665,7 +699,7 @@ describe("GET /discovery/recipes", () => {
     expect(res.body.data.recipes).toHaveLength(1);
     // "turkey" is in the alias table, so the filter expands to an OR over
     // every known variant (Turkey/Türkiye/tr/...) instead of a single ilike.
-    expect(chain.or).toHaveBeenCalledTimes(1);
+    expect(chain.or).toHaveBeenCalledTimes(2);
     const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
     expect(orArg).toContain("country.ilike.Turkey");
     expect(orArg).toContain("country.ilike.tr");
@@ -708,7 +742,7 @@ describe("GET /discovery/recipes", () => {
     expect(res.body.data.recipes).toHaveLength(1);
     // Whitespace-padded "Turkey" is trimmed before alias lookup; the result
     // is an OR over Turkey variants (no leading/trailing spaces in any).
-    expect(chain.or).toHaveBeenCalledTimes(1);
+    expect(chain.or).toHaveBeenCalledTimes(2);
     const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
     expect(orArg).toContain("country.ilike.Turkey");
     expect(orArg).not.toContain("  Turkey  ");
@@ -741,7 +775,7 @@ describe("GET /discovery/recipes", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.recipes).toHaveLength(1);
-    expect(chain.or).toHaveBeenCalledTimes(1);
+    expect(chain.or).toHaveBeenCalledTimes(2);
     const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
     expect(orArg).toContain("country.ilike.Turkey");
     expect(orArg).toContain("country.ilike.tr");
@@ -762,7 +796,7 @@ describe("GET /discovery/recipes", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.recipes).toHaveLength(1);
-    expect(chain.or).toHaveBeenCalledTimes(1);
+    expect(chain.or).toHaveBeenCalledTimes(2);
     const orArg = (chain.or as jest.Mock).mock.calls[0][0] as string;
     expect(orArg).toContain("country.ilike.Turkey");
   });
@@ -799,7 +833,7 @@ describe("GET /discovery/recipes", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.recipes).toHaveLength(1);
-    expect(chain.or).toHaveBeenCalledTimes(1);
+    expect(chain.or).toHaveBeenCalledTimes(2);
   });
 
   it("expands 'usa' to United States variants (not turkey-only)", async () => {

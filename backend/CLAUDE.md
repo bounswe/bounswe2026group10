@@ -199,6 +199,7 @@ Migration `002_en_tr_language_fields.sql` adds these columns and seeds `_en` fro
 - `GET /discovery/recipes` — Filtered recipe discovery
   - Query params: `genreId`, `varietyId`, `excludeAllergens` (comma-separated IDs), `tagIds` (comma-separated dietary tag IDs — only recipes with ALL specified tags), `search` (case-insensitive partial match on recipe title), `country`, `city`, `district` (case-insensitive, whitespace-/diacritic-tolerant; country also resolves common aliases — `"tr"`/`"Türkiye"`/`"TUR"` all match recipes stored as `"Turkey"`. See Location Normalization below), `page`, `limit`
   - Response recipe objects include `country`, `city`, `district` fields (nullable)
+  - Response also includes `varieties[]` and `genres[]` cascade arrays — distinct varieties and genres derived from **every** recipe matching the active filters (not just the current page), so callers can use them as cross-page-stable filter dropdowns. Implementation runs the cascade aggregation as a separate query in parallel with the paginated list (issue #463).
 - `GET /discovery/recipes/by-ingredients` — Recipes fully makeable with provided ingredients
   - Query params: `ingredientIds` (comma-separated IDs, required), `page`, `limit`
   - Only returns recipes whose every ingredient is in the provided list; partial matches excluded
