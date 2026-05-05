@@ -20,6 +20,7 @@ Two side-by-side cards presented before the manual form:
 - **Origin:** Country selector + Region text input
 - **Description** text area
 - **Story** text area — personal or cultural narrative
+- **Cultural tags:** multi-select chip selector backed by a curated taxonomy (e.g. *Wedding*, *Sıra Gecesi*, *Social Gathering*). The available tags are filtered by the region chosen in *Origin* — pick a region and the chip list re-renders to that region's tags plus global tags. Optional for community recipes; **required** when recipe type is *Cultural*.
 - **Dietary tags:** Vegan, Vegetarian, Halal, Kosher, Gluten-Free (chip selector — req 1.4.6)
 - **Allergen tags:** chip selector
 - "Next" button → Create: Ingredients & Tools (page 13)
@@ -29,6 +30,7 @@ Two side-by-side cards presented before the manual form:
 - Title required
 - Cultural recipe type only available for Expert role
 - Cultural recipe type requires a cultural story
+- Cultural recipes require at least one cultural tag
 
 ## States
 - **Default:** Import cards + empty form

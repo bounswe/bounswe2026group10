@@ -16,11 +16,12 @@ Unified search and browse experience. Default state shows genre browsing; typing
 - **Allergen filter:** Multi-select; excludes varieties containing selected allergens
 - **Ingredients I have:** Multi-select; shows varieties makeable with those ingredients
 - **Region filter:** Country/region selector
+- **Cultural tags filter:** Multi-select chip selector backed by the curated cultural-tag taxonomy. **Region-scoped:** when a region is chosen above, the chip list re-renders to show only that region's tags plus global tags. Selecting a tag returns recipes carrying it, plus the cascaded varieties and genres that contain such recipes.
 - **Dietary tags:** Vegan, vegetarian, halal, kosher, gluten-free, etc.
 - "Apply" and "Clear All" buttons
 
 ## Active Search / Results State (05-search-refined)
-- Search bar with active query and active filter chips below (dismissable per chip)
+- Search bar with active query and active filter chips below (dismissable per chip) — including any active cultural-tag chips alongside region/dietary chips
 - **Sort row:** Best Rating | Most Recent | By Region (req 1.2.4)
   - Active sort highlighted in primary color
 - **Results count heading** (e.g., "6 Results for 'kebap'")
