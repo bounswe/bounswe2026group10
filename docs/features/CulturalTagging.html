@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Roots & Recipes — Cultural Tagging</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: 'Inter', system-ui, sans-serif; color: #2a251f; }
+  body { min-height: 100vh; }
+  *, *::before, *::after { box-sizing: border-box; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- React + Babel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- Components -->
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="cultural-tag-chip.jsx"></script>
+<script type="text/babel" src="mobile-chrome.jsx"></script>
+<script type="text/babel" src="screens-search.jsx"></script>
+<script type="text/babel" src="screens-recipes.jsx"></script>
+<script type="text/babel" src="chip-showcase.jsx"></script>
+
+<script type="text/babel">
+  const PHONE_W = 390;
+  const PHONE_H = 844;
+
+  function App() {
+    return (
+      <DesignCanvas>
+        <DCSection
+          id="overview"
+          title="Roots & Recipes — Cultural Tagging"
+          subtitle="Additive change · 5 mobile frames + reusable component · Mirrors existing baseline">
+
+          <DCArtboard id="component" label="CulturalTagChip · component" width={720} height={420}>
+            <div style={{
+              width: 720, height: 420, background: '#FBF3EA',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 24,
+            }}>
+              <ChipShowcase />
+            </div>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="search"
+          title="05 — Search"
+          subtitle="Filter sheet adds a region-scoped Cultural Tags multi-select. Active sıra-gecesi chip carries through to results.">
+
+          <DCArtboard id="filter-sheet" label="05-Search-Filter-Sheet" width={PHONE_W} height={PHONE_H}>
+            <SearchFilterSheet />
+          </DCArtboard>
+
+          <DCArtboard id="results" label="05-Search-Results" width={PHONE_W} height={PHONE_H}>
+            <SearchResults />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="recipe"
+          title="09 — Recipe Detail"
+          subtitle="Cultural-tag chip row directly below the Story card. Tapping a chip opens the navigator pre-filtered.">
+
+          <DCArtboard id="recipe-detail" label="09-Recipe-Detail" width={PHONE_W} height={PHONE_H}>
+            <RecipeDetail />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="create"
+          title="12 / 15 — Create flow"
+          subtitle="Cultural tags chip selector inserted between Story and Dietary on Basic Info. Chips also rendered in Review & Publish preview.">
+
+          <DCArtboard id="create-basic" label="12-Create-Basic" width={PHONE_W} height={PHONE_H}>
+            <CreateBasic />
+          </DCArtboard>
+
+          <DCArtboard id="create-review" label="15-Create-Review" width={PHONE_W} height={PHONE_H}>
+            <CreateReview />
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
