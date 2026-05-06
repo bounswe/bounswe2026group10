@@ -14,7 +14,7 @@ Final step of recipe creation. Preview the full recipe before publishing or savi
   - Ingredients with quantities and units
   - Tools list
   - Steps (numbered with titles, descriptions, and photos per step)
-  - Story
+  - Story (with selected cultural tag chips rendered below the story text)
   - Allergen and dietary tags
 - **"Publish" button** → publishes recipe (req 1.3.4)
 - **"Save as Draft" button** → saves to drafts (req 1.3.3)

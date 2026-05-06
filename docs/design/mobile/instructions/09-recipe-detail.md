@@ -38,6 +38,7 @@ Full recipe view — the most feature-rich page in the app.
 ### Story (req 1.2.1)
 - Cultural or personal story section
 - Displayed in a bordered card with serif italic text
+- **Cultural tag chips:** small terracotta chips rendered in a wrap row directly below the story text (e.g. *Sıra Gecesi*, *Social Gathering*). Tapping a chip opens the navigator pre-filtered by that tag and the recipe's region.
 
 ### Interaction
 - "View all comments" → Comments & Ratings (page 10)
