@@ -22,6 +22,7 @@ Wiki: https://github.com/bounswe/bounswe2026group10/wiki
 | File Uploads | Multer |
 | Security | Helmet, CORS |
 | AI | Google Gemini 2.5 Flash (@google/generative-ai) |
+| Speech-to-Text | ElevenLabs Scribe v1 (`scribe_v1`) via REST |
 | Testing | Jest + Supertest + ts-jest |
 | Containerization | Docker (multi-stage, node:20-alpine) |
 
@@ -43,9 +44,11 @@ backend/
 │   ├── index.ts                 # Express app setup, middleware, route mounting
 │   ├── config/
 │   │   ├── supabase.ts          # Supabase client (anon + user-scoped)
-│   │   └── gemini.ts            # Google Gemini AI client config
+│   │   ├── gemini.ts            # Google Gemini AI client config
+│   │   └── elevenlabs.ts        # ElevenLabs STT client config (#413)
 │   ├── services/
-│   │   └── recipe-parser.ts     # Free-text recipe parser (Gemini AI)
+│   │   ├── recipe-parser.ts     # Free-text recipe parser (Gemini AI)
+│   │   └── transcription.ts     # ElevenLabs Scribe speech-to-text wrapper (#413)
 │   ├── middleware/
 │   │   ├── auth.ts              # requireAuth, requireRole middleware
 │   │   └── validate.ts          # Zod-based request body validation
@@ -265,6 +268,21 @@ Comments are coupled to ratings (Amazon-style): a non-creator must have a rating
   - Returns `{ ingredients: [{ name, originalQuantity, originalUnit, standardQuantity, standardUnit }], steps: [{ stepOrder, originalDescription, standardDescription }] }`
   - Region-aware: uses region hint (e.g. "Turkey") to resolve locale-specific units (çay bardağı → 100 ml) and expressions (kulak memesi kıvamı → clear description)
   - Uses Gemini 2.5 Flash AI for conversion
+- `POST /parse/recipe-audio` — Transcribe a recipe recording and parse it into structured recipe components (cook/expert only, #413)
+  - Accepts both **audio** files (mp3/wav/webm/m4a/ogg/flac) and **video** files (mp4/mov/webm/mkv); ElevenLabs Scribe extracts the audio track from videos server-side. Most recipe content in this project is captured on video, so the same endpoint serves both.
+  - Request: `multipart/form-data`
+    - `audio` (file, required) — audio or video file, max 100 MB. Field name is `audio` for both kinds.
+    - `language` (text, optional) — `"en"` | `"tr"` | `"auto"` (default `"auto"`); ignored if not one of these
+  - Pipeline: ElevenLabs Scribe (`scribe_v1`) for transcription → existing `parseRecipeText` (Gemini) for structuring
+  - Response: `{ transcription: { text, languageCode, languageProbability, truncated, source: "audio" | "video" }, recipe: { title, ingredients[], steps[], tools[] } }`
+  - Transcriptions longer than 5000 chars are truncated before being sent to the parser; the full transcript is still returned with `truncated: true` so the client can display what was heard
+  - Errors:
+    - 400 `MISSING_FILE` — no `audio` field
+    - 400 `INVALID_FILE_TYPE` — unsupported MIME type
+    - 400 `FILE_TOO_LARGE` — over 100 MB
+    - 400 `TRANSCRIPTION_TOO_SHORT` — transcription <10 chars (likely silence/noise)
+    - 500 `TRANSCRIPTION_FAILED` — ElevenLabs API failure
+    - 500 `PARSE_FAILED` — Gemini parser failure after a successful transcription
 
 ## User Roles & Permissions
 
@@ -304,6 +322,9 @@ Use `successResponse(data)` and `errorResponse(code, message)` from `src/utils/r
 - `INCOMPLETE_RECIPE` (400) — Missing fields for publish
 - `PARSE_FAILED` (500) — AI parsing of recipe text failed
 - `STANDARDIZATION_FAILED` (500) — AI unit standardization failed
+- `TRANSCRIPTION_FAILED` (500) — ElevenLabs speech-to-text request failed
+- `TRANSCRIPTION_TOO_SHORT` (400) — Transcription returned <10 chars (likely silence/noise)
+- `MISSING_FILE` / `INVALID_FILE_TYPE` / `FILE_TOO_LARGE` / `UPLOAD_ERROR` (400) — multipart upload errors (shared between `/media/upload` and `/parse/recipe-audio`)
 
 ### Validation
 - Zod schemas defined inline in route files
@@ -430,6 +451,7 @@ SUPABASE_ANON_KEY=<supabase-anon-key>
 DATABASE_URL=<postgres-connection-string>
 DIRECT_URL=<postgres-direct-connection-string>
 GEMINI_API_KEY=<google-gemini-api-key>
+ELEVENLABS_API_KEY=<elevenlabs-api-key>   # Speech-to-Text (Scribe v1) for /parse/recipe-audio
 ```
 
 ## Docker

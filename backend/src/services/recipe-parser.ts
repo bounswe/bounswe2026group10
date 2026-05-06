@@ -134,13 +134,54 @@ Return ONLY the JSON object, nothing else.`;
 // ─── Parser ───────────────────────────────────────────────────────────────────
 
 /**
+ * Number of times we'll try the Gemini parse before giving up. Gemini
+ * occasionally returns non-JSON output or 5xxs even with `responseMimeType:
+ * application/json`, and these failures are transient — retrying nearly
+ * always succeeds. The delays before retry attempts 2 and 3 (in ms).
+ */
+const MAX_PARSE_ATTEMPTS = 3;
+const PARSE_RETRY_DELAYS_MS = [300, 800];
+
+/** Sleep helper for retry backoff. */
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
  * Parses a free-text recipe narrative into structured components using Gemini AI.
+ * Retries up to MAX_PARSE_ATTEMPTS times on transient failures (Gemini API
+ * errors or malformed JSON). Only the final failure is surfaced to the caller.
  *
  * @param freeText - The free-text recipe narrative to parse.
  * @returns Parsed recipe with title, ingredients, steps, and tools.
- * @throws Error if the AI response cannot be parsed or the API call fails.
+ * @throws Error if every attempt fails.
  */
 export async function parseRecipeText(freeText: string): Promise<ParsedRecipe> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= MAX_PARSE_ATTEMPTS; attempt++) {
+    try {
+      return await parseRecipeTextOnce(freeText);
+    } catch (err) {
+      lastError = err;
+      if (attempt < MAX_PARSE_ATTEMPTS) {
+        console.warn(
+          `[parseRecipeText] attempt ${attempt}/${MAX_PARSE_ATTEMPTS} failed, retrying:`,
+          err instanceof Error ? err.message : err
+        );
+        await sleep(PARSE_RETRY_DELAYS_MS[attempt - 1] ?? 0);
+      }
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("parseRecipeText failed after all retries");
+}
+
+/**
+ * Single-attempt parse. Extracted from `parseRecipeText` so the retry loop
+ * stays simple. Throws on Gemini API failure or malformed JSON.
+ */
+async function parseRecipeTextOnce(freeText: string): Promise<ParsedRecipe> {
   const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
   const result = await model.generateContent({
