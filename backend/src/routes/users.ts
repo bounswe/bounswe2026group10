@@ -95,7 +95,7 @@ router.get("/me/favorites", requireAuth, async (req: Request, res: Response): Pr
     .from("user_favorites")
     .select(
       `recipe:recipes(
-        id, title, type, average_rating, rating_count, created_at, updated_at,
+        id, title, type, average_rating, rating_count, allergen_ids, created_at, updated_at,
         creator:profiles!recipes_creator_id_fkey(id, username),
         dish_variety:dish_varieties(id, name, dish_genre:dish_genres(id, name)),
         recipe_media(id, url, type)
@@ -111,9 +111,27 @@ router.get("/me/favorites", requireAuth, async (req: Request, res: Response): Pr
     return;
   }
 
+  const allAllergenIds = [
+    ...new Set((data ?? []).flatMap((fav: any) => fav.recipe?.allergen_ids ?? [])),
+  ] as number[];
+
+  const allergenMap = new Map<number, string>();
+  if (allAllergenIds.length > 0) {
+    const { data: allergenRows } = await supabase
+      .from("allergens")
+      .select("id, name")
+      .in("id", allAllergenIds);
+    for (const a of allergenRows ?? []) {
+      allergenMap.set(a.id, a.name);
+    }
+  }
+
   const recipes = (data ?? []).map((fav: any) => {
     const r = fav.recipe;
     const firstImage = (r?.recipe_media ?? []).find((m: any) => m.type === "image");
+    const allergens = (r?.allergen_ids ?? [])
+      .map((id: number) => ({ id, name: allergenMap.get(id) ?? null }))
+      .filter((a: any) => a.name !== null);
     return {
       id: r?.id ?? null,
       title: r?.title ?? null,
@@ -128,6 +146,7 @@ router.get("/me/favorites", requireAuth, async (req: Request, res: Response): Pr
       createdAt: r?.created_at ?? null,
       updatedAt: r?.updated_at ?? null,
       coverImageUrl: firstImage?.url ?? null,
+      allergens,
     };
   });
 
@@ -148,7 +167,7 @@ router.get("/me/drafts", requireAuth, async (req: Request, res: Response): Promi
   const { data, error } = await userClient
     .from("recipes")
     .select(
-      `id, title, type, is_published, average_rating, rating_count,
+      `id, title, type, is_published, average_rating, rating_count, allergen_ids,
        country, city, district, created_at, updated_at,
        recipe_media(id, url, type)`
     )
@@ -161,8 +180,26 @@ router.get("/me/drafts", requireAuth, async (req: Request, res: Response): Promi
     return;
   }
 
+  const allAllergenIdsDrafts = [
+    ...new Set((data ?? []).flatMap((r: any) => r.allergen_ids ?? [])),
+  ] as number[];
+
+  const allergenMapDrafts = new Map<number, string>();
+  if (allAllergenIdsDrafts.length > 0) {
+    const { data: allergenRows } = await supabase
+      .from("allergens")
+      .select("id, name")
+      .in("id", allAllergenIdsDrafts);
+    for (const a of allergenRows ?? []) {
+      allergenMapDrafts.set(a.id, a.name);
+    }
+  }
+
   const recipes = (data ?? []).map((r: any) => {
     const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
+    const allergens = (r.allergen_ids ?? [])
+      .map((id: number) => ({ id, name: allergenMapDrafts.get(id) ?? null }))
+      .filter((a: any) => a.name !== null);
     return {
       id: r.id,
       title: r.title,
@@ -176,6 +213,7 @@ router.get("/me/drafts", requireAuth, async (req: Request, res: Response): Promi
       createdAt: r.created_at,
       updatedAt: r.updated_at,
       coverImageUrl: firstImage?.url ?? null,
+      allergens,
     };
   });
 

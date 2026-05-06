@@ -136,53 +136,14 @@ router.get("/recipes", async (req, res) => {
       }
     }
 
-    // ── Step 1: Resolve variety IDs to exclude based on allergens ─────────────
-    let excludedRecipeIds: number[] = [];
+    // ── Step 1: Parse allergen IDs to exclude ────────────────────────────────
+    let excludeAllergenIds: number[] = [];
 
     if (excludeAllergens) {
-      const allergenIds = excludeAllergens
+      excludeAllergenIds = excludeAllergens
         .split(",")
         .map(Number)
         .filter((n) => Number.isInteger(n) && n > 0);
-
-      if (allergenIds.length > 0) {
-        // Find ingredient IDs that carry any of the excluded allergens
-        const { data: allergenIngredientRows, error: allergenErr } =
-          await supabase
-            .from("ingredient_allergens")
-            .select("ingredient_id")
-            .in("allergen_id", allergenIds);
-
-        if (allergenErr) {
-          return res
-            .status(500)
-            .json(errorResponse("DB_ERROR", allergenErr.message));
-        }
-
-        const excludedIngredientIds = [
-          ...new Set(allergenIngredientRows?.map((r) => r.ingredient_id) ?? []),
-        ];
-
-        if (excludedIngredientIds.length > 0) {
-          // Find recipe IDs that use those ingredients
-          const { data: recipeIngredientRows, error: riErr } = await supabase
-            .from("recipe_ingredients")
-            .select("recipe_id")
-            .in("ingredient_id", excludedIngredientIds);
-
-          if (riErr) {
-            return res
-              .status(500)
-              .json(errorResponse("DB_ERROR", riErr.message));
-          }
-
-          excludedRecipeIds = [
-            ...new Set(
-              recipeIngredientRows?.map((r) => r.recipe_id) ?? []
-            ),
-          ];
-        }
-      }
     }
 
     // ── Step 2: Resolve variety IDs when filtering by genre ───────────────────
@@ -228,8 +189,8 @@ router.get("/recipes", async (req, res) => {
       } else if (varietyIdsForGenre !== null) {
         q = q.in("dish_variety_id", varietyIdsForGenre);
       }
-      if (excludedRecipeIds.length > 0) {
-        q = q.not("id", "in", `(${excludedRecipeIds.join(",")})`);
+      if (excludeAllergenIds.length > 0) {
+        q = q.not("allergen_ids", "ov", `{${excludeAllergenIds.join(",")}}`);
       }
       if (tagFilteredRecipeIds !== null) {
         q = q.in("id", tagFilteredRecipeIds);
@@ -240,7 +201,7 @@ router.get("/recipes", async (req, res) => {
     let recipeQuery = supabase
       .from("recipes")
       .select(
-        `id, title, type, average_rating, rating_count,
+        `id, title, type, average_rating, rating_count, allergen_ids,
          country, city, district,
          created_at, updated_at,
          dish_variety:dish_varieties!recipes_dish_variety_id_fkey(
@@ -306,12 +267,31 @@ router.get("/recipes", async (req, res) => {
       }
     }
 
+    // Resolve allergen names for all recipes in one query
+    const allAllergenIds = [
+      ...new Set((recipes ?? []).flatMap((r: any) => r.allergen_ids ?? [])),
+    ] as number[];
+
+    const allergenMap = new Map<number, string>();
+    if (allAllergenIds.length > 0) {
+      const { data: allergenRows } = await supabase
+        .from("allergens")
+        .select("id, name")
+        .in("id", allAllergenIds);
+      for (const a of allergenRows ?? []) {
+        allergenMap.set(a.id, a.name);
+      }
+    }
+
     return res.status(200).json(
       successResponse({
         recipes: (recipes ?? []).map((r: any) => {
           const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
-          const { recipe_media, ...rest } = r;
-          return { ...rest, image_url: firstImage?.url ?? null };
+          const { recipe_media, allergen_ids, ...rest } = r;
+          const allergens = (allergen_ids ?? [])
+            .map((id: number) => ({ id, name: allergenMap.get(id) ?? null }))
+            .filter((a: any) => a.name !== null);
+          return { ...rest, image_url: firstImage?.url ?? null, allergens };
         }),
         varieties: [...varietyMap.values()],
         genres: [...genreMap.values()],
