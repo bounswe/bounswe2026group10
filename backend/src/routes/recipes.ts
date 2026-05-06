@@ -69,6 +69,10 @@ const recipeSchema = z.object({
     .array(z.number().int().positive())
     .optional()
     .default([]),
+  allergenIds: z
+    .array(z.number().int().positive())
+    .optional()
+    .default([]),
 });
 
 const updateRecipeSchema = recipeSchema.partial();
@@ -158,7 +162,7 @@ router.get("/mine", requireAuth, async (req: Request, res: Response): Promise<vo
   let query = userClient
     .from("recipes")
     .select(
-      `id, title, type, is_published, average_rating, rating_count,
+      `id, title, type, is_published, average_rating, rating_count, allergen_ids,
        country, city, district, created_at, updated_at,
        recipe_media(id, url, type)`
     )
@@ -174,8 +178,26 @@ router.get("/mine", requireAuth, async (req: Request, res: Response): Promise<vo
     return;
   }
 
+  const allAllergenIdsMine = [
+    ...new Set((data ?? []).flatMap((r: any) => r.allergen_ids ?? [])),
+  ] as number[];
+
+  const allergenMapMine = new Map<number, string>();
+  if (allAllergenIdsMine.length > 0) {
+    const { data: allergenRows } = await supabase
+      .from("allergens")
+      .select("id, name")
+      .in("id", allAllergenIdsMine);
+    for (const a of allergenRows ?? []) {
+      allergenMapMine.set(a.id, a.name);
+    }
+  }
+
   const recipes = (data ?? []).map((r: any) => {
     const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
+    const allergens = (r.allergen_ids ?? [])
+      .map((id: number) => ({ id, name: allergenMapMine.get(id) ?? null }))
+      .filter((a: any) => a.name !== null);
     return {
       id: r.id,
       title: r.title,
@@ -189,6 +211,7 @@ router.get("/mine", requireAuth, async (req: Request, res: Response): Promise<vo
       createdAt: r.created_at,
       updatedAt: r.updated_at,
       coverImageUrl: firstImage?.url ?? null,
+      allergens,
     };
   });
 
@@ -208,10 +231,14 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     ? req.query["lang"].toUpperCase()
     : null;
 
-  const { data, error } = await supabase
+  const authHeader = req.headers["authorization"];
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const recipeClient = token ? createUserClient(token) : supabase;
+
+  const { data, error } = await recipeClient
     .from("recipes")
     .select(
-      `id, title, story, video_url, serving_size, type, is_published, average_rating, rating_count, country, city, district, created_at, updated_at,
+      `id, title, story, video_url, serving_size, type, is_published, average_rating, rating_count, allergen_ids, country, city, district, created_at, updated_at,
        creator:profiles!recipes_creator_id_fkey(id, username),
        dish_variety:dish_varieties(id, name, dish_genre:dish_genres(id, name)),
        recipe_ingredients(id, quantity, unit, ingredient:ingredients(id, name, ingredient_allergens(allergen:allergens(name)))),
@@ -280,11 +307,20 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     }
   }
 
+  // Resolve top-level allergen names from stored allergen_ids
+  const storedAllergenIds: number[] = (data as any).allergen_ids ?? [];
+  let topLevelAllergens: { id: number; name: string }[] = [];
+  if (storedAllergenIds.length > 0) {
+    const { data: allergenData } = await supabase
+      .from("allergens")
+      .select("id, name")
+      .in("id", storedAllergenIds);
+    topLevelAllergens = (allergenData ?? []) as { id: number; name: string }[];
+  }
+
   // Optionally resolve isFavorited for authenticated callers
   let isFavorited = false;
-  const authHeader = req.headers["authorization"];
-  if (authHeader?.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
+  if (token) {
     const { data: userData } = await supabase.auth.getUser(token);
     if (userData?.user) {
       const { data: profile } = await supabase
@@ -324,6 +360,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       averageRating: (data as any).average_rating ?? null,
       ratingCount: (data as any).rating_count ?? 0,
       isFavorited,
+      allergens: topLevelAllergens,
       ingredients: (data.recipe_ingredients ?? []).map((ri: any) => ({
         id: ri.id,
         ingredientId: ri.ingredient?.id ?? null,
@@ -485,6 +522,7 @@ router.post(
         country: normalizedCountry,
         city: normalizedCity,
         district: normalizedDistrict,
+        allergen_ids: body.allergenIds,
       })
       .select("id, created_at")
       .single();
@@ -642,6 +680,7 @@ router.patch(
     if (body.country !== undefined) updateData.country = canonicalizeLocationForWrite(body.country);
     if (body.city !== undefined) updateData.city = canonicalizeLocationForWrite(body.city);
     if (body.district !== undefined) updateData.district = canonicalizeLocationForWrite(body.district);
+    if (body.allergenIds !== undefined) updateData.allergen_ids = body.allergenIds;
 
     if (Object.keys(updateData).length > 0) {
       const { error: updateError } = await userClient

@@ -166,6 +166,43 @@ describe("GET /recipes/:id", () => {
     expect(res.status).toBe(500);
     expect(res.body.error.code).toBe("DB_ERROR");
   });
+
+  it("returns top-level allergens resolved from allergen_ids", async () => {
+    const mockAllergens = [
+      { id: 1, name: "Gluten" },
+      { id: 2, name: "Dairy" },
+    ];
+    const mockSingle = jest.fn().mockResolvedValue({
+      data: { ...mockRecipeData, allergen_ids: [1, 2] },
+      error: null,
+    });
+    const mockEq = jest.fn().mockReturnValue({ single: mockSingle });
+    const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+
+    const mockIn = jest.fn().mockResolvedValue({ data: mockAllergens, error: null });
+    const mockAllergenSelect = jest.fn().mockReturnValue({ in: mockIn });
+
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "recipes") return { select: mockSelect };
+      if (table === "allergens") return { select: mockAllergenSelect };
+      return {};
+    });
+
+    const res = await request(app).get("/recipes/recipe-uuid-1");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.allergens).toHaveLength(2);
+    expect(res.body.data.allergens.map((a: any) => a.name)).toEqual(
+      expect.arrayContaining(["Gluten", "Dairy"])
+    );
+  });
+
+  it("returns empty allergens array when allergen_ids is empty", async () => {
+    setupRecipeMock({ ...mockRecipeData, allergen_ids: [] }, null);
+    const res = await request(app).get("/recipes/recipe-uuid-1");
+    expect(res.status).toBe(200);
+    expect(res.body.data.allergens).toEqual([]);
+  });
 });
 
 // ─── GET /recipes/mine ───────────────────────────────────────────────────────
@@ -747,6 +784,52 @@ describe("Recipe Endpoints (Creation & Publishing)", () => {
       expect(response.body.data.district).toBeNull();
     });
 
+    it("should store allergenIds in allergen_ids column when provided", async () => {
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { id: "recipe-allergen-1", created_at: "2023-01-01" },
+      });
+      const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes") return { insert: mockInsert };
+        return { insert: jest.fn().mockResolvedValue({ error: null }) };
+      });
+
+      const response = await request(app)
+        .post("/recipes")
+        .set("Authorization", "Bearer valid_token")
+        .send({ ...validCommunityPayload, allergenIds: [1, 2, 3] });
+
+      expect(response.status).toBe(201);
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({ allergen_ids: [1, 2, 3] })
+      );
+    });
+
+    it("should default allergen_ids to empty array when allergenIds not provided", async () => {
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { id: "recipe-no-allergen-1", created_at: "2023-01-01" },
+      });
+      const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+
+      setupMocks("cook", "profile-123", (table) => {
+        if (table === "recipes") return { insert: mockInsert };
+        return { insert: jest.fn().mockResolvedValue({ error: null }) };
+      });
+
+      const response = await request(app)
+        .post("/recipes")
+        .set("Authorization", "Bearer valid_token")
+        .send(validCommunityPayload);
+
+      expect(response.status).toBe(201);
+      expect(mockInsert).toHaveBeenCalledWith(
+        expect.objectContaining({ allergen_ids: [] })
+      );
+    });
+
     it("should return 201 for valid incomplete draft", async () => {
       const mockSingle = jest.fn().mockResolvedValue({
         data: { id: "recipe-draft-1", created_at: "2023-01-01" },
@@ -958,6 +1041,35 @@ describe("Recipe Endpoints (Creation & Publishing)", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data.message).toContain("updated successfully");
+    });
+
+    it("should update allergen_ids when allergenIds provided in patch", async () => {
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { creator_id: "profile-123", type: "community" },
+        error: null,
+      });
+      const mockEq = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
+      const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
+      const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
+      const mockDeleteEq = jest.fn().mockResolvedValue({ error: null });
+      const mockDelete = jest.fn().mockReturnValue({ eq: mockDeleteEq });
+      const mockInsert = jest.fn().mockResolvedValue({ error: null });
+
+      setupMocks("expert", "profile-123", (table) => {
+        if (table === "recipes") return { select: mockSelect, update: mockUpdate };
+        return { delete: mockDelete, insert: mockInsert };
+      });
+
+      const response = await request(app)
+        .patch("/recipes/123")
+        .set("Authorization", "Bearer valid")
+        .send({ allergenIds: [4, 5] });
+
+      expect(response.status).toBe(200);
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ allergen_ids: [4, 5] })
+      );
     });
   });
 });
