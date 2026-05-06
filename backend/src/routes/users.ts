@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from "express";
 import { z } from "zod";
-import { supabase } from "../config/supabase.js";
+import { supabase, createUserClient } from "../config/supabase.js";
 import { requireAuth } from "../middleware/auth.js";
 import type { AuthenticatedRequest } from "../types/index.js";
 import { errorResponse, successResponse } from "../utils/response.js";
@@ -137,6 +137,49 @@ router.get("/me/favorites", requireAuth, async (req: Request, res: Response): Pr
       pagination: { page, limit, total: count ?? 0 },
     })
   );
+});
+
+// ─── GET /users/me/drafts ─────────────────────────────────────────────────────
+
+router.get("/me/drafts", requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const user = (req as AuthenticatedRequest).user;
+  const userClient = createUserClient(user.accessToken);
+
+  const { data, error } = await userClient
+    .from("recipes")
+    .select(
+      `id, title, type, is_published, average_rating, rating_count,
+       country, city, district, created_at, updated_at,
+       recipe_media(id, url, type)`
+    )
+    .eq("creator_id", user.profileId)
+    .eq("is_published", false)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    res.status(500).json(errorResponse("DB_ERROR", error.message));
+    return;
+  }
+
+  const recipes = (data ?? []).map((r: any) => {
+    const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
+    return {
+      id: r.id,
+      title: r.title,
+      type: r.type,
+      isPublished: r.is_published,
+      averageRating: r.average_rating ?? null,
+      ratingCount: r.rating_count ?? 0,
+      country: r.country ?? null,
+      city: r.city ?? null,
+      district: r.district ?? null,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      coverImageUrl: firstImage?.url ?? null,
+    };
+  });
+
+  res.status(200).json(successResponse(recipes));
 });
 
 export default router;

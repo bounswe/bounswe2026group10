@@ -47,6 +47,10 @@ export async function transcribeAudio(
   // Wrap the buffer in a Blob so the global FormData attaches it as a file part.
   // Convert Buffer → Uint8Array (the bytes are the same view) so the Blob
   // constructor type matches across Node fetch/undici versions.
+  if (!ELEVENLABS_API_KEY) {
+    throw new Error("ELEVENLABS_API_KEY is not configured.");
+  }
+
   const blob = new Blob([new Uint8Array(audio)], {
     type: mimetype || "application/octet-stream",
   });

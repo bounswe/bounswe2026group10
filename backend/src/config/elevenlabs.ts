@@ -2,13 +2,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const apiKey = process.env["ELEVENLABS_API_KEY"];
-
-if (!apiKey) {
-  throw new Error("Missing ELEVENLABS_API_KEY environment variable.");
-}
-
-export const ELEVENLABS_API_KEY: string = apiKey;
+export const ELEVENLABS_API_KEY: string | undefined = process.env["ELEVENLABS_API_KEY"];
 
 /** ElevenLabs Speech-to-Text endpoint. */
 export const ELEVENLABS_STT_URL = "https://api.elevenlabs.io/v1/speech-to-text";
