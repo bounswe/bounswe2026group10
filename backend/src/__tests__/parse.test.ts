@@ -23,7 +23,14 @@ jest.mock("../services/recipe-parser.js", () => ({
   standardizeUnits: jest.fn(),
 }));
 
+// ─── Mock ElevenLabs (transcription service) ──────────────────────────────────
+
+jest.mock("../services/transcription.js", () => ({
+  transcribeAudio: jest.fn(),
+}));
+
 import { parseRecipeText, standardizeUnits } from "../services/recipe-parser.js";
+import { transcribeAudio } from "../services/transcription.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -331,5 +338,278 @@ describe("POST /parse/standardize-units", () => {
 
     expect(res.status).toBe(500);
     expect(res.body.error.code).toBe("STANDARDIZATION_FAILED");
+  });
+});
+
+// ─── POST /parse/recipe-audio ────────────────────────────────────────────────
+
+const mockTranscriptionEn = {
+  text: "Take two cups of flour, one egg, and mix them together. Knead the dough for ten minutes using a rolling pin. Bake in the oven at 350F for 20 minutes.",
+  languageCode: "eng",
+  languageProbability: 0.99,
+};
+
+const mockTranscriptionTr = {
+  text: "İki su bardağı un, bir yumurta alın ve karıştırın. Hamuru on dakika yoğurun ve fırında pişirin.",
+  languageCode: "tur",
+  languageProbability: 0.97,
+};
+
+describe("POST /parse/recipe-audio", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("returns 401 if not authenticated", async () => {
+    const res = await request(app)
+      .post("/parse/recipe-audio")
+      .attach("audio", Buffer.from("fake audio bytes"), {
+        filename: "recipe.mp3",
+        contentType: "audio/mpeg",
+      });
+
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 403 if user is a learner", async () => {
+    setupAuthMock("learner");
+
+    const res = await request(app)
+      .post("/parse/recipe-audio")
+      .set("Authorization", "Bearer valid_token")
+      .attach("audio", Buffer.from("fake audio bytes"), {
+        filename: "recipe.mp3",
+        contentType: "audio/mpeg",
+      });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.message).toContain("roles: cook, expert");
+  });
+
+  it("returns 400 if no audio file is provided", async () => {
+    setupAuthMock("cook");
+
+    const res = await request(app)
+      .post("/parse/recipe-audio")
+      .set("Authorization", "Bearer valid_token");
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("MISSING_FILE");
+  });
+
+  it("returns 400 for unsupported file type", async () => {
+    setupAuthMock("cook");
+
+    const res = await request(app)
+      .post("/parse/recipe-audio")
+      .set("Authorization", "Bearer valid_token")
+      .attach("audio", Buffer.from("not really audio"), {
+        filename: "fake.txt",
+        contentType: "text/plain",
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("INVALID_FILE_TYPE");
+  });
+
+  it("returns 400 if transcription is too short to parse", async () => {
+    setupAuthMock("cook");
+    (transcribeAudio as jest.Mock).mockResolvedValue({
+      text: "hi",
+      languageCode: "eng",
+      languageProbability: 0.5,
+    });
+
+    const res = await request(app)
+      .post("/parse/recipe-audio")
+      .set("Authorization", "Bearer valid_token")
+      .attach("audio", Buffer.from("fake audio bytes"), {
+        filename: "recipe.mp3",
+        contentType: "audio/mpeg",
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("TRANSCRIPTION_TOO_SHORT");
+  });
+
+  it("returns 500 if transcription service fails", async () => {
+    setupAuthMock("cook");
+    (transcribeAudio as jest.Mock).mockRejectedValue(new Error("ElevenLabs 429"));
+
+    const res = await request(app)
+      .post("/parse/recipe-audio")
+      .set("Authorization", "Bearer valid_token")
+      .attach("audio", Buffer.from("fake audio bytes"), {
+        filename: "recipe.mp3",
+        contentType: "audio/mpeg",
+      });
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("TRANSCRIPTION_FAILED");
+  });
+
+  it("returns 500 if parser fails after a successful transcription", async () => {
+    setupAuthMock("cook");
+    (transcribeAudio as jest.Mock).mockResolvedValue(mockTranscriptionEn);
+    (parseRecipeText as jest.Mock).mockRejectedValue(new Error("Gemini timeout"));
+
+    const res = await request(app)
+      .post("/parse/recipe-audio")
+      .set("Authorization", "Bearer valid_token")
+      .attach("audio", Buffer.from("fake audio bytes"), {
+        filename: "recipe.mp3",
+        contentType: "audio/mpeg",
+      });
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("PARSE_FAILED");
+  });
+
+  it("returns 200 with transcription + structured recipe (English, auto-detect)", async () => {
+    setupAuthMock("cook");
+    (transcribeAudio as jest.Mock).mockResolvedValue(mockTranscriptionEn);
+    (parseRecipeText as jest.Mock).mockResolvedValue(mockParsedResult);
+
+    const res = await request(app)
+      .post("/parse/recipe-audio")
+      .set("Authorization", "Bearer valid_token")
+      .attach("audio", Buffer.from("fake audio bytes"), {
+        filename: "recipe.mp3",
+        contentType: "audio/mpeg",
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.transcription.text).toBe(mockTranscriptionEn.text);
+    expect(res.body.data.transcription.languageCode).toBe("eng");
+    expect(res.body.data.transcription.truncated).toBe(false);
+    expect(res.body.data.transcription.source).toBe("audio");
+    expect(res.body.data.recipe.title).toBe("Simple Bread");
+    expect(res.body.data.recipe.ingredients).toHaveLength(2);
+    expect(res.body.data.recipe.steps).toHaveLength(3);
+
+    // Auto-detect should pass language="auto" to the transcription service.
+    expect(transcribeAudio).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      "audio/mpeg",
+      "recipe.mp3",
+      "auto"
+    );
+    // Parser is invoked with the raw transcription text.
+    expect(parseRecipeText).toHaveBeenCalledWith(mockTranscriptionEn.text);
+  });
+
+  it("accepts an MP4 video and tags the source as 'video'", async () => {
+    setupAuthMock("expert");
+    (transcribeAudio as jest.Mock).mockResolvedValue(mockTranscriptionEn);
+    (parseRecipeText as jest.Mock).mockResolvedValue(mockParsedResult);
+
+    const res = await request(app)
+      .post("/parse/recipe-audio")
+      .set("Authorization", "Bearer valid_token")
+      .attach("audio", Buffer.from("fake mp4 bytes"), {
+        filename: "cooking.mp4",
+        contentType: "video/mp4",
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.transcription.source).toBe("video");
+    expect(transcribeAudio).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      "video/mp4",
+      "cooking.mp4",
+      "auto"
+    );
+  });
+
+  it("accepts a MOV video", async () => {
+    setupAuthMock("expert");
+    (transcribeAudio as jest.Mock).mockResolvedValue(mockTranscriptionTr);
+    (parseRecipeText as jest.Mock).mockResolvedValue(mockParsedResult);
+
+    const res = await request(app)
+      .post("/parse/recipe-audio")
+      .set("Authorization", "Bearer valid_token")
+      .field("language", "tr")
+      .attach("audio", Buffer.from("fake mov bytes"), {
+        filename: "tarif.mov",
+        contentType: "video/quicktime",
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.transcription.source).toBe("video");
+    expect(res.body.data.transcription.languageCode).toBe("tur");
+  });
+
+  it("forwards the language hint when caller specifies tr", async () => {
+    setupAuthMock("expert");
+    (transcribeAudio as jest.Mock).mockResolvedValue(mockTranscriptionTr);
+    (parseRecipeText as jest.Mock).mockResolvedValue(mockParsedResult);
+
+    const res = await request(app)
+      .post("/parse/recipe-audio")
+      .set("Authorization", "Bearer valid_token")
+      .field("language", "tr")
+      .attach("audio", Buffer.from("fake turkish audio"), {
+        filename: "tarif.m4a",
+        contentType: "audio/m4a",
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.transcription.languageCode).toBe("tur");
+    expect(transcribeAudio).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      "audio/m4a",
+      "tarif.m4a",
+      "tr"
+    );
+  });
+
+  it("ignores invalid language values and falls back to auto-detect", async () => {
+    setupAuthMock("cook");
+    (transcribeAudio as jest.Mock).mockResolvedValue(mockTranscriptionEn);
+    (parseRecipeText as jest.Mock).mockResolvedValue(mockParsedResult);
+
+    const res = await request(app)
+      .post("/parse/recipe-audio")
+      .set("Authorization", "Bearer valid_token")
+      .field("language", "klingon")
+      .attach("audio", Buffer.from("fake audio"), {
+        filename: "recipe.wav",
+        contentType: "audio/wav",
+      });
+
+    expect(res.status).toBe(200);
+    expect(transcribeAudio).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      "audio/wav",
+      "recipe.wav",
+      "auto"
+    );
+  });
+
+  it("truncates very long transcriptions before passing to the parser", async () => {
+    setupAuthMock("cook");
+    const longText = "a".repeat(5500);
+    (transcribeAudio as jest.Mock).mockResolvedValue({
+      text: longText,
+      languageCode: "eng",
+      languageProbability: 0.95,
+    });
+    (parseRecipeText as jest.Mock).mockResolvedValue(mockParsedResult);
+
+    const res = await request(app)
+      .post("/parse/recipe-audio")
+      .set("Authorization", "Bearer valid_token")
+      .attach("audio", Buffer.from("fake audio"), {
+        filename: "long.mp3",
+        contentType: "audio/mpeg",
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.transcription.truncated).toBe(true);
+    // Parser receives only the first 5000 characters.
+    const [parserArg] = (parseRecipeText as jest.Mock).mock.calls[0];
+    expect(parserArg).toHaveLength(5000);
+    // But the response still exposes the full transcription so the user can see it.
+    expect(res.body.data.transcription.text).toHaveLength(5500);
   });
 });
