@@ -233,6 +233,62 @@ describe("GET /users/me/favorites", () => {
     expect(res.body.data.pagination.total).toBe(0);
   });
 
+  it("resolves and includes allergens in favorited recipes", async () => {
+    setupAuth();
+    const favRowWithAllergens = {
+      recipe: { ...mockFavRow.recipe, allergen_ids: [1, 2] },
+    };
+
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "profiles") return authProfileMock();
+      if (table === "user_favorites") {
+        const mockRange = jest.fn().mockResolvedValue({ data: [favRowWithAllergens], error: null, count: 1 });
+        const mockOrder = jest.fn().mockReturnValue({ range: mockRange });
+        const mockEq = jest.fn().mockReturnValue({ order: mockOrder });
+        return { select: jest.fn().mockReturnValue({ eq: mockEq }) };
+      }
+      if (table === "allergens") {
+        const mockIn = jest.fn().mockResolvedValue({
+          data: [{ id: 1, name: "Gluten" }, { id: 2, name: "Dairy" }],
+          error: null,
+        });
+        return { select: jest.fn().mockReturnValue({ in: mockIn }) };
+      }
+      return {};
+    });
+
+    const res = await request(app)
+      .get("/users/me/favorites")
+      .set("Authorization", "Bearer valid_token");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes[0].allergens).toHaveLength(2);
+    expect(res.body.data.recipes[0].allergens.map((a: any) => a.name)).toEqual(
+      expect.arrayContaining(["Gluten", "Dairy"])
+    );
+  });
+
+  it("returns empty allergens array when favorited recipe has no allergen_ids", async () => {
+    setupAuth();
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "profiles") return authProfileMock();
+      if (table === "user_favorites") {
+        const mockRange = jest.fn().mockResolvedValue({ data: [mockFavRow], error: null, count: 1 });
+        const mockOrder = jest.fn().mockReturnValue({ range: mockRange });
+        const mockEq = jest.fn().mockReturnValue({ order: mockOrder });
+        return { select: jest.fn().mockReturnValue({ eq: mockEq }) };
+      }
+      return {};
+    });
+
+    const res = await request(app)
+      .get("/users/me/favorites")
+      .set("Authorization", "Bearer valid_token");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes[0].allergens).toEqual([]);
+  });
+
   it("returns correct pagination metadata", async () => {
     setupAuth();
     (supabase.from as jest.Mock).mockImplementation((table: string) => {
@@ -375,6 +431,48 @@ describe("GET /users/me/drafts", () => {
 
     expect(res.status).toBe(500);
     expect(res.body.error.code).toBe("DB_ERROR");
+  });
+
+  it("resolves and includes allergens in draft recipes", async () => {
+    setupAuth();
+    const draftWithAllergens = { ...mockDraft, allergen_ids: [3] };
+
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "profiles") return authProfileMock();
+      if (table === "recipes") return draftsQueryMock([draftWithAllergens]);
+      if (table === "allergens") {
+        const mockIn = jest.fn().mockResolvedValue({
+          data: [{ id: 3, name: "Nuts" }],
+          error: null,
+        });
+        return { select: jest.fn().mockReturnValue({ in: mockIn }) };
+      }
+      return {};
+    });
+
+    const res = await request(app)
+      .get("/users/me/drafts")
+      .set("Authorization", "Bearer valid_token");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0].allergens).toHaveLength(1);
+    expect(res.body.data[0].allergens[0].name).toBe("Nuts");
+  });
+
+  it("returns empty allergens array when draft has no allergen_ids", async () => {
+    setupAuth();
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "profiles") return authProfileMock();
+      if (table === "recipes") return draftsQueryMock([mockDraft]);
+      return {};
+    });
+
+    const res = await request(app)
+      .get("/users/me/drafts")
+      .set("Authorization", "Bearer valid_token");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0].allergens).toEqual([]);
   });
 });
 

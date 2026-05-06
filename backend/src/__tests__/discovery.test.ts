@@ -401,23 +401,25 @@ describe("GET /discovery/recipes", () => {
     expect(res.body.data.pagination).toMatchObject({ page: 1, limit: 20, total: 1 });
   });
 
-  it("excludes recipes with specified allergens", async () => {
-    const mockAllergenIngredients = [{ ingredient_id: 5 }];
-    const mockRecipeIngredients = [{ recipe_id: 99 }];
-
-    (supabase.from as jest.Mock).mockImplementation((table) => {
-      if (table === "ingredient_allergens")
-        return chainable({ data: mockAllergenIngredients, error: null });
-      if (table === "recipe_ingredients")
-        return chainable({ data: mockRecipeIngredients, error: null });
-      if (table === "recipes")
-        return chainable({ data: [], error: null, count: 0 });
-    });
+  it("excludes recipes with specified allergens via allergen_ids overlap filter", async () => {
+    const chain = chainable({ data: [], error: null, count: 0 });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
 
     const res = await request(app).get("/discovery/recipes?excludeAllergens=1");
 
     expect(res.status).toBe(200);
     expect(res.body.data.recipes).toHaveLength(0);
+    expect(chain.not).toHaveBeenCalledWith("allergen_ids", "ov", "{1}");
+  });
+
+  it("applies allergen_ids overlap filter for multiple allergens", async () => {
+    const chain = chainable({ data: [], error: null, count: 0 });
+    (supabase.from as jest.Mock).mockReturnValue(chain);
+
+    const res = await request(app).get("/discovery/recipes?excludeAllergens=1,2,3");
+
+    expect(res.status).toBe(200);
+    expect(chain.not).toHaveBeenCalledWith("allergen_ids", "ov", "{1,2,3}");
   });
 
   it("returns empty when genreId has no varieties", async () => {
