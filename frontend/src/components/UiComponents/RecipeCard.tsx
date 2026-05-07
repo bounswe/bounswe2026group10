@@ -21,7 +21,7 @@ export function RecipeCard({ recipe, variant = 'horizontal', onClick }: RecipeCa
 
   if (variant === 'hero') {
     return (
-      <button type="button" className="recipe-card recipe-card--hero" onClick={onClick}>
+      <button type="button" className="recipe-card recipe-card--hero" data-testid="recipe-card" onClick={onClick}>
         <div className="recipe-card__hero-img">
           {recipe.imageUrl ? (
             <img src={recipe.imageUrl} alt={recipe.title} loading="lazy" />
@@ -52,7 +52,7 @@ export function RecipeCard({ recipe, variant = 'horizontal', onClick }: RecipeCa
   }
 
   return (
-    <button type="button" className="recipe-card recipe-card--horizontal" onClick={onClick}>
+    <button type="button" className="recipe-card recipe-card--horizontal" data-testid="recipe-card" onClick={onClick}>
       <div className="recipe-card__thumb">
         {recipe.imageUrl ? (
           <img src={recipe.imageUrl} alt={recipe.title} loading="lazy" />

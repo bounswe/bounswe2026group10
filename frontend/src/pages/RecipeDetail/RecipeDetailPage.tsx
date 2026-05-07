@@ -479,15 +479,17 @@ export function RecipeDetailPage() {
               <button
                 type="button"
                 className="recipe-detail__servings-btn"
+                data-testid="serving-minus"
                 onClick={() => setServings((s) => Math.max(1, s - 1))}
                 aria-label={t('recipeDetail.servingsDecreaseAria')}
               >
                 −
               </button>
-              <span className="recipe-detail__servings-value">{servings}</span>
+              <span className="recipe-detail__servings-value" data-testid="serving-value">{servings}</span>
               <button
                 type="button"
                 className="recipe-detail__servings-btn"
+                data-testid="serving-plus"
                 onClick={() => setServings((s) => s + 1)}
                 aria-label={t('recipeDetail.servingsIncreaseAria')}
               >
@@ -507,11 +509,12 @@ export function RecipeDetailPage() {
                   <div className="recipe-detail__ingredient-row">
                     <span className="recipe-detail__ingredient-name">{ing.ingredientName ?? t('recipeDetail.unknownIngredient')}</span>
                     <div className="recipe-detail__ingredient-right">
-                      <span className="recipe-detail__ingredient-amt">{ing.quantity} {ing.unit}</span>
+                      <span className="recipe-detail__ingredient-amt" data-testid="ingredient-quantity">{ing.quantity} {ing.unit}</span>
                       {ing.ingredientId !== null && (
                         <button
                           type="button"
                           className="recipe-detail__substitute-btn"
+                          data-testid="substitute-btn"
                           aria-label={t('recipeDetail.substituteAria', { name: ing.ingredientName ?? '' })}
                           title={t('recipeDetail.substituteAria', { name: ing.ingredientName ?? '' })}
                           onClick={() => openSubsModal(ing)}
@@ -616,6 +619,7 @@ export function RecipeDetailPage() {
           className="rd-subs-overlay"
           role="dialog"
           aria-modal="true"
+          data-testid="substitution-modal"
           onMouseDown={(e) => { if (e.target === e.currentTarget) setSubsModal(null) }}
         >
           <div className="rd-subs-modal">
@@ -634,7 +638,7 @@ export function RecipeDetailPage() {
             {!subsModal.loading && subsModal.subs.length > 0 && (
               <ul className="rd-subs-modal__list">
                 {subsModal.subs.map((sub, i) => (
-                  <li key={i} className="rd-subs-modal__item">
+                  <li key={i} className="rd-subs-modal__item" data-testid="substitution-item">
                     <div className="rd-subs-modal__item-row">
                       <span className="rd-subs-modal__item-name">{sub.ingredient.name}</span>
                       <span className="rd-subs-modal__item-amt">{sub.amount} {sub.unit}</span>
@@ -652,6 +656,7 @@ export function RecipeDetailPage() {
             <button
               type="button"
               className="rd-subs-modal__close"
+              data-testid="substitution-modal-close"
               onClick={() => setSubsModal(null)}
             >
               {t('recipeDetail.substituteClose')}
