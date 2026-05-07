@@ -155,7 +155,7 @@ export function RecipeParseModal({ visible, onClose, onApplied }: Props) {
 
         <KeyboardAvoidingView
           style={styles.keyboardContainer}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           pointerEvents="box-none"
         >
           <View style={styles.sheet}>
