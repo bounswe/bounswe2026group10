@@ -273,6 +273,7 @@ export function DiscoveryPage() {
         <button
           type="button"
           className={`discovery-page__filter-btn${filtersOpen ? ' discovery-page__filter-btn--open' : ''}`}
+          data-testid="filter-toggle"
           onClick={() => setFiltersOpen((o) => !o)}
           aria-expanded={filtersOpen}
         >
@@ -293,7 +294,7 @@ export function DiscoveryPage() {
       </div>
 
       {filtersOpen && (
-        <div className="discovery-page__filter-panel">
+        <div className="discovery-page__filter-panel" data-testid="filter-panel">
           <div className="discovery-page__filter-group">
             <p className="discovery-page__filter-group-label">{t('discovery.location')}</p>
             <div className="discovery-page__filter-location">
@@ -351,6 +352,7 @@ export function DiscoveryPage() {
                     key={tag.id}
                     type="button"
                     className={`discovery-page__filter-chip${excludedAllergenIds.includes(tag.id) ? ' discovery-page__filter-chip--active' : ''}`}
+                    data-testid="allergen-chip"
                     onClick={() => toggleAllergen(tag.id)}
                   >
                     {tag.name}
@@ -364,6 +366,7 @@ export function DiscoveryPage() {
             <button
               type="button"
               className="discovery-page__filter-clear"
+              data-testid="clear-filters"
               onClick={() => {
                 setSelectedTagIds([])
                 setExcludedAllergenIds([])
