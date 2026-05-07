@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import type { Tool } from '../../types/ingredient';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 import type { ToolItem } from '../../api/tools';
+import { searchStartsWith } from '../../utils/string';
 
 // Number of tools to show in the quick-add chips row
 const QUICK_ADD_COUNT = 7;
@@ -33,11 +34,11 @@ export function ToolSearchSection({
   const [search, setSearch] = useState('');
   const [showResults, setShowResults] = useState(false);
 
-  const query = search.trim().toLowerCase();
+  const query = search.trim();
   const filtered = query.length > 0
     ? allTools
         .filter((t) =>
-          t.name.toLowerCase().startsWith(query) &&
+          searchStartsWith(t.name, query) &&
           !selectedTools.some((s) => s.id === t.name),
         )
         .slice(0, 5)

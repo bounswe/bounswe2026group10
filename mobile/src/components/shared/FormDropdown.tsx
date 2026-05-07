@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
+import { searchStartsWith } from '../../utils/string';
 
 interface DropdownOption {
   label: string;
@@ -44,7 +45,7 @@ export function FormDropdown({
   const selectedOption = options.find((o) => o.value === value);
 
   const filteredOptions = searchable && search.length > 0
-    ? options.filter((o) => o.label.toLowerCase().startsWith(search.toLowerCase()))
+    ? options.filter((o) => searchStartsWith(o.label, search))
     : options;
 
   const handleSelect = (option: DropdownOption) => {

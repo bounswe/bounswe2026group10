@@ -1,5 +1,6 @@
 import { fetchApi } from './client';
 import type { DishGenre } from './dish-genres';
+import { searchIncludes } from '../utils/string';
 
 export type { DishGenre } from './dish-genres';
 
@@ -67,7 +68,7 @@ export async function fetchSearchGenres(query?: string): Promise<DishGenre[]> {
   try {
     const genres = await fetchApi<DishGenre[]>('/dish-genres');
     if (!query?.trim()) return genres;
-    return genres.filter((g) => g.name.toLowerCase().includes(query.toLowerCase()));
+    return genres.filter((g) => searchIncludes(g.name, query));
   } catch (error) {
     console.error('fetchSearchGenres error:', error);
     return [];
