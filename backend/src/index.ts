@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import { detectLanguage } from "./middleware/language.js";
 import authRouter from "./routes/auth.js";
 import recipesRouter from "./routes/recipes.js";
 import mediaRouter from "./routes/media.js";
@@ -25,6 +26,7 @@ const PORT = process.env["PORT"] ?? 3000;
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use(detectLanguage);
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {

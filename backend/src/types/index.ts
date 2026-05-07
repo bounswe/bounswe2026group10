@@ -1,8 +1,14 @@
 import type { Request } from "express";
+import type { SupportedLanguage } from "../utils/i18n.js";
 
 // ─── Language ─────────────────────────────────────────────────────────────────
 
 export type { SupportedLanguage } from "../utils/i18n.js";
+
+/** Express Request extended with the resolved language preference (set by detectLanguage middleware). */
+export interface LanguageRequest extends Request {
+  lang: SupportedLanguage | null;
+}
 
 // ─── User Roles ────────────────────────────────────────────────────────────────
 

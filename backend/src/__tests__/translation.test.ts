@@ -577,19 +577,6 @@ describe("GET /recipes/:id?lang=", () => {
 describe("POST /recipes/:id/publish — additional edge cases", () => {
   beforeEach(() => jest.clearAllMocks());
 
-  /** Sets up auth + profile mock for a given role. */
-  const setupAuth = (role: string, profileId = "profile-123") => {
-    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
-      data: { user: { id: "user-123", email: "test@example.com" } },
-      error: null,
-    });
-    (supabase.from as jest.Mock).mockImplementation((table: string) => {
-      if (table === "profiles")
-        return chain({ data: { id: profileId, username: "tester", role }, error: null });
-      return chain({ data: null, error: null });
-    });
-  };
-
   it("returns 401 when request has no Authorization header", async () => {
     const res = await request(app).post("/recipes/recipe-1/publish");
     expect(res.status).toBe(401);
@@ -655,6 +642,100 @@ describe("POST /recipes/:id/publish — additional edge cases", () => {
     expect(res.status).toBe(200);
     expect(res.body.data.isPublished).toBe(true);
     expect(translateSpy).toHaveBeenCalledWith("recipe-1");
+
+    translateSpy.mockRestore();
+  });
+});
+
+// ─── POST /recipes — translation trigger ─────────────────────────────────────
+
+describe("POST /recipes — translation trigger", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  const setupAuth = (role: string, profileId = "profile-123") => {
+    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123", email: "test@example.com" } },
+      error: null,
+    });
+
+    const mockSingle = jest.fn().mockResolvedValue({
+      data: { id: "recipe-new", created_at: "2024-01-01" },
+      error: null,
+    });
+    const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+    const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "profiles")
+        return chain({ data: { id: profileId, username: "tester", role }, error: null });
+      if (table === "recipes") return { insert: mockInsert };
+      return { insert: jest.fn().mockResolvedValue({ error: null }) };
+    });
+  };
+
+  it("triggers translateRecipe fire-and-forget after POST /recipes succeeds", async () => {
+    const translateSpy = jest
+      .spyOn(translationService, "translateRecipe")
+      .mockResolvedValue(undefined);
+
+    setupAuth("cook");
+
+    const res = await request(app)
+      .post("/recipes")
+      .set("Authorization", "Bearer valid_token")
+      .send({
+        title: "Test Recipe",
+        type: "community",
+        servingSize: 4,
+        ingredients: [{ ingredientId: 1, quantity: 1, unit: "cup" }],
+        steps: [{ stepOrder: 1, description: "Mix" }],
+      });
+
+    expect(res.status).toBe(201);
+    expect(translateSpy).toHaveBeenCalledWith("recipe-new");
+
+    translateSpy.mockRestore();
+  });
+});
+
+// ─── PATCH /recipes/:id — translation trigger ─────────────────────────────────
+
+describe("PATCH /recipes/:id — translation trigger", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("triggers translateRecipe fire-and-forget after PATCH /recipes/:id succeeds", async () => {
+    const translateSpy = jest
+      .spyOn(translationService, "translateRecipe")
+      .mockResolvedValue(undefined);
+
+    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "user-123", email: "test@example.com" } },
+      error: null,
+    });
+
+    const mockUpdateEq = jest.fn().mockResolvedValue({ error: null });
+    const mockUpdate = jest.fn().mockReturnValue({ eq: mockUpdateEq });
+    const mockDeleteEq = jest.fn().mockResolvedValue({ error: null });
+    const mockDelete = jest.fn().mockReturnValue({ eq: mockDeleteEq });
+
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "profiles")
+        return chain({ data: { id: "profile-123", username: "tester", role: "cook" }, error: null });
+      if (table === "recipes")
+        return {
+          ...chain({ data: { creator_id: "profile-123", type: "community" }, error: null }),
+          update: mockUpdate,
+        };
+      return { delete: mockDelete, insert: jest.fn().mockResolvedValue({ error: null }) };
+    });
+
+    const res = await request(app)
+      .patch("/recipes/recipe-123")
+      .set("Authorization", "Bearer valid_token")
+      .send({ title: "Updated Title" });
+
+    expect(res.status).toBe(200);
+    expect(translateSpy).toHaveBeenCalledWith("recipe-123");
 
     translateSpy.mockRestore();
   });

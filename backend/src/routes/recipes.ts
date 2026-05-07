@@ -3,7 +3,7 @@ import { z } from "zod";
 import { supabase, createUserClient } from "../config/supabase.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
-import type { AuthenticatedRequest } from "../types/index.js";
+import type { AuthenticatedRequest, LanguageRequest } from "../types/index.js";
 import { errorResponse, successResponse } from "../utils/response.js";
 import { canonicalizeLocationForWrite } from "../utils/locations.js";
 import { normalizeText } from "../utils/text.js";
@@ -227,9 +227,8 @@ router.get("/mine", requireAuth, async (req: Request, res: Response): Promise<vo
  */
 router.get("/:id", async (req: Request, res: Response): Promise<void> => {
   const recipeId = (req.params["id"] ?? "") as string;
-  const langParam = typeof req.query["lang"] === "string"
-    ? req.query["lang"].toUpperCase()
-    : null;
+  const lang = (req as LanguageRequest).lang;
+  const langParam = lang ? lang.toUpperCase() : null;
 
   const authHeader = req.headers["authorization"];
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
@@ -598,6 +597,11 @@ router.post(
       console.error("Sub-insert error:", subError.error);
     }
 
+    // Trigger translation non-blocking — fire-and-forget
+    translateRecipe(recipeId).catch((err) =>
+      console.error("[create] Translation trigger error:", err)
+    );
+
     res.status(201).json(
       successResponse({
         id: recipeId,
@@ -760,6 +764,11 @@ router.patch(
     if (insertPromises.length > 0) {
       await Promise.all(insertPromises);
     }
+
+    // Trigger translation non-blocking — fire-and-forget
+    translateRecipe(recipeId as string).catch((err) =>
+      console.error("[update] Translation trigger error:", err)
+    );
 
     res.status(200).json(successResponse({ message: "Recipe updated successfully.", id: recipeId }));
   }
