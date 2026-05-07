@@ -48,9 +48,11 @@ backend/
 │   │   └── elevenlabs.ts        # ElevenLabs STT client config (#413)
 │   ├── services/
 │   │   ├── recipe-parser.ts     # Free-text recipe parser (Gemini AI)
-│   │   └── transcription.ts     # ElevenLabs Scribe speech-to-text wrapper (#413)
+│   │   ├── transcription.ts     # ElevenLabs Scribe speech-to-text wrapper (#413)
+│   │   └── translationService.ts# DeepL EN↔TR translation for recipes (#409)
 │   ├── middleware/
 │   │   ├── auth.ts              # requireAuth, requireRole middleware
+│   │   ├── language.ts          # detectLanguage — resolves req.lang from ?lang= / Accept-Language (#409)
 │   │   └── validate.ts          # Zod-based request body validation
 │   ├── routes/
 │   │   ├── auth.ts              # Register, login, logout, refresh, me
@@ -67,16 +69,18 @@ backend/
 │   │   ├── comments.ts          # Recipe comments (create, list, delete)
 │   │   └── parse.ts             # Free-text recipe parser endpoint
 │   ├── types/
-│   │   └── index.ts             # TypeScript interfaces (roles, auth, response, SupportedLanguage)
+│   │   └── index.ts             # TypeScript interfaces (roles, auth, response, SupportedLanguage, LanguageRequest)
 │   ├── utils/
 │   │   ├── response.ts          # successResponse / errorResponse helpers
-│   │   ├── i18n.ts              # parseLangParam, resolveLang — ?lang= query param helpers
+│   │   ├── i18n.ts              # parseLangParam, resolveLang — language helpers (SupportedLanguage: "en" | "tr")
 │   │   ├── locations.ts         # location normalization + alias expansion (#398)
 │   │   └── text.ts              # Turkish-aware text helpers (#402)
 │   └── __tests__/               # Jest test suite
 │       ├── auth.test.ts
 │       ├── middleware.test.ts
 │       ├── recipes.test.ts
+│       ├── translation.test.ts  # translateRecipe(), GET /recipes/:id?lang=, publish/create/update triggers
+│       ├── language.test.ts     # detectLanguage middleware — ?lang=, Accept-Language, fallback (#409)
 │       ├── discovery.test.ts
 │       ├── dietary-tags.test.ts
 │       ├── media.test.ts
@@ -342,6 +346,23 @@ Use `successResponse(data)` and `errorResponse(code, message)` from `src/utils/r
 - Chainable mock pattern simulates PostgREST query builder
 - Supertest for HTTP-level assertions
 - Tests run sequentially (`--runInBand`)
+
+### Language Detection & Translation Pipeline (issue #409)
+
+`detectLanguage` middleware (mounted globally in `index.ts`) resolves the caller's preferred language and attaches it as `req.lang: SupportedLanguage | null`:
+
+- **Priority 1:** `?lang=` query param — validated via `parseLangParam()`; invalid values (e.g. `?lang=de`) fall back to `"en"`
+- **Priority 2:** `Accept-Language` header — first tag parsed; any tag starting with `"tr"` resolves to `"tr"`, all others to `"en"`
+- **No source:** `req.lang = null` — downstream handlers skip translation lookups
+
+`GET /recipes/:id` reads `req.lang` instead of parsing `?lang=` directly, converts to uppercase (`'en'` → `'EN'`) for the DB column, and fetches translations from `recipe_translations`, `recipe_step_translations`, and `recipe_ingredient_translations` when `req.lang` is non-null, falling back to original content when no translation row exists.
+
+Translation is triggered fire-and-forget (`.catch()` swallows errors) after:
+- `POST /recipes` — recipe create
+- `PATCH /recipes/:id` — recipe update
+- `POST /recipes/:id/publish` — recipe publish
+
+`translateRecipe(id)` in `src/services/translationService.ts` uses DeepL to translate EN↔TR. Requires `DEEPL_API_KEY` env var; skips silently when not set (safe for test environments).
 
 ### Location Normalization (issue #398)
 
