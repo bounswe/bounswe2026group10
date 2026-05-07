@@ -21,12 +21,51 @@ export function mockDelay(ms = 400): Promise<void> {
 
 const TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
+const USER_PROFILE_KEY = 'user_profile';
 
 let _token: string | null = null;
 let _refreshToken: string | null = null;
 
 // Deduplicates concurrent refresh attempts — only one refresh runs at a time.
 let _refreshPromise: Promise<void> | null = null;
+
+// ─── Session expiry callback ──────────────────────────────────────────────────
+// AuthContext registers this so it can react when a token refresh fails
+// mid-session (user appears logged in but all tokens are gone).
+let _onSessionExpired: (() => void) | null = null;
+
+export function registerSessionExpiredHandler(cb: () => void): void {
+  _onSessionExpired = cb;
+}
+
+// ─── User profile persistence ─────────────────────────────────────────────────
+// Stored alongside tokens so the app can restore the full auth state on
+// startup without a network round-trip (graceful offline / slow connectivity).
+
+export interface StoredUserProfile {
+  userId: string;
+  email: string;
+  username: string;
+  role: string;
+}
+
+export async function persistUserProfile(profile: StoredUserProfile | null): Promise<void> {
+  if (profile) {
+    await SecureStore.setItemAsync(USER_PROFILE_KEY, JSON.stringify(profile));
+  } else {
+    await SecureStore.deleteItemAsync(USER_PROFILE_KEY);
+  }
+}
+
+export async function loadPersistedUserProfile(): Promise<StoredUserProfile | null> {
+  const stored = await SecureStore.getItemAsync(USER_PROFILE_KEY);
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored) as StoredUserProfile;
+  } catch {
+    return null;
+  }
+}
 
 export async function persistToken(token: string | null): Promise<void> {
   _token = token;
@@ -155,6 +194,7 @@ export async function fetchApi<T>(
             setRefreshToken(null);
             await SecureStore.deleteItemAsync(TOKEN_KEY);
             await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+            _onSessionExpired?.();
             throw err;
           } finally {
             _refreshPromise = null;
