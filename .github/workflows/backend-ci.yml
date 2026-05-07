@@ -50,3 +50,30 @@ jobs:
           ELEVENLABS_API_KEY: dummy-key-for-ci
           SUPABASE_URL: https://dummy.supabase.co
           SUPABASE_ANON_KEY: dummy-anon-key
+
+  deploy:
+    name: Deploy to DigitalOcean
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Log in to Container Registry
+        run: doctl registry login --expiry-seconds 1200
+
+      - name: Build and push Docker image
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            -t registry.digitalocean.com/roots-recipes/roots-recipes-backend:latest \
+            --push \
+            .
+        working-directory: backend
