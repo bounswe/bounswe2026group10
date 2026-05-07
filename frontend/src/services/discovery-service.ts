@@ -84,9 +84,24 @@ export interface DiscoveryPagination {
   total: number
 }
 
+export interface CascadeGenre {
+  id: string
+  name: string
+}
+
+export interface CascadeVariety {
+  id: string
+  name: string
+  genreId: string | null
+}
+
 export interface DiscoveryRecipeResults {
   recipes: RecipeSummary[]
   pagination: DiscoveryPagination
+  /** Genres present in every recipe matching the active filters (#463). */
+  cascadeGenres: CascadeGenre[]
+  /** Varieties present in every recipe matching the active filters (#463). */
+  cascadeVarieties: CascadeVariety[]
 }
 
 // ── Normalizers: map backend snake_case → our camelCase types ────────────────
@@ -185,6 +200,10 @@ export const discoveryService = {
         ? payload.recipes
         : []
     const pagination = payload?.pagination ?? {}
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawGenres: any[] = Array.isArray(payload?.genres) ? payload.genres : []
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawVarieties: any[] = Array.isArray(payload?.varieties) ? payload.varieties : []
 
     return {
       recipes: rawRecipes.map(normalizeRecipe),
@@ -193,6 +212,12 @@ export const discoveryService = {
         limit: Number(pagination.limit ?? params?.limit ?? 20),
         total: Number(pagination.total ?? rawRecipes.length),
       },
+      cascadeGenres: rawGenres.map((g) => ({ id: String(g.id), name: g.name ?? '' })),
+      cascadeVarieties: rawVarieties.map((v) => ({
+        id: String(v.id),
+        name: v.name ?? '',
+        genreId: v.dish_genre?.id != null ? String(v.dish_genre.id) : null,
+      })),
     }
   },
 
