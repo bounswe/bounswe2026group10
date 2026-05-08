@@ -1,0 +1,3 @@
+# Exclude HTML screen mockups and feature docs from GitHub language stats
+mobile/screens/*.html linguist-detectable=false
+docs/features/*.html  linguist-documentation=true
