@@ -3,6 +3,8 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import swaggerUi from "swagger-ui-express";
+import { openApiSpec } from "./docs/openapi";
 import { detectLanguage } from "./middleware/language.js";
 import authRouter from "./routes/auth.js";
 import recipesRouter from "./routes/recipes.js";
@@ -22,6 +24,9 @@ import allergensRouter from "./routes/allergens.js";
 
 const app = express();
 const PORT = process.env["PORT"] ?? 3000;
+
+// ─── Swagger UI (mounted before helmet so CSP doesn't block the UI assets) ────
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
 
 // ─── Global Middleware ────────────────────────────────────────────────────────
 app.use(helmet());
