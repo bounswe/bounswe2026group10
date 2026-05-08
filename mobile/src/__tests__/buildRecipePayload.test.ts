@@ -134,4 +134,28 @@ describe('buildRecipePayload', () => {
     );
     expect(payload.tools).toEqual([{ name: 'Pan' }, { name: 'Knife' }]);
   });
+
+  it('forwards draft.culturalTagIds as culturalTagIds on the payload', () => {
+    const payload = buildRecipePayload(
+      makeDraft({ culturalTagIds: [4, 8, 9] })
+    );
+    expect(payload.culturalTagIds).toEqual([4, 8, 9]);
+  });
+
+  it('emits an empty culturalTagIds array when no tags are selected', () => {
+    const payload = buildRecipePayload(makeDraft());
+    expect(payload.culturalTagIds).toEqual([]);
+  });
+
+  it('keeps culturalTagIds disjoint from dietary/allergen tagIds', () => {
+    const payload = buildRecipePayload(
+      makeDraft({
+        dietaryTagIds: [1],
+        allergenTagIds: [2],
+        culturalTagIds: [3],
+      })
+    );
+    expect(payload.tagIds).toEqual([1, 2]);
+    expect(payload.culturalTagIds).toEqual([3]);
+  });
 });

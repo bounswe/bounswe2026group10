@@ -1,4 +1,8 @@
-import { getCulturalTags, pickCulturalTagLabel } from '../api/cultural-tags';
+import {
+  getCulturalTags,
+  pickCulturalTagLabel,
+  getMockCulturalTagsForRecipe,
+} from '../api/cultural-tags';
 
 jest.mock('../api/client', () => ({
   mockDelay: jest.fn().mockResolvedValue(undefined),
@@ -52,5 +56,63 @@ describe('pickCulturalTagLabel', () => {
 
   it('falls back to English for unknown locales', () => {
     expect(pickCulturalTagLabel(tag, 'de')).toBe('Wedding');
+  });
+});
+
+describe('getMockCulturalTagsForRecipe', () => {
+  it('returns deterministic tags for the same recipe id', () => {
+    const a = getMockCulturalTagsForRecipe('recipe-42', null);
+    const b = getMockCulturalTagsForRecipe('recipe-42', null);
+    expect(a).toEqual(b);
+  });
+
+  it('returns different selections for different recipe ids', () => {
+    // Across a wide id space, at least one pair should differ. This protects
+    // against a regression that would always pick the same tag.
+    const samples = ['r-1', 'r-2', 'r-3', 'r-4', 'r-5'].map((id) =>
+      getMockCulturalTagsForRecipe(id, null).map((t) => t.id).join(','),
+    );
+    const unique = new Set(samples);
+    expect(unique.size).toBeGreaterThan(1);
+  });
+
+  it('returns 1 or 2 tags', () => {
+    const tags = getMockCulturalTagsForRecipe('recipe-id', null);
+    expect(tags.length).toBeGreaterThanOrEqual(1);
+    expect(tags.length).toBeLessThanOrEqual(2);
+  });
+
+  it('never returns duplicate tag ids in the result', () => {
+    for (const id of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
+      const tags = getMockCulturalTagsForRecipe(id, null);
+      const ids = tags.map((t) => t.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+
+  it('respects country scoping (Japan-only set excludes Turkey-only tags)', () => {
+    // Across many ids, every returned tag for country=Japan must be either
+    // global (country=null) or Japan-scoped — never a Turkey-only tag.
+    for (const id of ['j1', 'j2', 'j3', 'j4', 'j5']) {
+      const tags = getMockCulturalTagsForRecipe(id, 'Japan');
+      for (const tag of tags) {
+        expect(tag.country === null || tag.country === 'Japan').toBe(true);
+      }
+    }
+  });
+
+  it('matches country case-insensitively', () => {
+    const upper = getMockCulturalTagsForRecipe('same-id', 'TURKEY');
+    const lower = getMockCulturalTagsForRecipe('same-id', 'turkey');
+    expect(upper).toEqual(lower);
+  });
+
+  it('returns an empty array for an unknown country with no global pool overlap is impossible (sanity check global tags exist)', () => {
+    // Even with a country that matches nothing, global tags are still eligible.
+    const tags = getMockCulturalTagsForRecipe('id', 'Atlantis');
+    expect(tags.length).toBeGreaterThan(0);
+    for (const tag of tags) {
+      expect(tag.country).toBeNull();
+    }
   });
 });
