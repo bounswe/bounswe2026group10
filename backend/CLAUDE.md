@@ -493,4 +493,5 @@ Multi-stage build: TypeScript compile in builder stage, production deps only in 
 5. Mount the router in `src/index.ts` if new
 6. Add tests in `src/__tests__/`
 7. Run `npm test` to verify
-8. **Update this CLAUDE.md file** to reflect the changes
+8. **Update `src/docs/openapi.ts`** — add/modify/remove the corresponding path entry. The Swagger UI at `/api-docs` is auto-generated from this file, so it must stay in sync with the actual routes at all times.
+9. **Update this CLAUDE.md file** to reflect the changes
