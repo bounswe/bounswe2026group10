@@ -75,6 +75,7 @@ export function SearchScreen() {
   const hasFilters =
     filters.excludeAllergenIds.length > 0 ||
     filters.dietaryTagIds.length > 0 ||
+    filters.culturalTagIds.length > 0 ||
     filters.country !== '' ||
     filters.city !== '';
 
@@ -129,6 +130,7 @@ export function SearchScreen() {
       genreId: selectedGenreId ?? undefined,
       excludeAllergenIds: filters.excludeAllergenIds,
       dietaryTagIds: filters.dietaryTagIds,
+      culturalTagIds: filters.culturalTagIds,
       country: filters.country || undefined,
       city: filters.city || undefined,
     })
@@ -218,6 +220,11 @@ export function SearchScreen() {
               ))}
               {filters.dietaryTagNames.map((name) => (
                 <View key={name} style={styles.filterTag}>
+                  <Text style={styles.filterTagText}>{name}</Text>
+                </View>
+              ))}
+              {filters.culturalTagNames.map((name) => (
+                <View key={`cultural-${name}`} style={styles.filterTag}>
                   <Text style={styles.filterTagText}>{name}</Text>
                 </View>
               ))}

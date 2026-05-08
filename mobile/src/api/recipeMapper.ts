@@ -1,6 +1,7 @@
 import type { Recipe } from '../types/recipe';
 import type { AllergenTag, DietaryTag, MeasurementUnit, UserRole } from '../types/common';
 import type { BackendRecipeDetail } from './recipes';
+import { getMockCulturalTagsForRecipe } from './cultural-tags';
 
 const ALLERGEN_MAP: Record<string, AllergenTag> = {
   peanuts: 'PEANUTS',
@@ -131,6 +132,13 @@ export function mapBackendRecipeToMobile(data: BackendRecipeDetail): Recipe {
     dishVarietyName: data.dishVarietyName ?? '',
     tags,
     allergens,
+    // Cultural tags ride along once the backend ships /cultural-tags. Until
+    // then, fall back to a deterministic mock so Recipe Detail has visible
+    // chips. Drop `getMockCulturalTagsForRecipe` once the backend returns
+    // `culturalTags` on the payload.
+    culturalTags:
+      (data as { culturalTags?: Recipe['culturalTags'] }).culturalTags ??
+      getMockCulturalTagsForRecipe(data.id, data.country ?? null),
     status: data.isPublished ? 'PUBLISHED' : 'DRAFT',
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,

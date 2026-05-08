@@ -17,6 +17,7 @@ import type { CreateStackParamList } from "../../navigation/types";
 import { colors, fonts, fontSizes, spacing } from "../../theme";
 import { IconButton } from "../shared/IconButton";
 import { StepHeader } from "../create-basic/StepHeader";
+import { CulturalTagChips } from "../shared/CulturalTagChips";
 import { useTranslation } from "react-i18next";
 import { useRecipeForm } from "../../context/RecipeFormContext";
 import { attachRecipeMedia, createRecipe, publishRecipe } from "../../api/recipes";
@@ -31,6 +32,7 @@ export function CreateReviewScreen() {
 
   const hasDietaryTags = draft.dietaryTagNames.length > 0;
   const hasAllergenTags = draft.allergenTagNames.length > 0;
+  const hasCulturalTags = draft.culturalTags.length > 0;
 
   const metaParts = [draft.originCountry].filter(Boolean);
 
@@ -190,6 +192,14 @@ export function CreateReviewScreen() {
                 </View>
               ))}
             </View>
+          </View>
+        )}
+
+        {/* Cultural tags */}
+        {hasCulturalTags && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>{t("create.review.culturalTags").toUpperCase()}</Text>
+            <CulturalTagChips tags={draft.culturalTags} />
           </View>
         )}
 

@@ -118,6 +118,7 @@ export async function fetchDiscoveryRecipes(params: {
   genreId?: number;
   excludeAllergenIds?: number[];
   dietaryTagIds?: number[];
+  culturalTagIds?: number[];
   country?: string;
   city?: string;
 }): Promise<Recipe[]> {
@@ -127,6 +128,9 @@ export async function fetchDiscoveryRecipes(params: {
     if (params.genreId !== undefined) qs.set('genreId', String(params.genreId));
     if (params.excludeAllergenIds?.length) qs.set('excludeAllergens', params.excludeAllergenIds.join(','));
     if (params.dietaryTagIds?.length) qs.set('tagIds', params.dietaryTagIds.join(','));
+    // Forwarded for the (not-yet-shipped) cultural-tagging endpoint; the current
+    // backend ignores this query param.
+    if (params.culturalTagIds?.length) qs.set('culturalTagIds', params.culturalTagIds.join(','));
     if (params.country) qs.set('country', params.country);
     if (params.city) qs.set('city', params.city);
 

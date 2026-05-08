@@ -32,9 +32,11 @@ import type { RecipeType } from "../../types/common";
 import { validateBasicInfo } from "../../utils/recipeValidation";
 import { getDishGenres } from "../../api/dish-genres";
 import { getDietaryTags } from "../../api/dietary-tags";
+import { getCulturalTags, pickCulturalTagLabel } from "../../api/cultural-tags";
 import { uploadImage } from "../../api/images";
 import type { DishGenre } from "../../api/dish-genres";
 import type { DietaryTagItem } from "../../api/dietary-tags";
+import type { CulturalTagItem } from "../../api/cultural-tags";
 
 interface ImageItem {
   id: string;
@@ -45,7 +47,7 @@ interface ImageItem {
 }
 
 export function CreateBasicInfoScreen() {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const navigation =
     useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const isFocused = useIsFocused();
@@ -72,6 +74,9 @@ export function CreateBasicInfoScreen() {
   const [selectedAllergenIds, setSelectedAllergenIds] = useState<string[]>(
     draft.allergenTagIds.map(String),
   );
+  const [selectedCulturalIds, setSelectedCulturalIds] = useState<string[]>(
+    draft.culturalTagIds.map(String),
+  );
   const [story, setStory] = useState(draft.story);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [parseModalVisible, setParseModalVisible] = useState(false);
@@ -89,6 +94,7 @@ export function CreateBasicInfoScreen() {
   // API data
   const [genres, setGenres] = useState<DishGenre[]>([]);
   const [allTags, setAllTags] = useState<DietaryTagItem[]>([]);
+  const [culturalTags, setCulturalTags] = useState<CulturalTagItem[]>([]);
 
   useEffect(() => {
     if (!isFocused) return;
@@ -102,6 +108,7 @@ export function CreateBasicInfoScreen() {
     setServingSize(draft.servingSize ? String(draft.servingSize) : "");
     setSelectedDietaryIds(draft.dietaryTagIds.map(String));
     setSelectedAllergenIds(draft.allergenTagIds.map(String));
+    setSelectedCulturalIds(draft.culturalTagIds.map(String));
     setStory(draft.story);
     setImages(
       draft.imageUrls.map((url, i) => ({
@@ -135,6 +142,10 @@ export function CreateBasicInfoScreen() {
   const allergenChipOptions = allTags
     .filter((t) => t.category === "allergen")
     .map((t) => ({ label: t.name, value: String(t.id) }));
+  const culturalChipOptions = culturalTags.map((tag) => ({
+    label: pickCulturalTagLabel(tag, i18n.language),
+    value: String(tag.id),
+  }));
 
   // Sync uploaded image CDN URLs to the draft whenever the images list changes
   useEffect(() => {
@@ -163,6 +174,23 @@ export function CreateBasicInfoScreen() {
       })
       .catch((err) => console.error("[BasicInfo] dietary-tags error:", err));
   }, []);
+
+  // Refetch cultural tags whenever the selected country changes (region scoping).
+  useEffect(() => {
+    let cancelled = false;
+    getCulturalTags(country || null)
+      .then((data) => {
+        if (cancelled) return;
+        setCulturalTags(data);
+        // Drop any selected ids that are no longer available for the new country
+        const stillValid = new Set(data.map((t) => String(t.id)));
+        setSelectedCulturalIds((prev) => prev.filter((id) => stillValid.has(id)));
+      })
+      .catch((err) => console.error("[BasicInfo] cultural-tags error:", err));
+    return () => {
+      cancelled = true;
+    };
+  }, [country]);
 
   const handleGenreChange = (id: string) => {
     setGenreId(Number(id));
@@ -243,6 +271,10 @@ export function CreateBasicInfoScreen() {
       const allergenNames = allergenChipOptions
         .filter((o) => selectedAllergenIds.includes(o.value))
         .map((o) => o.label);
+      const culturalTagIdsNum = selectedCulturalIds.map(Number);
+      const selectedCulturalObjects = culturalTags.filter((tag) =>
+        selectedCulturalIds.includes(String(tag.id)),
+      );
       updateDraft({
         title,
         type: recipeType,
@@ -255,6 +287,8 @@ export function CreateBasicInfoScreen() {
         dietaryTagNames: dietaryNames,
         allergenTagIds: selectedAllergenIds.map(Number),
         allergenTagNames: allergenNames,
+        culturalTagIds: culturalTagIdsNum,
+        culturalTags: selectedCulturalObjects,
         story,
         servingSize: servingSize ? parseInt(servingSize, 10) : undefined,
         imageUrls: images.filter((img) => img.cdnUrl).map((img) => img.cdnUrl!),
@@ -285,6 +319,7 @@ export function CreateBasicInfoScreen() {
           setServingSize("");
           setSelectedDietaryIds([]);
           setSelectedAllergenIds([]);
+          setSelectedCulturalIds([]);
           setStory("");
           setImages([]);
           setErrors({});
@@ -424,6 +459,26 @@ export function CreateBasicInfoScreen() {
           numberOfLines={4}
           optional
         />
+
+        <View style={styles.culturalTagsBlock}>
+          {culturalChipOptions.length > 0 ? (
+            <ChipSelector
+              label={t("create.fields.culturalTags")}
+              options={culturalChipOptions}
+              selected={selectedCulturalIds}
+              onToggle={(id) =>
+                setSelectedCulturalIds(toggleString(selectedCulturalIds, id))
+              }
+            />
+          ) : (
+            <Text style={styles.culturalTagsEmpty}>
+              {t("create.fields.culturalTagsEmpty")}
+            </Text>
+          )}
+          <Text style={styles.culturalTagsHelp}>
+            {t("create.fields.culturalTagsHelp")}
+          </Text>
+        </View>
 
         {/* ── Recipe Images ── */}
         <View style={styles.imagesSection}>
@@ -701,6 +756,23 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.xs,
     color: colors.primary,
     textAlign: "center",
+  },
+  // ── Cultural Tags ──
+  culturalTagsBlock: {
+    marginTop: spacing.lg,
+  },
+  culturalTagsHelp: {
+    fontFamily: fonts.sans,
+    fontSize: fontSizes.xs,
+    color: colors.onSurfaceVariant,
+    marginTop: spacing.xs,
+  },
+  culturalTagsEmpty: {
+    fontFamily: fonts.sansMedium,
+    fontSize: fontSizes.sm,
+    color: colors.onSurfaceVariant,
+    marginTop: spacing.sm,
+    fontStyle: "italic",
   },
   // ── Recipe Type ──
   typeSection: {

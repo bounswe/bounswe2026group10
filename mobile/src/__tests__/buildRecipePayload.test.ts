@@ -14,6 +14,8 @@ function makeDraft(overrides: Partial<RecipeFormState> = {}): RecipeFormState {
     dietaryTagNames: [],
     allergenTagIds: [],
     allergenTagNames: [],
+    culturalTagIds: [],
+    culturalTags: [],
     story: '',
     servingSize: undefined,
     ingredients: [],

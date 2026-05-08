@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { fetchDietaryTags, fetchLocations, type DietaryTag } from '../../api/search';
+import { getCulturalTags, pickCulturalTagLabel, type CulturalTagItem } from '../../api/cultural-tags';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
 export interface FilterState {
@@ -19,6 +20,8 @@ export interface FilterState {
   excludeAllergenNames: string[];
   dietaryTagIds: number[];
   dietaryTagNames: string[];
+  culturalTagIds: number[];
+  culturalTagNames: string[];
   country: string;
   city: string;
 }
@@ -37,18 +40,22 @@ export const EMPTY_FILTERS: FilterState = {
   excludeAllergenNames: [],
   dietaryTagIds: [],
   dietaryTagNames: [],
+  culturalTagIds: [],
+  culturalTagNames: [],
   country: '',
   city: '',
 };
 
 export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters }: FilterModalProps) {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     allergens: false,
     dietary: false,
+    cultural: false,
     location: false,
   });
   const [tags, setTags] = useState<DietaryTag[]>([]);
+  const [culturalTags, setCulturalTags] = useState<CulturalTagItem[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -77,6 +84,22 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
       })
       .finally(() => setLoading(false));
   }, [visible]);
+
+  // Load cultural tags whenever the selected country changes (region scoping).
+  // Selected-but-now-out-of-region ids stay in `selected` until the user clears
+  // them — mirrors how dietary-tag selections persist across modal re-opens.
+  useEffect(() => {
+    if (!visible) return;
+    let cancelled = false;
+    getCulturalTags(filters.country || null)
+      .then((data) => {
+        if (!cancelled) setCulturalTags(data);
+      })
+      .catch((err) => console.error('FilterModal cultural-tags error:', err));
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, filters.country]);
 
   // Load cities when selected country changes
   useEffect(() => {
@@ -111,6 +134,18 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
       dietaryTagNames: prev.dietaryTagNames.includes(name)
         ? prev.dietaryTagNames.filter((n) => n !== name)
         : [...prev.dietaryTagNames, name],
+    }));
+  };
+
+  const toggleCulturalTag = (id: number, label: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      culturalTagIds: prev.culturalTagIds.includes(id)
+        ? prev.culturalTagIds.filter((tid) => tid !== id)
+        : [...prev.culturalTagIds, id],
+      culturalTagNames: prev.culturalTagNames.includes(label)
+        ? prev.culturalTagNames.filter((n) => n !== label)
+        : [...prev.culturalTagNames, label],
     }));
   };
 
@@ -251,6 +286,48 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
                         <Text style={styles.checkboxLabel}>{tag.name}</Text>
                       </TouchableOpacity>
                     ))}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* ── Cultural Tags ── */}
+            {culturalTags.length > 0 && (
+              <View style={styles.filterSection}>
+                <TouchableOpacity
+                  style={styles.sectionHeader}
+                  onPress={() => toggleSection('cultural')}
+                >
+                  <Text style={styles.filterTitle}>{t('search.culturalTags')}</Text>
+                  <MaterialCommunityIcons
+                    name={expandedSections.cultural ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={colors.onSurfaceVariant}
+                  />
+                </TouchableOpacity>
+
+                {expandedSections.cultural && (
+                  <View style={styles.sectionContent}>
+                    {culturalTags.map((tag) => {
+                      const label = pickCulturalTagLabel(tag, i18n.language);
+                      const checked = filters.culturalTagIds.includes(tag.id);
+                      return (
+                        <TouchableOpacity
+                          key={tag.id}
+                          style={styles.checkboxRow}
+                          onPress={() => toggleCulturalTag(tag.id, label)}
+                        >
+                          <View
+                            style={[styles.checkbox, checked && styles.checkboxChecked]}
+                          >
+                            {checked && (
+                              <MaterialCommunityIcons name="check" size={16} color={colors.white} />
+                            )}
+                          </View>
+                          <Text style={styles.checkboxLabel}>{label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 )}
               </View>

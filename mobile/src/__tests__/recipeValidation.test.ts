@@ -192,6 +192,8 @@ function makeDraft(overrides: Partial<RecipeFormState> = {}): RecipeFormState {
     dietaryTagNames: [],
     allergenTagIds: [],
     allergenTagNames: [],
+    culturalTagIds: [],
+    culturalTags: [],
     story: '',
     servingSize: 4,
     ingredients: [{ id: '1', ingredientId: 1, name: 'Salt', quantity: '5', unit: 'g' }],

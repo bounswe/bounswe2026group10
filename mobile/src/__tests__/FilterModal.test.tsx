@@ -126,6 +126,8 @@ describe('FilterModal', () => {
         excludeAllergenNames: ['Peanuts'],
         dietaryTagIds: [1],
         dietaryTagNames: ['Vegetarian'],
+        culturalTagIds: [],
+        culturalTagNames: [],
         country: 'Turkey',
         city: 'Istanbul',
       };
@@ -145,6 +147,8 @@ describe('FilterModal', () => {
             excludeAllergenNames: [],
             dietaryTagIds: [],
             dietaryTagNames: [],
+            culturalTagIds: [],
+            culturalTagNames: [],
             country: '',
             city: '',
           }}

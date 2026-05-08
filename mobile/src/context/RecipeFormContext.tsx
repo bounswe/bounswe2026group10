@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState } from 'react';
 import type { RecipeType } from '../types/common';
 import type { Tool } from '../types/ingredient';
 import type { IngredientFormItem } from '../components/create-ingredients/IngredientRowEditor';
+import type { CulturalTagItem } from '../api/cultural-tags';
 
 export interface ReviewStep {
   description: string;
@@ -21,6 +22,8 @@ export interface RecipeFormState {
   dietaryTagNames: string[];  // display names corresponding to dietaryTagIds
   allergenTagIds: number[];   // numeric DB ids from GET /dietary-tags, category=allergen
   allergenTagNames: string[]; // display names corresponding to allergenTagIds
+  culturalTagIds: number[];   // numeric DB ids from GET /cultural-tags
+  culturalTags: CulturalTagItem[]; // full objects so Review/Detail can render labels without re-fetching
   story: string;
   servingSize: number | undefined;
   // Screen 13 — Ingredients & Tools
@@ -46,6 +49,8 @@ const EMPTY_DRAFT: RecipeFormState = {
   dietaryTagNames: [],
   allergenTagIds: [],
   allergenTagNames: [],
+  culturalTagIds: [],
+  culturalTags: [],
   story: '',
   servingSize: undefined,
   ingredients: [],

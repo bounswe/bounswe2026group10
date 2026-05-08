@@ -138,6 +138,10 @@ export const mockRecipe: Recipe = {
   dishVarietyId: "variety-adana-kebab",
   tags: ["HALAL", "HEARTY"],
   allergens: ["DAIRY"],
+  culturalTags: [
+    { id: 1, key: 'wedding', labelEn: 'Wedding', labelTr: 'Düğün', country: null },
+    { id: 9, key: 'iftar', labelEn: 'Iftar', labelTr: 'İftar', country: 'Turkey' },
+  ],
   createdAt: "2025-06-01T12:00:00Z",
   updatedAt: "2025-06-15T08:30:00Z",
 };

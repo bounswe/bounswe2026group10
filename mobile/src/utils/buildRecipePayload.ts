@@ -12,6 +12,9 @@ export function buildRecipePayload(draft: RecipeFormState) {
     servingSize: draft.servingSize,
     videoUrl: draft.videoUrl ?? undefined,
     tagIds: [...draft.dietaryTagIds, ...draft.allergenTagIds],
+    // Forwarded for the (not-yet-shipped) cultural-tagging endpoint; the current
+    // backend ignores this field.
+    culturalTagIds: draft.culturalTagIds,
     ingredients: draft.ingredients
       .filter((ing) => ing.name.trim() && ing.ingredientId !== null)
       .map((ing) => ({
