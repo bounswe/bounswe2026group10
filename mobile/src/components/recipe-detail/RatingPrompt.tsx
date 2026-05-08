@@ -9,11 +9,10 @@ import { useAuth } from '../../context/AuthContext';
 interface RatingPromptProps {
   recipeId: string;
   creatorUsername?: string;
-  onNavigateToComments?: () => void;
   onRatingChange?: () => void;
 }
 
-export function RatingPrompt({ recipeId, creatorUsername, onNavigateToComments, onRatingChange }: RatingPromptProps) {
+export function RatingPrompt({ recipeId, creatorUsername, onRatingChange }: RatingPromptProps) {
   const { t } = useTranslation('common');
   const { authState } = useAuth();
   const isAuthenticated = authState.status === 'authenticated';
@@ -57,9 +56,6 @@ export function RatingPrompt({ recipeId, creatorUsername, onNavigateToComments, 
     }
   };
 
-  const handleViewComments =
-    onNavigateToComments ?? (() => Alert.alert(t('recipeDetail.viewAllComments'), t('common.comingSoon')));
-
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>{t('recipeDetail.yourRating')}</Text>
@@ -80,18 +76,6 @@ export function RatingPrompt({ recipeId, creatorUsername, onNavigateToComments, 
           </TouchableOpacity>
         ))}
       </View>
-
-      <TouchableOpacity onPress={handleViewComments}>
-        <Text style={styles.viewAll}>{t('recipeDetail.viewAllComments')}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => Alert.alert(t('recipeDetail.addThoughts'), t('common.comingSoon'))}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.addButtonText}>{t('recipeDetail.addThoughts')}</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -100,7 +84,6 @@ const styles = StyleSheet.create({
   container: {
     marginTop: spacing['3xl'],
     alignItems: 'center',
-    paddingBottom: spacing['3xl'],
   },
   heading: {
     fontFamily: fonts.serifBold,
@@ -111,24 +94,5 @@ const styles = StyleSheet.create({
   ratingRow: {
     flexDirection: 'row',
     gap: spacing.xs,
-    marginBottom: spacing.lg,
-  },
-  viewAll: {
-    fontFamily: fonts.sansMedium,
-    fontSize: fontSizes.md,
-    color: colors.primary,
-    textDecorationLine: 'underline',
-    marginBottom: spacing.lg,
-  },
-  addButton: {
-    backgroundColor: colors.secondary,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing['2xl'],
-    borderRadius: 12,
-  },
-  addButtonText: {
-    fontFamily: fonts.sansMedium,
-    fontSize: fontSizes.md,
-    color: colors.white,
   },
 });
