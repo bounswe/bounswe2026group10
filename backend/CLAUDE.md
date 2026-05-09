@@ -60,6 +60,7 @@ backend/
 │   │   ├── media.ts             # File upload (images/videos)
 │   │   ├── discovery.ts         # Recipe discovery with filters
 │   │   ├── dietary-tags.ts      # Dietary/allergen tag listing
+│   │   ├── cultural-tags.ts     # Cultural-event tag listing (region-scoped)
 │   │   ├── dish-genres.ts       # Cuisine genre listing
 │   │   ├── dish-varieties.ts    # Dish variety listing, search, recipes
 │   │   ├── ingredients.ts       # Ingredient search/autocomplete
@@ -92,6 +93,7 @@ backend/
 │       ├── tools.test.ts
 │       ├── units.test.ts
 │       ├── comments.test.ts
+│       ├── cultural-tags.test.ts # GET /cultural-tags, culturalTags in recipe detail, discovery filter
 │       └── health.test.ts
 ├── Dockerfile
 ├── jest.config.js
@@ -114,6 +116,7 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - **recipe_media** — `id`, `recipe_id` (FK), `url`, `type` (image|video), `created_at`
 - **ratings** — `id`, `recipe_id` (FK), `user_id` (FK profiles), `score` (1-5), `created_at`, `updated_at` — unique constraint on (recipe_id, user_id)
 - **recipe_dietary_tags** — `recipe_id` (FK recipes), `tag_id` (FK dietary_tags) — composite PK
+- **recipe_cultural_tags** — `recipe_id` (FK recipes ON DELETE CASCADE), `tag_id` (FK cultural_tags ON DELETE CASCADE) — composite PK
 - **comments** — `id` (serial PK), `recipe_id` (FK recipes ON DELETE CASCADE), `user_id` (FK profiles ON DELETE CASCADE), `text` (1–2000 chars, CHECK), `created_at`, `updated_at` (nullable). Indexed on `recipe_id`, `user_id`, and `(recipe_id, created_at DESC)`. **Unique constraint on `(recipe_id, user_id)`** — one comment per user per recipe; the API enforces this with a pre-insert existence check and also maps Postgres `unique_violation` (23505) on insert to 409 `COMMENT_ALREADY_EXISTS` to handle the race window. The API exposes the column as `body`; the route maps `body` ↔ `text` at the DB boundary.
 - **video_annotations** — `id` (serial PK), `recipe_id` (FK recipes), `start_time` / `end_time` (numeric seconds into the video, both `>= 0`, `end_time >= start_time` enforced both at the DB CHECK level and in the route), `note` (1–500 chars, CHECK), `technique` (text, nullable — short label like "Searing"), `created_at`. Used for manual timestamp **ranges** placed by the recipe creator (cook/expert) on top of an uploaded video — e.g. "putting the chicken in the oven" from 42.5s to 56.78s. Two complementary surfaces, both creator-only: per-step start markers via `recipe_steps.video_timestamp` (single point — when the step begins), and standalone time-range annotations via this table.
 
@@ -124,6 +127,7 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - **ingredient_allergens** — `ingredient_id` (FK), `allergen_id` (FK)
 - **ingredient_substitutions** — `id`, `ingredient_id` (FK ingredients), `substitute_id` (FK ingredients), `source_amount` NUMERIC(10,3), `source_unit` TEXT, `sub_amount` NUMERIC(10,3), `sub_unit` TEXT, `confidence` NUMERIC(3,2), `description` TEXT — unique on (ingredient_id, substitute_id), no self-substitution
 - **dietary_tags** — `id`, `name`, `name_en`, `name_tr`, `category` (dietary|allergen)
+- **cultural_tags** — `id`, `key` (unique slug e.g. `"social-gathering"`), `label_en`, `label_tr`, `country` (nullable — NULL = global, otherwise country-scoped e.g. `"Turkey"`). Seeded with 10 curated tags: 7 global (`social-gathering`, `religious-feast`, `wedding`, `funeral`, `birth`, `new-year`, `harvest`) + 3 region-specific (`sira-gecesi`/Turkey, `iftar`/Turkey, `mochitsuki`/Japan). Migration: `migrations/004_cultural_tags.sql`.
 - **dish_genres** — `id`, `name`, `name_en`, `name_tr`, `description`, `description_en`, `description_tr`
 - **dish_varieties** — `id`, `name`, `name_en`, `name_tr`, `description`, `description_en`, `description_tr`, `genre_id` (FK dish_genres)
 
@@ -169,12 +173,12 @@ All endpoints require `requireAuth + requireAdmin`. **Admin writes go through a 
 - `DELETE /admin/comments/:id` — Moderator-style delete of any comment, even when the admin is not its author (distinct from `DELETE /comments/:id` which is author-only).
 
 ### Recipes (`/recipes`)
-- `GET /recipes/:id` — Recipe detail (public if published, creator-only if draft)
+- `GET /recipes/:id` — Recipe detail (public if published, creator-only if draft); response includes `culturalTags[]` (`{ id, key, labelEn, labelTr, country }`) alongside existing `tags[]`
 - `GET /recipes` — List published recipes with pagination
   - Query params: `creatorId` (optional UUID — filter by creator's profile ID to view a specific user's published recipes), `page`, `limit`
   - Response recipe objects include `coverImageUrl` (first image from `recipe_media`, or `null`)
-- `POST /recipes` — Create recipe (cook/expert only, accepts `tagIds`, optional `country`, `city`, `district`)
-- `PATCH /recipes/:id` — Update draft (creator only, cook/expert, accepts `tagIds`, optional `country`, `city`, `district`)
+- `POST /recipes` — Create recipe (cook/expert only, accepts `tagIds`, `culturalTagIds`, optional `country`, `city`, `district`)
+- `PATCH /recipes/:id` — Update draft (creator only, cook/expert, accepts `tagIds`, `culturalTagIds`, optional `country`, `city`, `district`)
 - `POST /recipes/:id/publish` — Publish draft (validates completeness)
 - `POST /recipes/:id/ratings` — Rate recipe 1-5 (cannot self-rate, upsert)
 - `GET /recipes/:id/ratings/me` — Get own rating
@@ -225,9 +229,16 @@ All endpoints require `requireAuth + requireAdmin`. **Admin writes go through a 
   - Query params: `lang` (optional — "en" or "tr")
   - Without `lang`: response includes `name`, `name_en`, `name_tr`, `category`
 
+### Cultural Tags (`/cultural-tags`)
+- `GET /cultural-tags` — List curated cultural-event tags
+  - Query params: `country` (optional — when provided returns global tags + country-scoped tags; omitting returns all 10 tags)
+  - Response shape: `{ id, key, labelEn, labelTr, country }[]` — mirrors mobile `CulturalTagItem` interface
+  - 10 seeded tags: 7 global (`social-gathering`, `religious-feast`, `wedding`, `funeral`, `birth`, `new-year`, `harvest`) + Turkey-scoped (`sira-gecesi`, `iftar`) + Japan-scoped (`mochitsuki`)
+  - `GET /cultural-tags?country=Turkey` → 9 tags (global + sira-gecesi + iftar, excludes mochitsuki)
+
 ### Discovery (`/discovery`)
 - `GET /discovery/recipes` — Filtered recipe discovery
-  - Query params: `genreId`, `varietyId`, `excludeAllergens` (comma-separated IDs), `tagIds` (comma-separated dietary tag IDs — only recipes with ALL specified tags), `search` (case-insensitive partial match on recipe title), `country`, `city`, `district` (case-insensitive, whitespace-/diacritic-tolerant; country also resolves common aliases — `"tr"`/`"Türkiye"`/`"TUR"` all match recipes stored as `"Turkey"`. See Location Normalization below), `page`, `limit`
+  - Query params: `genreId`, `varietyId`, `excludeAllergens` (comma-separated IDs), `tagIds` (comma-separated dietary tag IDs — only recipes with ALL specified tags), `culturalTagIds` (comma-separated cultural tag IDs — recipes matching ANY of them; OR logic), `search` (case-insensitive partial match on recipe title), `country`, `city`, `district` (case-insensitive, whitespace-/diacritic-tolerant; country also resolves common aliases — `"tr"`/`"Türkiye"`/`"TUR"` all match recipes stored as `"Turkey"`. See Location Normalization below), `page`, `limit`
   - Response recipe objects include `country`, `city`, `district` fields (nullable)
   - Response also includes `varieties[]` and `genres[]` cascade arrays — distinct varieties and genres derived from **every** recipe matching the active filters (not just the current page), so callers can use them as cross-page-stable filter dropdowns. Implementation runs the cascade aggregation as a separate query in parallel with the paginated list (issue #463).
 - `GET /discovery/recipes/by-ingredients` — Recipes fully makeable with provided ingredients
