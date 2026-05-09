@@ -10,12 +10,22 @@ export interface RegisterRequest {
   password: string
   username: string
   role: string
+  /** Sent only when role='expert'. Backend stores it on the auto-created
+   *  expert_requests row that the admin will review. */
+  expertRequestReason?: string
 }
 
 export interface AuthResponseData {
   userId: string
   accessToken: string
   refreshToken: string
+  /** True when the caller registered with role='expert' — the profile was
+   *  actually created as 'cook' (interim) and the expert request is awaiting
+   *  admin approval. Only present on `/auth/register` responses. */
+  pendingExpertRequest?: boolean
+  /** Mirrors `profile.role` after registration; useful when the caller asked
+   *  for `expert` and the backend downgraded the response role to 'cook'. */
+  role?: string
 }
 
 export interface AuthResponse {

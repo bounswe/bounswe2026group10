@@ -12,6 +12,7 @@ import { WelcomePage } from '@/pages/Welcome/WelcomePage'
 import { LibraryPage } from '@/pages/Library/LibraryPage'
 import { EditRecipePage } from '@/pages/EditRecipe/EditRecipePage'
 import { ProfilePage } from '@/pages/Profile/ProfilePage'
+import { AdminPage } from '@/pages/Admin/AdminPage'
 import { RouteError } from '@/router/RouteError'
 
 export const router = createBrowserRouter([
@@ -45,6 +46,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute roles={['cook', 'expert']}>
             <CreateRecipePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/admin',
+        element: (
+          <ProtectedRoute roles={['admin']}>
+            <AdminPage />
           </ProtectedRoute>
         ),
       },

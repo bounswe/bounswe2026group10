@@ -110,3 +110,21 @@
     min-width: 6.25rem;
   }
 }
+
+/* Admin shortcut — only rendered for the single admin profile. */
+.app-header__admin-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-main);
+  color: var(--text-on-main);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background var(--transition-fast);
+}
+
+.app-header__admin-link:hover {
+  background: var(--color-main-dark);
+}

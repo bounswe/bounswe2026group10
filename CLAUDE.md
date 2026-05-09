@@ -100,10 +100,13 @@ Dish hierarchy: **DishGenre** → **DishVariety** → **Recipe**. Each recipe ha
 | `learner` | Browse, discover, rate recipes |
 | `cook` | + Create **community** recipes, upload media |
 | `expert` | + Create **cultural** recipes (requires cultural story) |
+| `admin` | Single account. Reviews expert requests, moderates users / recipes / comments via `/admin/*` endpoints. Not registerable. |
 
-Role is set at registration and stored in `profiles.role`. The `requireRole()` middleware enforces this.
+Role is set at registration and stored in `profiles.role`. The `requireRole()` middleware enforces this; `requireAdmin` is the dedicated shorthand for admin-only routes.
 
-**Role inheritance:** Learner → Cook → Expert (each level includes previous permissions).
+**Role inheritance:** Learner → Cook → Expert (each level includes previous permissions). `admin` is a separate moderator surface, not part of the inheritance chain.
+
+**Expert approval workflow:** `expert` is gated. Picking `role='expert'` at registration creates the profile as `cook` (interim — applicants can already publish community recipes while waiting) and opens a pending `expert_requests` row; alternatively, learners/cooks can apply later via `POST /auth/expert-requests`. The single admin reviews requests at `/admin/expert-requests` and approval flips the applicant's role to `expert`. See `backend/CLAUDE.md` for full endpoint signatures.
 
 ---
 
