@@ -58,6 +58,8 @@ const discoveryQuerySchema = z.object({
   excludeAllergens: z.string().optional(),
   // Comma-separated dietary tag IDs to require (e.g. "1,3" for Halal + Vegan)
   tagIds: z.string().optional(),
+  // Comma-separated cultural tag IDs — recipes matching ANY of them are returned
+  culturalTagIds: z.string().optional(),
   genreId: z.coerce.number().int().positive().optional(),
   varietyId: z.coerce.number().int().positive().optional(),
   // Case-insensitive partial match on recipe title (e.g. "pasta")
@@ -86,7 +88,7 @@ router.get("/recipes", async (req, res) => {
         .join("; ");
       return res.status(400).json(errorResponse("VALIDATION_ERROR", message));
     }
-    const { excludeAllergens, tagIds, genreId, varietyId, search, country, city, district, page, limit } = parsed.data;
+    const { excludeAllergens, tagIds, culturalTagIds, genreId, varietyId, search, country, city, district, page, limit } = parsed.data;
 
     // ── Step 0: Resolve tag filter ───────────────────────────────────────────
     let tagFilteredRecipeIds: string[] | null = null;
@@ -129,6 +131,42 @@ router.get("/recipes", async (req, res) => {
           return res.status(200).json(
             successResponse({
               recipes: [],
+              pagination: { page, limit, total: 0 },
+            })
+          );
+        }
+      }
+    }
+
+    // ── Step 0b: Resolve cultural tag filter (OR — any matching tag) ─────────
+    let culturalTagFilteredRecipeIds: string[] | null = null;
+
+    if (culturalTagIds) {
+      const parsedCulturalTagIds = culturalTagIds
+        .split(",")
+        .map(Number)
+        .filter((n) => Number.isInteger(n) && n > 0);
+
+      if (parsedCulturalTagIds.length > 0) {
+        const { data: culturalTagRows, error: culturalTagErr } = await supabase
+          .from("recipe_cultural_tags")
+          .select("recipe_id")
+          .in("tag_id", parsedCulturalTagIds);
+
+        if (culturalTagErr) {
+          return res.status(500).json(errorResponse("DB_ERROR", culturalTagErr.message));
+        }
+
+        culturalTagFilteredRecipeIds = [
+          ...new Set((culturalTagRows ?? []).map((r) => r.recipe_id)),
+        ];
+
+        if (culturalTagFilteredRecipeIds.length === 0) {
+          return res.status(200).json(
+            successResponse({
+              recipes: [],
+              varieties: [],
+              genres: [],
               pagination: { page, limit, total: 0 },
             })
           );
@@ -194,6 +232,9 @@ router.get("/recipes", async (req, res) => {
       }
       if (tagFilteredRecipeIds !== null) {
         q = q.in("id", tagFilteredRecipeIds);
+      }
+      if (culturalTagFilteredRecipeIds !== null) {
+        q = q.in("id", culturalTagFilteredRecipeIds);
       }
       return q;
     };

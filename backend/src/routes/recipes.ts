@@ -69,6 +69,10 @@ const recipeSchema = z.object({
     .array(z.number().int().positive())
     .optional()
     .default([]),
+  culturalTagIds: z
+    .array(z.number().int().positive())
+    .optional()
+    .default([]),
   allergenIds: z
     .array(z.number().int().positive())
     .optional()
@@ -245,6 +249,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
        recipe_tools(id, name),
        recipe_media(id, url, type),
        recipe_dietary_tags(dietary_tag:dietary_tags(id, name, category)),
+       recipe_cultural_tags(cultural_tag:cultural_tags(id, key, label_en, label_tr, country)),
        video_annotations(id, start_time, end_time, note, technique, created_at)`
     )
     .eq("id", recipeId)
@@ -390,6 +395,13 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
         id: rt.dietary_tag?.id ?? null,
         name: rt.dietary_tag?.name ?? null,
         category: rt.dietary_tag?.category ?? null,
+      })),
+      culturalTags: ((data as any).recipe_cultural_tags ?? []).map((rt: any) => ({
+        id: rt.cultural_tag?.id ?? null,
+        key: rt.cultural_tag?.key ?? null,
+        labelEn: rt.cultural_tag?.label_en ?? null,
+        labelTr: rt.cultural_tag?.label_tr ?? null,
+        country: rt.cultural_tag?.country ?? null,
       })),
       videoAnnotations: [...((data as any).video_annotations ?? [])]
         .sort((a: any, b: any) => Number(a.start_time) - Number(b.start_time))
@@ -598,6 +610,17 @@ router.post(
       );
     }
 
+    if (body.culturalTagIds.length > 0) {
+      insertPromises.push(
+        userClient.from("recipe_cultural_tags").insert(
+          body.culturalTagIds.map((tagId) => ({
+            recipe_id: recipeId,
+            tag_id: tagId,
+          }))
+        ).then(r => r)
+      );
+    }
+
     // Wait for all sub-inserts to complete
     const results = await Promise.all(insertPromises);
     const subError = results.find((r) => r.error);
@@ -765,6 +788,20 @@ router.patch(
         insertPromises.push(
           userClient.from("recipe_dietary_tags").insert(
             body.tagIds.map((tagId) => ({
+              recipe_id: recipeId,
+              tag_id: tagId,
+            }))
+          ).then(r => r)
+        );
+      }
+    }
+
+    if (body.culturalTagIds) {
+      await userClient.from("recipe_cultural_tags").delete().eq("recipe_id", recipeId);
+      if (body.culturalTagIds.length > 0) {
+        insertPromises.push(
+          userClient.from("recipe_cultural_tags").insert(
+            body.culturalTagIds.map((tagId) => ({
               recipe_id: recipeId,
               tag_id: tagId,
             }))
