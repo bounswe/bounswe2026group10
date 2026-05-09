@@ -5,7 +5,8 @@
     "roles": {
       "learner": "Öğrenci",
       "cook": "Aşçı",
-      "expert": "Uzman"
+      "expert": "Uzman",
+      "admin": "Yönetici"
     }
   },
   "language": {
@@ -449,5 +450,77 @@
     "save": "Kaydet",
     "cancel": "İptal",
     "alreadyCommented": "Bu tarife zaten yorum yapmışsınız. Mevcut yorumunuzu düzenleyebilirsiniz."
+  },
+  "admin": {
+    "headerLink": "Yönetici Paneli",
+    "title": "Yönetici Paneli",
+    "subtitle": "Uzman hesabı başvurularını incele ve kullanıcıları yönet.",
+    "tabsAria": "Yönetici bölümleri",
+    "tabs": {
+      "requests": "Uzman Başvuruları",
+      "users": "Kullanıcılar"
+    },
+    "refresh": "Yenile",
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "pagination": {
+      "label": "{{total}} sayfadan {{page}}. sayfa"
+    },
+    "requests": {
+      "statusAria": "Duruma göre filtrele",
+      "status": {
+        "pending": "Bekliyor",
+        "approved": "Onaylandı",
+        "rejected": "Reddedildi"
+      },
+      "empty": "Bu durumda başvuru yok.",
+      "unknownApplicant": "(bilinmeyen başvuran)",
+      "currentRole": "Mevcut rol",
+      "reason": "Başvuru gerekçesi",
+      "noReason": "(gerekçe belirtilmemiş)",
+      "decisionAt": "Karar tarihi",
+      "decisionNote": "Yönetici notu",
+      "approve": "Onayla",
+      "reject": "Reddet",
+      "approveTitle": "{{username}} uzman olarak onaylansın mı?",
+      "rejectTitle": "{{username}} kişisinin uzman başvurusu reddedilsin mi?",
+      "approveConfirm": "Onayla ve yükselt",
+      "rejectConfirm": "Başvuruyu reddet",
+      "decisionNoteLabel": "Karar notu (kullanıcıya görünür)",
+      "decisionNotePlaceholder": "İsteğe bağlı — başvuran için kısa bir mesaj.",
+      "decisionNoteOptional": "isteğe bağlı",
+      "approvedToast": "{{username}} uzman olarak yükseltildi.",
+      "rejectedToast": "{{username}} kişisinin başvurusu reddedildi."
+    },
+    "users": {
+      "searchPlaceholder": "Kullanıcı adında ara…",
+      "searchSubmit": "Ara",
+      "roleFilterAria": "Role göre filtrele",
+      "roleAll": "Tüm roller",
+      "empty": "Bu filtrelerle eşleşen kullanıcı yok.",
+      "createdAt": "Katılım",
+      "region": "Bölge",
+      "preferredLanguage": "Tercih edilen dil",
+      "bio": "Biyografi",
+      "edit": "Düzenle",
+      "delete": "Sil",
+      "adminProtected": "Yönetici profili korumalıdır ve değiştirilemez.",
+      "editTitle": "Kullanıcıyı düzenle — {{username}}",
+      "usernameLabel": "Kullanıcı adı",
+      "roleLabel": "Rol",
+      "roleHint": "Hiç kimse yönetici (admin) olarak yükseltilemez (tek yönetici kuralı).",
+      "deleteTitle": "Kullanıcı silinsin mi?",
+      "deleteMessage": "Bu işlem {{username}} kullanıcısının profilini kalıcı olarak siler; tüm tarifleri, yorumları, puanları ve favorileri de cascade ile silinir. Geri alınamaz.",
+      "deleteConfirm": "Kullanıcıyı sil",
+      "updatedToast": "{{username}} güncellendi.",
+      "deletedToast": "{{username}} silindi."
+    },
+    "errors": {
+      "loadRequests": "Başvurular yüklenemedi.",
+      "loadUsers": "Kullanıcılar yüklenemedi.",
+      "decisionFailed": "Karar kaydedilemedi.",
+      "updateFailed": "Kullanıcı güncellenemedi.",
+      "deleteFailed": "Kullanıcı silinemedi."
+    }
   }
 }

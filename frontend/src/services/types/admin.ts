@@ -1,0 +1,58 @@
+import type { UserRole } from '@/services/types/auth'
+
+/** Status of an `expert_requests` row, mirrors backend CHECK constraint. */
+export type ExpertRequestStatus = 'pending' | 'approved' | 'rejected'
+
+/** A single expert-account request. Matches `GET /admin/expert-requests` items
+ *  and `GET /auth/expert-requests/me`. Date fields are ISO strings. */
+export interface ExpertRequest {
+  id: string
+  userId: string
+  reason: string | null
+  status: ExpertRequestStatus
+  decisionNote: string | null
+  decidedBy: string | null
+  createdAt: string
+  decidedAt: string | null
+  /** Only present on the admin listing endpoint. */
+  applicant?: {
+    id: string
+    username: string
+    role: UserRole
+  } | null
+}
+
+/** Page envelope returned by `GET /admin/expert-requests`. */
+export interface ExpertRequestList {
+  requests: ExpertRequest[]
+  pagination: { page: number; limit: number; total: number }
+}
+
+/** A profile row as returned by `GET /admin/users`. Backend snake_case is
+ *  preserved here because the listing endpoint mirrors the column names. */
+export interface AdminUser {
+  id: string
+  user_id: string
+  username: string
+  role: UserRole
+  region: string | null
+  preferred_language: string | null
+  bio: string | null
+  avatar_url: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AdminUserList {
+  users: AdminUser[]
+  pagination: { page: number; limit: number; total: number }
+}
+
+/** Body for `PATCH /admin/users/:id`. The backend rejects role='admin'. */
+export interface AdminUserUpdate {
+  username?: string
+  role?: Exclude<UserRole, 'admin'>
+  bio?: string
+  region?: string
+  preferred_language?: string
+}

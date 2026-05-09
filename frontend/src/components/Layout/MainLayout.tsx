@@ -45,6 +45,11 @@ export function MainLayout() {
               </div>
 
               <div className="app-header__actions">
+                {profile.role === 'admin' && (
+                  <Link to="/admin" className="app-header__admin-link">
+                    {t('admin.headerLink')}
+                  </Link>
+                )}
                 <LanguageSwitcher variant="compact" />
                 <button
                   type="button"

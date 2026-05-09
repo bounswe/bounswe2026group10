@@ -5,7 +5,8 @@
     "roles": {
       "learner": "Learner",
       "cook": "Cook",
-      "expert": "Expert"
+      "expert": "Expert",
+      "admin": "Admin"
     }
   },
   "language": {
@@ -449,5 +450,77 @@
     "save": "Save",
     "cancel": "Cancel",
     "alreadyCommented": "You have already commented on this recipe. Edit your existing comment instead."
+  },
+  "admin": {
+    "headerLink": "Admin Panel",
+    "title": "Admin Panel",
+    "subtitle": "Review expert account requests and manage users.",
+    "tabsAria": "Admin sections",
+    "tabs": {
+      "requests": "Expert Requests",
+      "users": "Users"
+    },
+    "refresh": "Refresh",
+    "cancel": "Cancel",
+    "save": "Save",
+    "pagination": {
+      "label": "Page {{page}} of {{total}}"
+    },
+    "requests": {
+      "statusAria": "Filter by status",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "empty": "No requests in this state.",
+      "unknownApplicant": "(unknown applicant)",
+      "currentRole": "Current role",
+      "reason": "Applicant reason",
+      "noReason": "(no reason provided)",
+      "decisionAt": "Decision date",
+      "decisionNote": "Admin note",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approveTitle": "Approve {{username}} as expert?",
+      "rejectTitle": "Reject {{username}}'s expert request?",
+      "approveConfirm": "Approve & promote",
+      "rejectConfirm": "Reject request",
+      "decisionNoteLabel": "Decision note (visible to the user)",
+      "decisionNotePlaceholder": "Optional — leave a short message for the applicant.",
+      "decisionNoteOptional": "optional",
+      "approvedToast": "{{username}} promoted to expert.",
+      "rejectedToast": "{{username}}'s request was rejected."
+    },
+    "users": {
+      "searchPlaceholder": "Search by username…",
+      "searchSubmit": "Search",
+      "roleFilterAria": "Filter by role",
+      "roleAll": "All roles",
+      "empty": "No users match those filters.",
+      "createdAt": "Joined",
+      "region": "Region",
+      "preferredLanguage": "Preferred language",
+      "bio": "Bio",
+      "edit": "Edit",
+      "delete": "Delete",
+      "adminProtected": "The admin profile is protected and cannot be modified.",
+      "editTitle": "Edit user — {{username}}",
+      "usernameLabel": "Username",
+      "roleLabel": "Role",
+      "roleHint": "Cannot promote anyone to admin (single-admin invariant).",
+      "deleteTitle": "Delete user?",
+      "deleteMessage": "This will permanently remove {{username}}'s profile and cascade-delete all of their recipes, comments, ratings, and favorites. This cannot be undone.",
+      "deleteConfirm": "Delete user",
+      "updatedToast": "{{username}} updated.",
+      "deletedToast": "{{username}} deleted."
+    },
+    "errors": {
+      "loadRequests": "Could not load requests.",
+      "loadUsers": "Could not load users.",
+      "decisionFailed": "Decision could not be saved.",
+      "updateFailed": "Could not update user.",
+      "deleteFailed": "Could not delete user."
+    }
   }
 }
