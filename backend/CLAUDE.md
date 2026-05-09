@@ -68,6 +68,7 @@ backend/
 │   │   ├── units.ts             # Unit search/autocomplete
 │   │   ├── comments.ts          # Recipe comments (create, list, delete)
 │   │   ├── video-annotations.ts # Manual timestamp annotations on recipe videos
+│   │   ├── admin.ts             # Admin-only: expert-request review, user/recipe/comment moderation
 │   │   └── parse.ts             # Free-text recipe parser endpoint
 │   ├── types/
 │   │   └── index.ts             # TypeScript interfaces (roles, auth, response, SupportedLanguage, LanguageRequest)
@@ -104,7 +105,8 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 
 ### Core Tables
 
-- **profiles** — `id`, `user_id` (FK auth.users), `username` (unique), `role`
+- **profiles** — `id`, `user_id` (FK auth.users), `username` (unique), `role` (`learner` | `cook` | `expert` | `admin`). A partial unique index `profiles_one_admin_only` (`WHERE role='admin'`) enforces that **at most one admin** can exist at any time. The first admin is seeded manually via SQL/Supabase dashboard — `admin` is intentionally absent from the registration enum so it cannot be created from the public API.
+- **expert_requests** — `id`, `user_id` (FK profiles, ON DELETE CASCADE), `reason` (TEXT, nullable — applicant's justification), `status` (`pending` | `approved` | `rejected`), `decision_note` (TEXT, nullable — admin's note), `decided_by` (FK profiles, ON DELETE SET NULL), `created_at`, `decided_at`. A partial unique index `expert_requests_one_pending_per_user` (`WHERE status='pending'`) ensures each user has at most one open request; previously rejected requests do not block new submissions.
 - **recipes** — `id`, `creator_id` (FK profiles), `dish_variety_id` (FK), `title`, `story`, `video_url`, `serving_size`, `type` (community|cultural), `is_published`, `average_rating`, `rating_count`, `created_at`, `updated_at`
 - **recipe_ingredients** — `id`, `recipe_id` (FK), `ingredient_id` (FK), `quantity`, `unit`
 - **recipe_steps** — `id`, `recipe_id` (FK), `step_order`, `description`, `video_timestamp` (numeric, nullable — seconds into the recipe video)
@@ -144,12 +146,27 @@ Migration `002_en_tr_language_fields.sql` adds these columns and seeds `_en` fro
 - `GET /health` — Health check
 
 ### Auth (`/auth`)
-- `POST /auth/register` — Register (email, password, username, role)
+- `POST /auth/register` — Register (email, password, username, role, optional `expertRequestReason`)
+  - **Option-A expert flow:** if `role === "expert"` is requested, the profile is created with `role='cook'` (interim — applicants can already publish community recipes while waiting) and a pending `expert_requests` row is opened (seeded with `expertRequestReason` if provided). Response includes `pendingExpertRequest: true`. The user must wait for admin approval to actually become an expert.
+  - `role='admin'` is rejected at the schema level (admin cannot be self-registered).
 - `POST /auth/login` — Login (returns access_token, refresh_token)
 - `POST /auth/logout` — Logout (auth required)
 - `POST /auth/refresh` — Refresh access token
 - `GET /auth/me` — Current user info (auth required)
 - `PATCH /auth/profile` — Update profile fields (auth required, all fields optional: `username`, `bio`, `avatar_url`, `preferred_language`, `region`); returns 409 if username taken
+- `POST /auth/expert-requests` — Submit an expert-account request (learner/cook only; body `{ reason: string }`). Returns 409 `EXPERT_REQUEST_PENDING` if a pending request already exists, 409 `CONFLICT` if caller is already expert, 403 if caller is admin.
+- `GET /auth/expert-requests/me` — Returns the caller's most recent request (any status) or `null`.
+
+### Admin (`/admin`) — single-admin moderation surface
+All endpoints require `requireAuth + requireAdmin`. **Admin writes go through a privileged service-role Supabase client** (`supabaseAdmin` in `src/config/supabase.ts`). This is required because the `profiles` table has RLS enabled with `UPDATE/INSERT` policies scoped to `(user_id = auth.uid())` — a plain anon client silently no-ops when an admin tries to mutate someone else's row, leaving requests as "approved" while the role never flips. Reads continue to use the regular anon client (the `SELECT` policy is `USING: true`). When `SUPABASE_SERVICE_ROLE_KEY` is missing the admin write endpoints return 503 `ADMIN_NOT_CONFIGURED` rather than failing silently.
+- `GET /admin/expert-requests` — List requests (default `status=pending`); query: `status`, `page`, `limit`. Includes nested `applicant` (id/username/role).
+- `POST /admin/expert-requests/:id/approve` — Approve and promote applicant to `expert` (idempotent — does not touch admin profiles via `.neq('role','admin')`). Body: optional `decisionNote`. Returns 409 `REQUEST_ALREADY_DECIDED` if not pending.
+- `POST /admin/expert-requests/:id/reject` — Reject without changing the applicant's role. Body: optional `decisionNote`.
+- `GET /admin/users` — List profiles; query: `search` (username ilike), `role`, `page`, `limit`.
+- `PATCH /admin/users/:id` — Update another user's profile fields (`username`, `role`, `bio`, `region`, `preferred_language`). `role` is restricted to non-admin values; the admin profile itself cannot be modified through this endpoint (returns 403). Username uniqueness is re-checked.
+- `DELETE /admin/users/:id` — Delete a profile (every FK referencing profiles cascades). Cannot delete the admin profile or self. The matching `auth.users` row is preserved (only the Supabase service role can remove it); the deleted profile is enough to lock the account out of every API endpoint.
+- `DELETE /admin/recipes/:id` — Delete any recipe (all `recipe_*` child rows cascade via existing FKs).
+- `DELETE /admin/comments/:id` — Moderator-style delete of any comment, even when the admin is not its author (distinct from `DELETE /comments/:id` which is author-only).
 
 ### Recipes (`/recipes`)
 - `GET /recipes/:id` — Recipe detail (public if published, creator-only if draft)
@@ -320,6 +337,16 @@ Manual timestamp **ranges** a cook/expert places on the recipe's uploaded video 
 | `learner` | View recipes, rate, browse/discover |
 | `cook` | + Create **community** recipes, upload media |
 | `expert` | + Create **cultural** recipes (in addition to community) |
+| `admin` | Single account. Reviews expert requests, edits/deletes any user/recipe/comment. Not registerable; seeded manually. |
+
+### Becoming an expert (approval workflow)
+
+`expert` is the only gated role. Two paths exist for landing on it; both end up writing to `expert_requests`:
+
+1. **At registration** — picking `role='expert'` on `POST /auth/register` creates the profile as `cook` (interim, so the applicant can immediately publish community recipes) and opens a pending request seeded with the optional `expertRequestReason`. Response carries `pendingExpertRequest: true`.
+2. **Post-registration promotion** — an existing learner or cook calls `POST /auth/expert-requests` with a `reason`. Same `expert_requests` row, just opened later.
+
+Either way, the single admin reviews the request via `GET /admin/expert-requests` and decides with `POST /admin/expert-requests/:id/approve` (which sets `profiles.role='expert'` on the applicant) or `.../reject`. The DB enforces "one pending request per user" via a partial unique index, so the user surface returns 409 `EXPERT_REQUEST_PENDING` rather than silently stacking duplicates.
 
 ## Authentication Flow
 
@@ -348,6 +375,10 @@ Use `successResponse(data)` and `errorResponse(code, message)` from `src/utils/r
 - `CONFLICT` (409) — Duplicate username/email, already published
 - `RATING_REQUIRED` (400) — Comment attempted without a rating on the recipe
 - `COMMENT_ALREADY_EXISTS` (409) — User attempted to post a second comment on the same recipe (must edit instead)
+- `EXPERT_REQUEST_PENDING` (409) — User submitted a second expert request while one is still pending
+- `REQUEST_ALREADY_DECIDED` (409) — Admin tried to approve/reject a request that is no longer pending
+- `PROMOTION_FAILED` (409) — Admin approved a request but the applicant's profile could not be promoted (deleted, or already an admin)
+- `ADMIN_NOT_CONFIGURED` (503) — `SUPABASE_SERVICE_ROLE_KEY` is missing on the backend, so admin writes are disabled
 - `INCOMPLETE_RECIPE` (400) — Missing fields for publish
 - `PARSE_FAILED` (500) — AI parsing of recipe text failed
 - `STANDARDIZATION_FAILED` (500) — AI unit standardization failed
@@ -494,11 +525,14 @@ Required in `.env`:
 PORT=3000
 SUPABASE_URL=<supabase-project-url>
 SUPABASE_ANON_KEY=<supabase-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<supabase-service-role-key>   # required for /admin/* writes — bypasses RLS, must NEVER be exposed to the frontend
 DATABASE_URL=<postgres-connection-string>
 DIRECT_URL=<postgres-direct-connection-string>
 GEMINI_API_KEY=<google-gemini-api-key>
 ELEVENLABS_API_KEY=<elevenlabs-api-key>   # Speech-to-Text (Scribe v1) for /parse/recipe-audio
 ```
+
+**Where to get `SUPABASE_SERVICE_ROLE_KEY`:** Supabase Dashboard → Project Settings → API → "Project API keys" → `service_role` (labeled "secret"). Treat this key like a database superuser password — it bypasses every RLS policy, so keep it server-side only.
 
 ## Docker
 

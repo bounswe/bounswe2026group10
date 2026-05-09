@@ -4,6 +4,7 @@ import { supabase } from "../config/supabase.js";
 import { requireAuth } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import type { AuthenticatedRequest, UserRole } from "../types/index.js";
+import { REGISTRABLE_ROLES } from "../types/index.js";
 import { errorResponse, successResponse } from "../utils/response.js";
 
 const router = Router();
@@ -18,9 +19,16 @@ const registerSchema = z.object({
     .min(3, "Username must be at least 3 characters.")
     .max(30, "Username must be at most 30 characters.")
     .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores."),
-  role: z.enum(["learner", "cook", "expert"], {
+  role: z.enum(REGISTRABLE_ROLES, {
     message: "Role must be one of: learner, cook, expert.",
   }),
+  // Optional justification — used only when `role === "expert"` to seed the
+  // expert_requests row that a single admin will later review/approve.
+  expertRequestReason: z
+    .string()
+    .trim()
+    .max(2000, "Expert request reason must be at most 2000 characters.")
+    .optional(),
 });
 
 const loginSchema = z.object({
@@ -39,7 +47,21 @@ const refreshSchema = z.object({
  * Creates a Supabase Auth user and a corresponding profile row.
  */
 router.post("/register", validate(registerSchema), async (req, res): Promise<void> => {
-  const { email, password, username, role } = req.body as z.infer<typeof registerSchema>;
+  const {
+    email,
+    password,
+    username,
+    role: requestedRole,
+    expertRequestReason,
+  } = req.body as z.infer<typeof registerSchema>;
+
+  // Option-A expert flow: choosing "expert" at registration does NOT make the
+  // user an expert. The profile is created with role="cook" (so the applicant
+  // can already publish community recipes while waiting) and a pending
+  // expert_requests row is opened. The single admin reviews it, and if
+  // approved, the user's role is promoted to "expert".
+  const isExpertRequest = requestedRole === "expert";
+  const role: UserRole = isExpertRequest ? "cook" : requestedRole;
 
   // Check if username already taken (before creating auth user)
   const { data: existingProfile } = await supabase
@@ -86,19 +108,38 @@ router.post("/register", validate(registerSchema), async (req, res): Promise<voi
   }
 
   // Insert profile row
-  const { error: profileError } = await supabase.from("profiles").insert({
-    user_id: authData.user.id,
-    username,
-    role,
-  });
+  const { data: insertedProfile, error: profileError } = await supabase
+    .from("profiles")
+    .insert({
+      user_id: authData.user.id,
+      username,
+      role,
+    })
+    .select("id")
+    .single();
 
-  if (profileError) {
+  if (profileError || !insertedProfile) {
     // Profile insertion failed — attempt to clean up the auth user
     await supabase.auth.admin?.deleteUser(authData.user.id).catch(() => null);
     res
       .status(500)
       .json(errorResponse("PROFILE_CREATION_FAILED", "Could not create user profile."));
     return;
+  }
+
+  // If the caller asked for the "expert" role, open a pending expert_requests
+  // row tied to their fresh profile. Failure here is non-fatal — the account
+  // is created either way; the user can re-submit via POST /auth/expert-requests.
+  let pendingExpertRequest = false;
+  if (isExpertRequest) {
+    const { error: reqError } = await supabase.from("expert_requests").insert({
+      user_id: (insertedProfile as { id: string }).id,
+      reason: expertRequestReason ?? null,
+      status: "pending",
+    });
+    if (!reqError) {
+      pendingExpertRequest = true;
+    }
   }
 
   res.status(201).json(
@@ -109,6 +150,7 @@ router.post("/register", validate(registerSchema), async (req, res): Promise<voi
       role,
       accessToken: authData.session.access_token,
       refreshToken: authData.session.refresh_token,
+      pendingExpertRequest,
     })
   );
 });
@@ -266,6 +308,145 @@ router.patch("/profile", requireAuth, validate(updateProfileSchema), async (req,
   }
 
   res.status(200).json(successResponse(updated));
+});
+
+// ─── Expert Account Requests ─────────────────────────────────────────────────
+//
+// Open-to-self endpoints used by learner/cook profiles to apply for promotion
+// to "expert". The matching admin-side review endpoints live under
+// `/admin/expert-requests/*` (see src/routes/admin.ts).
+
+const expertRequestSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .min(1, "Please provide a short reason for your request.")
+    .max(2000, "Reason must be at most 2000 characters."),
+});
+
+/**
+ * Submit an expert-account request. The caller must currently be a learner or
+ * cook (already-experts and the admin cannot apply). Only one pending request
+ * per user is allowed; a previously rejected request does not block a new one.
+ */
+router.post(
+  "/expert-requests",
+  requireAuth,
+  validate(expertRequestSchema),
+  async (req, res): Promise<void> => {
+    const user = (req as AuthenticatedRequest).user;
+    const { reason } = req.body as z.infer<typeof expertRequestSchema>;
+
+    if (user.role === "expert") {
+      res
+        .status(409)
+        .json(errorResponse("CONFLICT", "You are already an expert."));
+      return;
+    }
+    if (user.role === "admin") {
+      res
+        .status(403)
+        .json(errorResponse("FORBIDDEN", "Admins cannot request the expert role."));
+      return;
+    }
+
+    // Reject if a pending request already exists.
+    const { data: existing } = await supabase
+      .from("expert_requests")
+      .select("id, status")
+      .eq("user_id", user.profileId)
+      .eq("status", "pending")
+      .maybeSingle();
+
+    if (existing) {
+      res
+        .status(409)
+        .json(
+          errorResponse(
+            "EXPERT_REQUEST_PENDING",
+            "You already have a pending expert request."
+          )
+        );
+      return;
+    }
+
+    const { data: inserted, error } = await supabase
+      .from("expert_requests")
+      .insert({
+        user_id: user.profileId,
+        reason,
+        status: "pending",
+      })
+      .select("id, user_id, reason, status, created_at")
+      .single();
+
+    if (error || !inserted) {
+      // Map the partial-unique-index race to the same 409 path.
+      if ((error as { code?: string } | null)?.code === "23505") {
+        res
+          .status(409)
+          .json(
+            errorResponse(
+              "EXPERT_REQUEST_PENDING",
+              "You already have a pending expert request."
+            )
+          );
+        return;
+      }
+      res.status(500).json(errorResponse("DB_ERROR", error?.message ?? "Insert failed."));
+      return;
+    }
+
+    res.status(201).json(
+      successResponse({
+        id: (inserted as any).id,
+        userId: (inserted as any).user_id,
+        reason: (inserted as any).reason,
+        status: (inserted as any).status,
+        createdAt: (inserted as any).created_at,
+      })
+    );
+  }
+);
+
+/**
+ * Returns the most recent expert request belonging to the caller, or null if
+ * none exists. Useful for the frontend to render "your request is pending /
+ * approved / rejected" badges.
+ */
+router.get("/expert-requests/me", requireAuth, async (req, res): Promise<void> => {
+  const user = (req as AuthenticatedRequest).user;
+
+  const { data, error } = await supabase
+    .from("expert_requests")
+    .select("id, user_id, reason, status, decision_note, decided_by, created_at, decided_at")
+    .eq("user_id", user.profileId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    res.status(500).json(errorResponse("DB_ERROR", error.message));
+    return;
+  }
+
+  if (!data) {
+    res.status(200).json(successResponse(null));
+    return;
+  }
+
+  res.status(200).json(
+    successResponse({
+      id: (data as any).id,
+      userId: (data as any).user_id,
+      reason: (data as any).reason,
+      status: (data as any).status,
+      decisionNote: (data as any).decision_note,
+      decidedBy: (data as any).decided_by,
+      createdAt: (data as any).created_at,
+      decidedAt: (data as any).decided_at,
+    })
+  );
 });
 
 export default router;

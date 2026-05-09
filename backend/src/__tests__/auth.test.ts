@@ -55,22 +55,29 @@ describe("Auth Routes", () => {
     });
 
     it("should return 201 on successful registration", async () => {
-      // Mock existing profile check
-      const mockSingle = jest.fn().mockResolvedValue({ data: null });
-      const mockEq = jest.fn().mockReturnValue({ maybeSingle: mockSingle });
-      const mockSelect = jest.fn().mockReturnValue({ eq: mockEq });
-      
-      // Mock profile insert
-      const mockInsert = jest.fn().mockResolvedValue({ error: null });
-      
+      // Username uniqueness check returns no row.
+      const mockExistingProfileMaybeSingle = jest.fn().mockResolvedValue({ data: null });
+      const mockExistingProfileEq = jest
+        .fn()
+        .mockReturnValue({ maybeSingle: mockExistingProfileMaybeSingle });
+      const mockExistingProfileSelect = jest
+        .fn()
+        .mockReturnValue({ eq: mockExistingProfileEq });
+
+      // Profile insert + select id chain.
+      const mockInsertSingle = jest
+        .fn()
+        .mockResolvedValue({ data: { id: "profile-1" }, error: null });
+      const mockInsertSelect = jest.fn().mockReturnValue({ single: mockInsertSingle });
+      const mockInsert = jest.fn().mockReturnValue({ select: mockInsertSelect });
+
       (supabase.from as jest.Mock).mockImplementation((table) => {
         if (table === "profiles") {
-          return { select: mockSelect, insert: mockInsert };
+          return { select: mockExistingProfileSelect, insert: mockInsert };
         }
         return {};
       });
 
-      // Mock auth.signUp
       (supabase.auth.signUp as jest.Mock).mockResolvedValue({
         data: {
           user: { id: "user-123", email: validPayload.email },
@@ -84,6 +91,82 @@ describe("Auth Routes", () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.username).toBe(validPayload.username);
       expect(response.body.data.role).toBe(validPayload.role);
+      expect(response.body.data.pendingExpertRequest).toBe(false);
+    });
+
+    it("registers as cook with a pending expert request when role=expert is requested", async () => {
+      // Username check — free.
+      const mockExistingProfileMaybeSingle = jest.fn().mockResolvedValue({ data: null });
+      const mockExistingProfileEq = jest
+        .fn()
+        .mockReturnValue({ maybeSingle: mockExistingProfileMaybeSingle });
+      const mockExistingProfileSelect = jest
+        .fn()
+        .mockReturnValue({ eq: mockExistingProfileEq });
+
+      // Profile insert returns the new id.
+      const mockInsertSingle = jest
+        .fn()
+        .mockResolvedValue({ data: { id: "profile-new" }, error: null });
+      const mockInsertSelect = jest.fn().mockReturnValue({ single: mockInsertSingle });
+      const mockProfilesInsert = jest.fn().mockReturnValue({ select: mockInsertSelect });
+
+      // expert_requests insert succeeds.
+      const mockExpertRequestsInsert = jest.fn().mockResolvedValue({ error: null });
+
+      (supabase.from as jest.Mock).mockImplementation((table) => {
+        if (table === "profiles") {
+          return { select: mockExistingProfileSelect, insert: mockProfilesInsert };
+        }
+        if (table === "expert_requests") {
+          return { insert: mockExpertRequestsInsert };
+        }
+        return {};
+      });
+
+      (supabase.auth.signUp as jest.Mock).mockResolvedValue({
+        data: {
+          user: { id: "user-xyz", email: "expert@example.com" },
+          session: { access_token: "access", refresh_token: "refresh" },
+        },
+        error: null,
+      });
+
+      const res = await request(app)
+        .post("/auth/register")
+        .send({
+          email: "expert@example.com",
+          password: "password123",
+          username: "wannabe_expert",
+          role: "expert",
+          expertRequestReason: "10 years of cooking",
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      // Role is downgraded to cook (interim) regardless of the form selection.
+      expect(res.body.data.role).toBe("cook");
+      expect(res.body.data.pendingExpertRequest).toBe(true);
+
+      // Verify the expert_requests insert ran with the new profile id + reason.
+      expect(mockExpertRequestsInsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: "profile-new",
+          reason: "10 years of cooking",
+          status: "pending",
+        })
+      );
+    });
+
+    it("rejects role=admin at registration via VALIDATION_ERROR", async () => {
+      const res = await request(app).post("/auth/register").send({
+        email: "test@example.com",
+        password: "password123",
+        username: "wannabe_admin",
+        role: "admin",
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe("VALIDATION_ERROR");
     });
   });
 

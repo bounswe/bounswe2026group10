@@ -243,16 +243,227 @@ export const openApiSpec = {
                   email: { type: "string", format: "email" },
                   password: { type: "string", minLength: 6 },
                   username: { type: "string" },
-                  role: { type: "string", enum: ["learner", "cook", "expert"] },
+                  role: { type: "string", enum: ["learner", "cook", "expert"], description: "Choosing 'expert' creates the profile as 'cook' (interim) and opens a pending expert_requests row that must be approved by the admin." },
+                  expertRequestReason: { type: "string", description: "Optional justification, only stored when role='expert' is requested." },
                 },
               },
             },
           },
         },
         responses: {
-          "201": { description: "User registered successfully" },
+          "201": {
+            description: "User registered successfully. When role='expert' was requested, the response carries `pendingExpertRequest: true` and the user's role is 'cook' (interim) until an admin approves the request.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: true },
+                    data: {
+                      type: "object",
+                      properties: {
+                        userId: { type: "string" },
+                        email: { type: "string" },
+                        username: { type: "string" },
+                        role: { type: "string", enum: ["learner", "cook", "expert"] },
+                        accessToken: { type: "string" },
+                        refreshToken: { type: "string" },
+                        pendingExpertRequest: { type: "boolean" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
           "400": { description: "Validation error", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
           "409": { description: "Email or username already taken", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+        },
+      },
+    },
+
+    // ── Expert account requests (user-side) ─────────────────────────────────
+    "/auth/expert-requests": {
+      post: {
+        summary: "Submit an expert-account request",
+        description:
+          "Open a pending expert_requests row. Only one pending request per user. Caller must currently be a learner or cook.",
+        tags: ["Auth"],
+        security: [bearerAuth],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["reason"],
+                properties: {
+                  reason: { type: "string", maxLength: 2000 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "201": { description: "Pending request created" },
+          "401": { description: "Unauthorized", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+          "403": { description: "Caller is admin (admins cannot apply)", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+          "409": { description: "Already an expert OR a pending request already exists", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+        },
+      },
+    },
+    "/auth/expert-requests/me": {
+      get: {
+        summary: "Get my latest expert-account request (or null)",
+        tags: ["Auth"],
+        security: [bearerAuth],
+        responses: {
+          "200": { description: "Latest request or null" },
+          "401": { description: "Unauthorized", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+        },
+      },
+    },
+
+    // ── Admin (admin-only) ──────────────────────────────────────────────────
+    "/admin/expert-requests": {
+      get: {
+        summary: "List expert-account requests",
+        description: "Defaults to only pending requests. Admin only.",
+        tags: ["Admin"],
+        security: [bearerAuth],
+        parameters: [
+          { name: "status", in: "query", schema: { type: "string", enum: ["pending", "approved", "rejected"] } },
+          { name: "page", in: "query", schema: { type: "integer", default: 1 } },
+          { name: "limit", in: "query", schema: { type: "integer", default: 20, maximum: 100 } },
+        ],
+        responses: {
+          "200": { description: "Paginated list" },
+          "401": { description: "Unauthorized" },
+          "403": { description: "Caller is not the admin" },
+        },
+      },
+    },
+    "/admin/expert-requests/{id}/approve": {
+      post: {
+        summary: "Approve a pending expert request",
+        description: "Promotes the applicant's profile.role to 'expert' and marks the request approved.",
+        tags: ["Admin"],
+        security: [bearerAuth],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        requestBody: {
+          required: false,
+          content: { "application/json": { schema: { type: "object", properties: { decisionNote: { type: "string" } } } } },
+        },
+        responses: {
+          "200": { description: "Approved" },
+          "404": { description: "Request not found" },
+          "409": { description: "Request already decided" },
+        },
+      },
+    },
+    "/admin/expert-requests/{id}/reject": {
+      post: {
+        summary: "Reject a pending expert request",
+        tags: ["Admin"],
+        security: [bearerAuth],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        requestBody: {
+          required: false,
+          content: { "application/json": { schema: { type: "object", properties: { decisionNote: { type: "string" } } } } },
+        },
+        responses: {
+          "200": { description: "Rejected" },
+          "404": { description: "Request not found" },
+          "409": { description: "Request already decided" },
+        },
+      },
+    },
+    "/admin/users": {
+      get: {
+        summary: "List users",
+        tags: ["Admin"],
+        security: [bearerAuth],
+        parameters: [
+          { name: "search", in: "query", schema: { type: "string" } },
+          { name: "role", in: "query", schema: { type: "string", enum: ["learner", "cook", "expert", "admin"] } },
+          { name: "page", in: "query", schema: { type: "integer", default: 1 } },
+          { name: "limit", in: "query", schema: { type: "integer", default: 20, maximum: 100 } },
+        ],
+        responses: {
+          "200": { description: "Paginated list" },
+          "401": { description: "Unauthorized" },
+          "403": { description: "Caller is not the admin" },
+        },
+      },
+    },
+    "/admin/users/{id}": {
+      patch: {
+        summary: "Update a user's profile",
+        description:
+          "Admin can modify role/username/bio/region/preferred_language. The admin profile itself cannot be modified through this endpoint, and roles cannot be set to 'admin'.",
+        tags: ["Admin"],
+        security: [bearerAuth],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  username: { type: "string" },
+                  role: { type: "string", enum: ["learner", "cook", "expert"] },
+                  bio: { type: "string" },
+                  region: { type: "string" },
+                  preferred_language: { type: "string" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "Updated" },
+          "403": { description: "Target is the admin profile" },
+          "404": { description: "User not found" },
+          "409": { description: "Username already taken" },
+        },
+      },
+      delete: {
+        summary: "Delete a user profile",
+        description:
+          "Removes the profile row. All FKs referencing profiles cascade. The auth.users row is preserved (only the Supabase service role can remove it); the deleted profile is enough to lock the account out of the API.",
+        tags: ["Admin"],
+        security: [bearerAuth],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        responses: {
+          "204": { description: "Deleted" },
+          "403": { description: "Target is the admin profile or self" },
+          "404": { description: "User not found" },
+        },
+      },
+    },
+    "/admin/recipes/{id}": {
+      delete: {
+        summary: "Delete any recipe",
+        description: "Deletes a recipe regardless of who created it. All recipe_* child rows cascade.",
+        tags: ["Admin"],
+        security: [bearerAuth],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+        responses: {
+          "204": { description: "Deleted" },
+          "404": { description: "Recipe not found" },
+        },
+      },
+    },
+    "/admin/comments/{id}": {
+      delete: {
+        summary: "Delete any comment (moderator action)",
+        tags: ["Admin"],
+        security: [bearerAuth],
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        responses: {
+          "204": { description: "Deleted" },
+          "404": { description: "Comment not found" },
         },
       },
     },
@@ -1711,5 +1922,6 @@ export const openApiSpec = {
     { name: "Media", description: "File upload" },
     { name: "Tools & Units", description: "Cooking tool and measurement unit lookup" },
     { name: "Users", description: "Favorites and drafts" },
+    { name: "Admin", description: "Single-admin moderation surface: expert request review, user/recipe/comment moderation" },
   ],
 };

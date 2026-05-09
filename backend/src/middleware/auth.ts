@@ -84,3 +84,11 @@ export const requireRole =
     }
     next();
   };
+
+// ─── requireAdmin ────────────────────────────────────────────────────────────
+
+/**
+ * Shorthand for `requireRole("admin")`. Intentionally a separate export so the
+ * intent is obvious at call sites in admin-only routes.
+ */
+export const requireAdmin = requireRole("admin");
