@@ -12,9 +12,13 @@ export interface LanguageRequest extends Request {
 
 // ─── User Roles ────────────────────────────────────────────────────────────────
 
-export type UserRole = "learner" | "cook" | "expert";
+export type UserRole = "learner" | "cook" | "expert" | "admin";
 
-export const USER_ROLES: UserRole[] = ["learner", "cook", "expert"];
+export const USER_ROLES: UserRole[] = ["learner", "cook", "expert", "admin"];
+
+/** Roles selectable at registration. `admin` is intentionally excluded. */
+export const REGISTRABLE_ROLES = ["learner", "cook", "expert"] as const;
+export type RegistrableRole = (typeof REGISTRABLE_ROLES)[number];
 
 // ─── Authenticated User ────────────────────────────────────────────────────────
 
