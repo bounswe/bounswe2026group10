@@ -188,6 +188,18 @@ export const openApiSpec = {
           total: { type: "integer" },
         },
       },
+      VideoAnnotation: {
+        type: "object",
+        properties: {
+          id: { type: "integer" },
+          recipeId: { type: "string", format: "uuid" },
+          startTime: { type: "number", description: "Seconds into the recipe video where the annotation begins", minimum: 0 },
+          endTime: { type: "number", description: "Seconds into the recipe video where the annotation ends (>= startTime)", minimum: 0 },
+          note: { type: "string", minLength: 1, maxLength: 500 },
+          technique: { type: ["string", "null"] },
+          createdAt: { type: "string", format: "date-time" },
+        },
+      },
     },
   },
   paths: {
@@ -875,6 +887,138 @@ export const openApiSpec = {
       },
     },
 
+    // ── Video Annotations ───────────────────────────────────────────────────────
+    "/recipes/{id}/annotations": {
+      post: {
+        summary: "Add a manual video annotation (timestamp + note) to a recipe",
+        tags: ["Video Annotations"],
+        security: [bearerAuth],
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["startTime", "endTime", "note"],
+                properties: {
+                  startTime: { type: "number", minimum: 0, description: "Seconds into the recipe video where the annotation begins" },
+                  endTime: { type: "number", minimum: 0, description: "Seconds into the recipe video where the annotation ends (>= startTime)" },
+                  note: { type: "string", minLength: 1, maxLength: 500 },
+                  technique: { type: ["string", "null"], maxLength: 120 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "201": {
+            description: "Annotation created",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: true },
+                    data: { $ref: "#/components/schemas/VideoAnnotation" },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "Validation error", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+          "403": { description: "Caller is not the recipe creator (or wrong role)", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+          "404": { description: "Recipe not found", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+        },
+      },
+      get: {
+        summary: "List video annotations for a recipe (sorted by timestamp asc)",
+        tags: ["Video Annotations"],
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+        ],
+        responses: {
+          "200": {
+            description: "Annotations list",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: true },
+                    data: { type: "array", items: { $ref: "#/components/schemas/VideoAnnotation" } },
+                  },
+                },
+              },
+            },
+          },
+          "403": { description: "Recipe is a draft and the caller is not the creator", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+          "404": { description: "Recipe not found", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+        },
+      },
+    },
+    "/annotations/{annotationId}": {
+      patch: {
+        summary: "Edit a video annotation (recipe creator only)",
+        tags: ["Video Annotations"],
+        security: [bearerAuth],
+        parameters: [
+          { name: "annotationId", in: "path", required: true, schema: { type: "integer" } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  startTime: { type: "number", minimum: 0 },
+                  endTime: { type: "number", minimum: 0 },
+                  note: { type: "string", minLength: 1, maxLength: 500 },
+                  technique: { type: ["string", "null"], maxLength: 120 },
+                },
+                description: "At least one of startTime / endTime / note / technique must be provided. Resulting endTime must be >= startTime.",
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Annotation updated",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: true },
+                    data: { $ref: "#/components/schemas/VideoAnnotation" },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "Validation error", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+          "403": { description: "Caller is not the recipe creator", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+          "404": { description: "Annotation not found", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+        },
+      },
+      delete: {
+        summary: "Delete a video annotation (recipe creator only)",
+        tags: ["Video Annotations"],
+        security: [bearerAuth],
+        parameters: [
+          { name: "annotationId", in: "path", required: true, schema: { type: "integer" } },
+        ],
+        responses: {
+          "204": { description: "Annotation deleted" },
+          "403": { description: "Caller is not the recipe creator", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+          "404": { description: "Annotation not found", content: { "application/json": { schema: { $ref: "#/components/schemas/ApiError" } } } },
+        },
+      },
+    },
+
     // ── Dish Genres ─────────────────────────────────────────────────────────────
     "/dish-genres": {
       get: {
@@ -1556,6 +1700,7 @@ export const openApiSpec = {
     { name: "Auth", description: "Registration, login, token management, profile" },
     { name: "Recipes", description: "Recipe CRUD, publish, ratings, media" },
     { name: "Comments", description: "Recipe comments" },
+    { name: "Video Annotations", description: "Manual timestamp annotations on recipe videos" },
     { name: "Dish Genres", description: "Cuisine genre catalogue" },
     { name: "Dish Varieties", description: "Specific dish catalogue" },
     { name: "Ingredients", description: "Ingredient search and substitutions" },

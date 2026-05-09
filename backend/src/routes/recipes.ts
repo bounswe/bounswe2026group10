@@ -244,7 +244,8 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
        recipe_steps(id, step_order, description, video_timestamp),
        recipe_tools(id, name),
        recipe_media(id, url, type),
-       recipe_dietary_tags(dietary_tag:dietary_tags(id, name, category))`
+       recipe_dietary_tags(dietary_tag:dietary_tags(id, name, category)),
+       video_annotations(id, start_time, end_time, note, technique, created_at)`
     )
     .eq("id", recipeId)
     .single();
@@ -390,6 +391,16 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
         name: rt.dietary_tag?.name ?? null,
         category: rt.dietary_tag?.category ?? null,
       })),
+      videoAnnotations: [...((data as any).video_annotations ?? [])]
+        .sort((a: any, b: any) => Number(a.start_time) - Number(b.start_time))
+        .map((a: any) => ({
+          id: a.id,
+          startTime: Number(a.start_time),
+          endTime: Number(a.end_time),
+          note: a.note,
+          technique: a.technique ?? null,
+          createdAt: a.created_at,
+        })),
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     })
@@ -727,6 +738,7 @@ router.patch(
               recipe_id: recipeId,
               step_order: s.stepOrder,
               description: s.description,
+              video_timestamp: s.videoTimestamp ?? null,
             }))
           ).then(r => r)
         );
