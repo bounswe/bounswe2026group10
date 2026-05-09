@@ -23,6 +23,7 @@ import usersRouter from "./routes/users.js";
 import allergensRouter from "./routes/allergens.js";
 import videoAnnotationsRouter from "./routes/video-annotations.js";
 import adminRouter from "./routes/admin.js";
+import culturalTagsRouter from "./routes/cultural-tags.js";
 
 const app = express();
 const PORT = process.env["PORT"] ?? 3000;
@@ -59,6 +60,7 @@ app.use("/", videoAnnotationsRouter);
 app.use("/users", usersRouter);
 app.use("/allergens", allergensRouter);
 app.use("/admin", adminRouter);
+app.use("/cultural-tags", culturalTagsRouter);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {
