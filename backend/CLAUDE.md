@@ -67,6 +67,7 @@ backend/
 │   │   ├── tools.ts             # Tool search/autocomplete
 │   │   ├── units.ts             # Unit search/autocomplete
 │   │   ├── comments.ts          # Recipe comments (create, list, delete)
+│   │   ├── video-annotations.ts # Manual timestamp annotations on recipe videos
 │   │   └── parse.ts             # Free-text recipe parser endpoint
 │   ├── types/
 │   │   └── index.ts             # TypeScript interfaces (roles, auth, response, SupportedLanguage, LanguageRequest)
@@ -112,6 +113,7 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 - **ratings** — `id`, `recipe_id` (FK), `user_id` (FK profiles), `score` (1-5), `created_at`, `updated_at` — unique constraint on (recipe_id, user_id)
 - **recipe_dietary_tags** — `recipe_id` (FK recipes), `tag_id` (FK dietary_tags) — composite PK
 - **comments** — `id` (serial PK), `recipe_id` (FK recipes ON DELETE CASCADE), `user_id` (FK profiles ON DELETE CASCADE), `text` (1–2000 chars, CHECK), `created_at`, `updated_at` (nullable). Indexed on `recipe_id`, `user_id`, and `(recipe_id, created_at DESC)`. **Unique constraint on `(recipe_id, user_id)`** — one comment per user per recipe; the API enforces this with a pre-insert existence check and also maps Postgres `unique_violation` (23505) on insert to 409 `COMMENT_ALREADY_EXISTS` to handle the race window. The API exposes the column as `body`; the route maps `body` ↔ `text` at the DB boundary.
+- **video_annotations** — `id` (serial PK), `recipe_id` (FK recipes), `start_time` / `end_time` (numeric seconds into the video, both `>= 0`, `end_time >= start_time` enforced both at the DB CHECK level and in the route), `note` (1–500 chars, CHECK), `technique` (text, nullable — short label like "Searing"), `created_at`. Used for manual timestamp **ranges** placed by the recipe creator (cook/expert) on top of an uploaded video — e.g. "putting the chicken in the oven" from 42.5s to 56.78s. Two complementary surfaces, both creator-only: per-step start markers via `recipe_steps.video_timestamp` (single point — when the step begins), and standalone time-range annotations via this table.
 
 ### Reference Tables
 
@@ -164,6 +166,10 @@ Migration `002_en_tr_language_fields.sql` adds these columns and seeds `_en` fro
 - `GET /recipes/:id/media` — List recipe media
 - `DELETE /recipes/:id/media/:mediaId` — Remove media (creator only)
 - `GET /recipes/:id/scale` — Scale ingredient quantities to a desired serving size (#163)
+  
+  **Note (#422 — manual video timestamps):**
+  - `GET /recipes/:id` now also returns `videoAnnotations[]` (sorted by `timestamp` asc), so the frontend can render step descriptions and standalone markers in a single call.
+  - `recipe_steps[].videoTimestamp` is the per-step timestamp (already in the DB as `video_timestamp`); both `POST /recipes` and `PATCH /recipes/:id` now persist it on insert and on full step replace.
   - Query params: `servings` (required, integer 1–1000)
   - Returns `{ recipeId, baseServings, requestedServings, ingredients[] }` with proportionally scaled quantities
   - Returns 400 if `servings` param is invalid or recipe has no base serving size set
@@ -261,6 +267,25 @@ Comments are coupled to ratings (Amazon-style): a non-creator must have a rating
 - `DELETE /comments/:id` — Delete own comment (auth required, author only)
   - Returns 403 if the user is not the comment author
   - Returns 404 if the comment does not exist
+
+### Video Annotations (#422)
+
+Manual timestamp **ranges** a cook/expert places on the recipe's uploaded video (e.g. "putting the chicken in the oven" from `42.5s` to `56.78s`). Annotations are independent of `recipe_steps`: steps still own their own `videoTimestamp` (single start point), while annotations are time intervals that can sit anywhere on the video. Reads are public for published recipes; writes (POST/PATCH/DELETE) are creator-only and require `cook` or `expert` role for create.
+
+- `POST /recipes/:id/annotations` — Create an annotation on a recipe (auth required, cook/expert, creator only)
+  - Body: `{ startTime: number (>=0), endTime: number (>= startTime), note: string (1–500 chars, trimmed), technique?: string | null }`
+  - Returns 404 if the recipe does not exist, 403 if the caller is not the creator (or wrong role), 400 on validation failures (including `endTime < startTime`)
+  - Response: a single `VideoAnnotation` (`id`, `recipeId`, `startTime`, `endTime`, `note`, `technique`, `createdAt`)
+- `GET /recipes/:id/annotations` — List annotations sorted by `startTime` ascending
+  - Public for published recipes. Drafts are 403 unless the caller is the creator (token resolved via the same path as `GET /recipes/:id`)
+  - Returns 404 if the recipe does not exist
+- `PATCH /annotations/:annotationId` — Edit an existing annotation (auth required, recipe creator only)
+  - Body: `{ startTime?: number, endTime?: number, note?: string, technique?: string | null }` — at least one field required. The route fetches the existing row and validates the merged (existing + patched) range so that single-sided updates never produce `endTime < startTime` (returns 400 `VALIDATION_ERROR` if they would)
+  - Returns 404 if the annotation does not exist, 403 if the caller is not the recipe creator
+- `DELETE /annotations/:annotationId` — Delete an annotation (auth required, recipe creator only)
+  - Returns 204 on success, 404 if missing, 403 if not the creator
+
+`GET /recipes/:id` includes `videoAnnotations[]` (sorted by `startTime` asc) in the response envelope so the frontend can render the video player overlay alongside steps in a single call.
 
 ### Parse (`/parse`)
 - `POST /parse/recipe-text` — Parse free-text recipe into structured components (cook/expert only)
