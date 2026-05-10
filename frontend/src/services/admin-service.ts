@@ -4,9 +4,16 @@ import type {
   AdminUserList,
   AdminUserUpdate,
   ApproveCulturalTagPayload,
+  ApproveDishGenrePayload,
+  ApproveDishVarietyPayload,
+  ContentRequestStatus,
   CulturalTagRequest,
   CulturalTagRequestList,
   CulturalTagRequestStatus,
+  DishGenreRequest,
+  DishGenreRequestList,
+  DishVarietyRequest,
+  DishVarietyRequestList,
   ExpertRequest,
   ExpertRequestList,
   ExpertRequestStatus,
@@ -119,6 +126,74 @@ export const adminService = {
   ): Promise<CulturalTagRequest> {
     const { data } = await httpClient.post<Envelope<CulturalTagRequest>>(
       `/admin/cultural-tag-requests/${id}/reject`,
+      payload
+    )
+    return data.data
+  },
+
+  // ── Dish genre requests ────────────────────────────────────────────────────
+
+  async listDishGenreRequests(
+    params: { status?: ContentRequestStatus; page?: number; limit?: number } = {}
+  ): Promise<DishGenreRequestList> {
+    const { data } = await httpClient.get<Envelope<DishGenreRequestList>>(
+      '/admin/dish-genre-requests',
+      { params: compact(params) }
+    )
+    return data.data
+  },
+
+  async approveDishGenreRequest(
+    id: number,
+    payload: ApproveDishGenrePayload = {}
+  ): Promise<DishGenreRequest> {
+    const { data } = await httpClient.post<Envelope<DishGenreRequest>>(
+      `/admin/dish-genre-requests/${id}/approve`,
+      payload
+    )
+    return data.data
+  },
+
+  async rejectDishGenreRequest(
+    id: number,
+    payload: { decisionNote?: string } = {}
+  ): Promise<DishGenreRequest> {
+    const { data } = await httpClient.post<Envelope<DishGenreRequest>>(
+      `/admin/dish-genre-requests/${id}/reject`,
+      payload
+    )
+    return data.data
+  },
+
+  // ── Dish variety requests ──────────────────────────────────────────────────
+
+  async listDishVarietyRequests(
+    params: { status?: ContentRequestStatus; page?: number; limit?: number } = {}
+  ): Promise<DishVarietyRequestList> {
+    const { data } = await httpClient.get<Envelope<DishVarietyRequestList>>(
+      '/admin/dish-variety-requests',
+      { params: compact(params) }
+    )
+    return data.data
+  },
+
+  async approveDishVarietyRequest(
+    id: number,
+    payload: ApproveDishVarietyPayload = {}
+  ): Promise<DishVarietyRequest> {
+    const { data } = await httpClient.post<Envelope<DishVarietyRequest>>(
+      `/admin/dish-variety-requests/${id}/approve`,
+      payload
+    )
+    return data.data
+  },
+
+  async rejectDishVarietyRequest(
+    id: number,
+    payload: { decisionNote?: string } = {}
+  ): Promise<DishVarietyRequest> {
+    const { data } = await httpClient.post<Envelope<DishVarietyRequest>>(
+      `/admin/dish-variety-requests/${id}/reject`,
       payload
     )
     return data.data
