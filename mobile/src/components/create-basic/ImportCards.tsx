@@ -1,19 +1,16 @@
 import React from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
 interface ImportCardsProps {
   onPasteText: () => void;
+  onVoiceRecording: () => void;
 }
 
-export function ImportCards({ onPasteText }: ImportCardsProps) {
+export function ImportCards({ onPasteText, onVoiceRecording }: ImportCardsProps) {
   const { t } = useTranslation('common');
-
-  const handleVoiceRecording = () => {
-    Alert.alert(t('common.comingSoon'), t('create.import.voiceComingSoon'));
-  };
 
   return (
     <View style={styles.container}>
@@ -25,7 +22,7 @@ export function ImportCards({ onPasteText }: ImportCardsProps) {
           <Text style={styles.cardSubtitle}>{t('create.import.pasteTextSubtitle')}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.card} onPress={handleVoiceRecording} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.card} onPress={onVoiceRecording} activeOpacity={0.7}>
           <MaterialCommunityIcons name="microphone-outline" size={28} color={colors.primary} />
           <Text style={styles.cardTitle}>{t('create.import.voiceRecording')}</Text>
           <Text style={styles.cardSubtitle}>{t('create.import.voiceRecordingSubtitle')}</Text>
