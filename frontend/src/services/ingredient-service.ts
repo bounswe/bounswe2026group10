@@ -57,7 +57,7 @@ export const ingredientService = {
    * Throws with code CONFLICT (409) if name already exists.
    */
   create: async (name: string): Promise<IngredientOption> => {
-    const res = await httpClient.post('/ingredients', { name })
+    const res = await httpClient.post('/ingredients', { name_en: name, name_tr: name })
     const data = res.data?.data as { id?: unknown; name?: unknown }
     return {
       id: Number(data.id),
