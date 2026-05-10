@@ -62,7 +62,7 @@ export function MyLibraryScreen() {
   const [sort, setSort] = useState<SortKey>('date_desc');
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string>('');
-  const [recipes, setRecipes] = useState<MyRecipeSummary[]>([]);
+  const [allRecipes, setAllRecipes] = useState<MyRecipeSummary[]>([]);
   const [favorites, setFavorites] = useState<FavoriteRecipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,17 +86,16 @@ export function MyLibraryScreen() {
       if (showSpinner) setLoading(true);
       setError(null);
       try {
-        if (filter === 'favorites') {
-          const data = await getFavorites();
-          setFavorites(data.recipes);
-        } else {
-          const status = filter === 'all' ? undefined : filter;
-          const data = await getMyRecipes(status);
-          setRecipes(data);
-          if (showSpinner) {
-            setSelectedCountry('');
-            setSelectedCity('');
-          }
+        const [myRecipesData, favData] = await Promise.all([
+          getMyRecipes(),
+          getFavorites(),
+        ]);
+        setAllRecipes(myRecipesData);
+        setFavorites(favData.recipes);
+        
+        if (showSpinner) {
+          setSelectedCountry('');
+          setSelectedCity('');
         }
       } catch {
         setError(t('library.errorRetry'));
@@ -104,7 +103,7 @@ export function MyLibraryScreen() {
         setLoading(false);
       }
     },
-    [filter, t],
+    [t],
   );
 
   useEffect(() => {
@@ -120,27 +119,34 @@ export function MyLibraryScreen() {
   const countries = useMemo(
     () =>
       Array.from(
-        new Set(recipes.map((r) => r.country).filter(Boolean) as string[]),
+        new Set(allRecipes.map((r) => r.country).filter(Boolean) as string[]),
       ).sort(),
-    [recipes],
+    [allRecipes],
   );
 
   const cities = useMemo(() => {
     const source = selectedCountry
-      ? recipes.filter((r) => r.country === selectedCountry)
-      : recipes;
+      ? allRecipes.filter((r) => r.country === selectedCountry)
+      : allRecipes;
     return Array.from(
       new Set(source.map((r) => r.city).filter(Boolean) as string[]),
     ).sort();
-  }, [recipes, selectedCountry]);
+  }, [allRecipes, selectedCountry]);
 
   const displayedRecipes = useMemo(() => {
-    let result = recipes;
+    let result = allRecipes;
+    
+    if (filter === 'published') {
+      result = result.filter((r) => r.isPublished);
+    } else if (filter === 'draft') {
+      result = result.filter((r) => !r.isPublished);
+    }
+
     if (selectedCountry)
       result = result.filter((r) => r.country === selectedCountry);
     if (selectedCity) result = result.filter((r) => r.city === selectedCity);
     return sortRecipes(result, sort);
-  }, [recipes, selectedCountry, selectedCity, sort]);
+  }, [allRecipes, filter, selectedCountry, selectedCity, sort]);
 
   const displayedFavorites = useMemo(
     () =>
@@ -415,12 +421,14 @@ export function MyLibraryScreen() {
         })}
       </View>
 
-      {!loading && !isFavoritesTab && recipes.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.toolbar}
-        >
+      {!loading && !isFavoritesTab && allRecipes.length > 0 && (
+        <View style={{ flexGrow: 0, flexShrink: 0, marginBottom: spacing.md }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.toolbar}
+            style={{ maxHeight: 40 }}
+          >
           <TouchableOpacity
             style={styles.chip}
             onPress={() => setSortModalOpen(true)}
@@ -460,7 +468,8 @@ export function MyLibraryScreen() {
               </Text>
             </TouchableOpacity>
           )}
-        </ScrollView>
+          </ScrollView>
+        </View>
       )}
 
       {!!actionError && <Text style={styles.errorText}>{actionError}</Text>}
@@ -726,9 +735,11 @@ const styles = StyleSheet.create({
   },
   tabTextActive: { color: colors.white },
   toolbar: {
+    flexDirection: 'row',
     paddingHorizontal: spacing.lg,
     gap: spacing.sm,
     paddingBottom: spacing.sm,
+    alignItems: 'center',
   },
   chip: {
     flexDirection: 'row',
