@@ -218,6 +218,20 @@ describe('fetchDiscoveryRecipes', () => {
     expect(call).toContain('tagIds=5');
   });
 
+  it('passes culturalTagIds as a comma-separated query param', async () => {
+    mockFetchApi.mockResolvedValueOnce({ recipes: [] });
+    await fetchDiscoveryRecipes({ culturalTagIds: [3, 7, 9] });
+    const call = (mockFetchApi as jest.Mock).mock.calls[0][0] as string;
+    expect(call).toContain('culturalTagIds=3%2C7%2C9');
+  });
+
+  it('omits the culturalTagIds param when the array is empty', async () => {
+    mockFetchApi.mockResolvedValueOnce({ recipes: [] });
+    await fetchDiscoveryRecipes({ culturalTagIds: [] });
+    const call = (mockFetchApi as jest.Mock).mock.calls[0][0] as string;
+    expect(call).not.toContain('culturalTagIds');
+  });
+
   it('maps backend response to Recipe interface', async () => {
     const raw = [
       {

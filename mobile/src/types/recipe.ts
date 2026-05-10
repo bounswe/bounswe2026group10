@@ -2,6 +2,7 @@ import type { ISODateString, DietaryTag, AllergenTag, RecipeType, Origin } from 
 import type { User } from './user';
 import type { Ingredient, Tool } from './ingredient';
 import type { Step } from './step';
+import type { CulturalTagItem } from '../api/cultural-tags';
 
 export type RecipeStatus = 'PUBLISHED' | 'DRAFT';
 
@@ -27,6 +28,7 @@ export interface Recipe {
   dishVarietyName: string;
   tags: string[];
   allergens: string[];
+  culturalTags: CulturalTagItem[];
   status: RecipeStatus;
   createdAt: ISODateString;
   updatedAt: ISODateString;

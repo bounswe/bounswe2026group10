@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { Recipe, RecipeCard } from '../../types/recipe';
 import { useTranslation } from 'react-i18next';
-import { colors, spacing } from '../../theme';
+import { colors, fonts, fontSizes, spacing } from '../../theme';
 import { useServingAdjuster } from '../../hooks/useServingAdjuster';
 import { getRecipeById } from '../../api/recipes';
 import { mapBackendRecipeToMobile } from '../../api/recipeMapper';
@@ -13,6 +13,7 @@ import { IconButton } from '../shared/IconButton';
 import { HeroImage } from './HeroImage';
 import { RecipeHeader } from './RecipeHeader';
 import { StoryCard } from './StoryCard';
+import { CulturalTagChips } from '../shared/CulturalTagChips';
 import { IngredientsSection } from './IngredientsSection';
 import { ServingAdjuster } from './ServingAdjuster';
 import { ToolsSection } from './ToolsSection';
@@ -101,6 +102,15 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
 
         {recipe.story ? <StoryCard story={recipe.story} /> : null}
 
+        {recipe.culturalTags.length > 0 ? (
+          <View style={styles.culturalTagsBlock}>
+            <Text style={styles.culturalTagsLabel}>
+              {t('recipeDetail.culturalTags').toUpperCase()}
+            </Text>
+            <CulturalTagChips tags={recipe.culturalTags} />
+          </View>
+        ) : null}
+
         {recipe.images.length > 1 ? <MorePhotosSection images={recipe.images} /> : null}
 
         <IngredientsSection
@@ -172,5 +182,15 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing['4xl'],
+  },
+  culturalTagsBlock: {
+    marginTop: spacing.md,
+  },
+  culturalTagsLabel: {
+    fontFamily: fonts.sansBold,
+    fontSize: fontSizes.xs,
+    color: colors.onSurfaceVariant,
+    letterSpacing: 1,
+    marginBottom: spacing.sm,
   },
 });

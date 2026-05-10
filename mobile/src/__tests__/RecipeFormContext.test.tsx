@@ -26,10 +26,43 @@ describe('RecipeFormContext', () => {
     expect(draft.dietaryTagNames).toEqual([]);
     expect(draft.allergenTagIds).toEqual([]);
     expect(draft.allergenTagNames).toEqual([]);
+    expect(draft.culturalTagIds).toEqual([]);
+    expect(draft.culturalTags).toEqual([]);
     expect(draft.ingredients).toEqual([]);
     expect(draft.tools).toEqual([]);
     expect(draft.imageUrls).toEqual([]);
     expect(draft.steps).toEqual([]);
+  });
+
+  it('updateDraft persists culturalTagIds and culturalTags together', () => {
+    const { result } = renderHook(() => useRecipeForm(), { wrapper });
+    const tags = [
+      { id: 1, key: 'wedding', labelEn: 'Wedding', labelTr: 'Düğün', country: null },
+      { id: 9, key: 'iftar', labelEn: 'Iftar', labelTr: 'İftar', country: 'Turkey' },
+    ];
+    act(() =>
+      result.current.updateDraft({
+        culturalTagIds: [1, 9],
+        culturalTags: tags,
+      }),
+    );
+    expect(result.current.draft.culturalTagIds).toEqual([1, 9]);
+    expect(result.current.draft.culturalTags).toEqual(tags);
+  });
+
+  it('resetDraft clears culturalTagIds and culturalTags', () => {
+    const { result } = renderHook(() => useRecipeForm(), { wrapper });
+    act(() =>
+      result.current.updateDraft({
+        culturalTagIds: [1],
+        culturalTags: [
+          { id: 1, key: 'wedding', labelEn: 'Wedding', labelTr: 'Düğün', country: null },
+        ],
+      }),
+    );
+    act(() => result.current.resetDraft());
+    expect(result.current.draft.culturalTagIds).toEqual([]);
+    expect(result.current.draft.culturalTags).toEqual([]);
   });
 
   it('updateDraft merges partial state without wiping other fields', () => {
