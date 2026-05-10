@@ -1471,7 +1471,7 @@ export const openApiSpec = {
         parameters: [
           { name: "genreId", in: "query", schema: { type: "integer" } },
           { name: "varietyId", in: "query", schema: { type: "integer" } },
-          { name: "excludeAllergens", in: "query", schema: { type: "string" }, description: "Comma-separated allergen IDs to exclude" },
+          { name: "excludeAllergens", in: "query", schema: { type: "string" }, description: "Comma-separated allergen IDs to exclude. Excludes recipes that either tag the allergen manually (allergen_ids) or contain it via any ingredient (ingredient_allergens)." },
           { name: "tagIds", in: "query", schema: { type: "string" }, description: "Comma-separated dietary tag IDs — recipes must have ALL specified tags" },
           { name: "search", in: "query", schema: { type: "string" }, description: "Case-insensitive partial match on recipe title" },
           { name: "country", in: "query", schema: { type: "string" }, description: "Alias-aware (e.g. 'tr'/'Türkiye' both match 'Turkey')" },

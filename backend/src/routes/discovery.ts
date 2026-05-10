@@ -184,6 +184,43 @@ router.get("/recipes", async (req, res) => {
         .filter((n) => Number.isInteger(n) && n > 0);
     }
 
+    // ── Step 1b: Derive recipes whose ingredients carry the excluded allergens
+    // recipes.allergen_ids is a manually-populated denormalized column most
+    // creators leave empty, so a filter on that column alone misses recipes
+    // that contain the allergen via their ingredients. Resolve the real
+    // exclusion set through ingredient_allergens → recipe_ingredients (#518).
+    let allergenExcludedRecipeIds: string[] = [];
+
+    if (excludeAllergenIds.length > 0) {
+      const { data: badIngredientRows, error: iaErr } = await supabase
+        .from("ingredient_allergens")
+        .select("ingredient_id")
+        .in("allergen_id", excludeAllergenIds);
+
+      if (iaErr) {
+        return res.status(500).json(errorResponse("DB_ERROR", iaErr.message));
+      }
+
+      const badIngredientIds = [
+        ...new Set((badIngredientRows ?? []).map((r: any) => r.ingredient_id)),
+      ];
+
+      if (badIngredientIds.length > 0) {
+        const { data: badRecipeRows, error: riErr } = await supabase
+          .from("recipe_ingredients")
+          .select("recipe_id")
+          .in("ingredient_id", badIngredientIds);
+
+        if (riErr) {
+          return res.status(500).json(errorResponse("DB_ERROR", riErr.message));
+        }
+
+        allergenExcludedRecipeIds = [
+          ...new Set((badRecipeRows ?? []).map((r: any) => r.recipe_id)),
+        ];
+      }
+    }
+
     // ── Step 2: Resolve variety IDs when filtering by genre ───────────────────
     let varietyIdsForGenre: number[] | null = null;
 
@@ -228,7 +265,18 @@ router.get("/recipes", async (req, res) => {
         q = q.in("dish_variety_id", varietyIdsForGenre);
       }
       if (excludeAllergenIds.length > 0) {
+        // Manual creator-set allergen tags (legacy denormalized column).
         q = q.not("allergen_ids", "ov", `{${excludeAllergenIds.join(",")}}`);
+        // Derived exclusion via ingredient_allergens — covers recipes that
+        // never set allergen_ids manually but contain the allergen through
+        // their ingredients (#518).
+        if (allergenExcludedRecipeIds.length > 0) {
+          q = q.not(
+            "id",
+            "in",
+            `(${allergenExcludedRecipeIds.join(",")})`
+          );
+        }
       }
       if (tagFilteredRecipeIds !== null) {
         q = q.in("id", tagFilteredRecipeIds);
