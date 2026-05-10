@@ -221,6 +221,28 @@ export const recipeService = {
   },
 
   /**
+   * GET /users/me/drafts — list unpublished recipes belonging to the authenticated user.
+   */
+  listDrafts: async (): Promise<MyRecipeSummary[]> => {
+    const res = await httpClient.get('/users/me/drafts')
+    const raw: unknown[] = Array.isArray(res.data?.data) ? res.data.data : []
+    return raw.map((r: any) => ({
+      id: String(r.id),
+      title: r.title ?? '',
+      type: r.type === 'cultural' ? 'cultural' : 'community',
+      isPublished: r.isPublished ?? false,
+      averageRating: r.averageRating ?? null,
+      ratingCount: r.ratingCount ?? 0,
+      country: r.country ?? null,
+      city: r.city ?? null,
+      district: r.district ?? null,
+      createdAt: r.createdAt ?? '',
+      updatedAt: r.updatedAt ?? '',
+      coverImageUrl: r.coverImageUrl ?? null,
+    }))
+  },
+
+  /**
    * GET /recipes/mine — list all recipes belonging to the authenticated user.
    * Optional status filter: 'published' | 'draft'
    */

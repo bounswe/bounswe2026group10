@@ -164,7 +164,16 @@
     "noRecipes": "No recipes yet. Start creating!",
     "favorites": "Favorites",
     "noFavorites": "No favorites yet. Explore recipes!",
-    "seeAllFavorites": "See all {{count}} favorites"
+    "seeAllFavorites": "See all {{count}} favorites",
+    "drafts": "Drafts",
+    "noDrafts": "No drafts yet. Start creating a recipe!",
+    "draftEdit": "Edit",
+    "draftPublish": "Publish",
+    "draftDelete": "Delete",
+    "draftPublishConfirm": "Publish this recipe? It will be visible to everyone.",
+    "draftDeleteConfirm": "Delete this draft? This cannot be undone.",
+    "draftPublished": "Recipe published successfully.",
+    "draftDeleted": "Draft deleted."
   },
   "home": {
     "featured": "Featured Recipe",
