@@ -14,17 +14,9 @@ import { useTranslation } from 'react-i18next';
 import { fetchDietaryTags, fetchLocations, type DietaryTag } from '../../api/search';
 import { getCulturalTags, pickCulturalTagLabel, type CulturalTagItem } from '../../api/cultural-tags';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
+import type { ActiveFilters } from '../../navigation/types';
 
-export interface FilterState {
-  excludeAllergenIds: number[];
-  excludeAllergenNames: string[];
-  dietaryTagIds: number[];
-  dietaryTagNames: string[];
-  culturalTagIds: number[];
-  culturalTagNames: string[];
-  country: string;
-  city: string;
-}
+export type FilterState = ActiveFilters;
 
 interface FilterModalProps {
   visible: boolean;

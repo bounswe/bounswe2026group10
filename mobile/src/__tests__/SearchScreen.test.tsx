@@ -191,6 +191,50 @@ describe('SearchScreen', () => {
     });
   });
 
+  // ─── Filter tag removal ────────────────────────────────────────────────────
+
+  describe('filter tag individual removal', () => {
+    it('pressing genre filter tag clears the genre selection', async () => {
+      const { getByPlaceholderText, getAllByText } = await renderAndFlush();
+
+      // Enter search so genre chips become visible
+      fireEvent.changeText(getByPlaceholderText('Search heirloom flavors...'), 'Soups');
+      await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
+
+      // Press the 'Soups' chip to select it (query is cleared, selectedGenreId is set)
+      fireEvent.press(getAllByText('Soups')[0]);
+      await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
+
+      // Now the filter tag row shows 'Soups' (index 0, above ScrollView).
+      // Genre chips also show 'Soups' (index 1+).  Pressing index 0 removes genre.
+      fireEvent.press(getAllByText('Soups')[0]);
+      await act(async () => { await Promise.resolve(); });
+
+      // Genre deselected → last API call must not carry genreId
+      const lastArgs = mockFetchDiscovery.mock.calls[mockFetchDiscovery.mock.calls.length - 1][0];
+      expect(lastArgs.genreId).toBeUndefined();
+    });
+
+    it('varieties include only those from API results when filters are active via genre selection', async () => {
+      // mockFetchDiscovery returns only variety id=1 recipe
+      mockFetchDiscovery.mockResolvedValue([
+        { ...mockRecipes[0], dishVarietyId: 1 },
+      ]);
+
+      const { getByPlaceholderText, getAllByText, queryByText } = await renderAndFlush();
+
+      // Select 'Soups' genre (sets selectedGenreId without text filter)
+      fireEvent.changeText(getByPlaceholderText('Search heirloom flavors...'), 'Soups');
+      await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
+      fireEvent.press(getAllByText('Soups')[0]);
+      await act(async () => { await new Promise((r) => setTimeout(r, 500)); });
+
+      // Variety id=1 (Lentil Soup) should be in filteredVarieties
+      // Variety id=3 (Pilaf, genreId=3) does NOT belong to genre 1 so not shown
+      expect(queryByText('Pilaf')).toBeNull();
+    });
+  });
+
   // ─── Navigation ────────────────────────────────────────────────────────────
 
   describe('navigation', () => {

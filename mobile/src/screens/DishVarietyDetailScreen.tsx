@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -16,6 +16,8 @@ import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSizes, spacing } from '../theme';
 import { RecipeCard } from '../components/search/RecipeCard';
 import { fetchApi } from '../api/client';
+import { fetchDiscoveryRecipes } from '../api/search';
+import type { ActiveFilters } from '../navigation/types';
 
 // Types
 interface DishVarietyDetail {
@@ -107,7 +109,8 @@ export function DishVarietyDetailScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
   const { t } = useTranslation('common');
-  const varietyId = route.params?.id;
+  const varietyId: number = route.params?.id;
+  const routeFilters: ActiveFilters | undefined = route.params?.filters;
 
   const [variety, setVariety] = useState<DishVarietyDetail | null>(null);
   const [featuredDescription, setFeaturedDescription] = useState<string | null>(null);
@@ -115,6 +118,8 @@ export function DishVarietyDetailScreen() {
   const [communityImageMap, setCommunityImageMap] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // IDs of recipes that pass the active filters; null means "show all"
+  const [filteredRecipeIds, setFilteredRecipeIds] = useState<Set<string> | null>(null);
 
   // Fetch variety details
   useEffect(() => {
@@ -125,6 +130,32 @@ export function DishVarietyDetailScreen() {
       .catch(() => setError('Failed to load dish variety'))
       .finally(() => setLoading(false));
   }, [varietyId]);
+
+  // When the caller passed active filters, fetch the matching recipe IDs from
+  // the discovery endpoint so we can intersect them with the variety's recipe list.
+  useEffect(() => {
+    if (!routeFilters || !varietyId) {
+      setFilteredRecipeIds(null);
+      return;
+    }
+    const hasActive =
+      routeFilters.excludeAllergenIds.length > 0 ||
+      routeFilters.dietaryTagIds.length > 0 ||
+      routeFilters.country !== '';
+    if (!hasActive) {
+      setFilteredRecipeIds(null);
+      return;
+    }
+    fetchDiscoveryRecipes({
+      varietyId,
+      excludeAllergenIds: routeFilters.excludeAllergenIds,
+      dietaryTagIds: routeFilters.dietaryTagIds,
+      country: routeFilters.country || undefined,
+      city: routeFilters.city || undefined,
+    }).then((recipes) => {
+      setFilteredRecipeIds(new Set(recipes.map((r) => r.id)));
+    });
+  }, [varietyId, routeFilters]);
 
   // Fetch cultural recipe details (story + image)
   useEffect(() => {
@@ -212,8 +243,12 @@ export function DishVarietyDetailScreen() {
     );
   }
 
-  const culturalRecipe = variety.recipes.find((recipe) => recipe.type === 'cultural') ?? null;
-  const communityRecipes = variety.recipes.filter((recipe) => recipe.type === 'community');
+  const displayedRecipes = filteredRecipeIds !== null
+    ? variety.recipes.filter((r) => filteredRecipeIds.has(r.id))
+    : variety.recipes;
+
+  const culturalRecipe = displayedRecipes.find((recipe) => recipe.type === 'cultural') ?? null;
+  const communityRecipes = displayedRecipes.filter((recipe) => recipe.type === 'community');
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -244,10 +279,10 @@ export function DishVarietyDetailScreen() {
         {/* Recipes Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {t('dishVariety.recipes', { count: variety.recipes.length })}
+            {t('dishVariety.recipes', { count: displayedRecipes.length })}
           </Text>
 
-          {variety.recipes.length === 0 ? (
+          {displayedRecipes.length === 0 ? (
             <Text style={styles.emptyText}>{t('dishVariety.noRecipes')}</Text>
           ) : (
             <>
