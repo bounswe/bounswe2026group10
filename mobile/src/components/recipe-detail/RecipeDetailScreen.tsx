@@ -20,6 +20,7 @@ import { ToolsSection } from './ToolsSection';
 import { StepsSection } from './StepsSection';
 import { CookingModeButton } from './CookingModeButton';
 import { RatingPrompt } from './RatingPrompt';
+import { CommentsSection } from './CommentsSection';
 import { AlternativeVersions } from './AlternativeVersions';
 import { MorePhotosSection } from './MorePhotosSection';
 import { VideoGuideScreen } from '../video-guide/VideoGuideScreen';
@@ -138,9 +139,12 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
           recipeId={recipeId}
           creatorUsername={recipe.creatorUsername}
           onRatingChange={fetchRecipe}
-          onNavigateToComments={() =>
-            Alert.alert(t('recipeDetail.viewAllComments'), t('recipeDetail.commentsSoon'))
-          }
+        />
+
+        <CommentsSection
+          recipeId={recipeId}
+          creatorUsername={recipe.creatorUsername}
+          onCommentSubmitted={fetchRecipe}
         />
       </ScrollView>
 
