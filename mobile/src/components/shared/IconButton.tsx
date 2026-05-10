@@ -8,6 +8,8 @@ interface IconButtonProps {
   size?: number;
   color?: string;
   onPress?: () => void;
+  disabled?: boolean;
+  accessibilityLabel?: string;
 }
 
 export function IconButton({
@@ -15,9 +17,18 @@ export function IconButton({
   size = 24,
   color = colors.onSurface,
   onPress,
+  disabled = false,
+  accessibilityLabel,
 }: IconButtonProps) {
   return (
-    <TouchableOpacity onPress={onPress} style={styles.container} activeOpacity={0.6}>
+    <TouchableOpacity
+      onPress={onPress}
+      style={[styles.container, disabled && styles.disabled]}
+      activeOpacity={0.6}
+      disabled={disabled}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+    >
       <MaterialCommunityIcons name={name} size={size} color={color} />
     </TouchableOpacity>
   );
@@ -26,5 +37,8 @@ export function IconButton({
 const styles = StyleSheet.create({
   container: {
     padding: spacing.xs,
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });

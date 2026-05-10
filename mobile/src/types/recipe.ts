@@ -33,6 +33,7 @@ export interface Recipe {
   createdAt: ISODateString;
   updatedAt: ISODateString;
   creatorUsername: string;
+  isFavorited: boolean;
 }
 
 export interface RecipeCard {

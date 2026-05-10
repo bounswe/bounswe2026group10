@@ -143,5 +143,6 @@ export function mapBackendRecipeToMobile(data: BackendRecipeDetail): Recipe {
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
     creatorUsername: data.creatorUsername ?? '',
+    isFavorited: data.isFavorited ?? false,
   };
 }
