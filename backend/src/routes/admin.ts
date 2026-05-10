@@ -546,6 +546,224 @@ router.delete("/comments/:id", async (req: Request, res: Response): Promise<void
   res.status(204).send();
 });
 
+// ─── Cultural Tag Requests ────────────────────────────────────────────────────
+
+const listCulturalTagRequestsQuery = z.object({
+  status: z.enum(["pending", "approved", "rejected"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+const approveTagRequestSchema = z.object({
+  labelEn:      z.string().trim().min(2).max(100).optional(),
+  labelTr:      z.string().trim().min(2).max(100).optional(),
+  country:      z.string().trim().min(1).max(100).optional(),
+  decisionNote: z.string().trim().max(2000).optional(),
+});
+
+function slugifyTagKey(text: string): string {
+  return text
+    .replace(/[İI]/g, "i").replace(/ı/g, "i")
+    .replace(/[şŞ]/g, "s").replace(/[çÇ]/g, "c")
+    .replace(/[ğĞ]/g, "g").replace(/[üÜ]/g, "u")
+    .replace(/[öÖ]/g, "o")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
+/**
+ * GET /admin/cultural-tag-requests
+ * List cultural tag requests. Defaults to pending only.
+ */
+router.get("/cultural-tag-requests", async (req: Request, res: Response): Promise<void> => {
+  const parsed = listCulturalTagRequestsQuery.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json(errorResponse("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid query."));
+    return;
+  }
+  const { status, page, limit } = parsed.data;
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  let query = supabase
+    .from("cultural_tag_requests")
+    .select(
+      `id, label_en, label_tr, country, status, decision_note, decided_by, created_at, decided_at,
+       requester:profiles!cultural_tag_requests_requested_by_fkey(id, username)`,
+      { count: "exact" }
+    )
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  query = status ? query.eq("status", status) : query.eq("status", "pending");
+
+  const { data, error, count } = await query;
+  if (error) {
+    res.status(500).json(errorResponse("DB_ERROR", error.message));
+    return;
+  }
+
+  res.status(200).json(successResponse({
+    requests: (data ?? []).map((r: any) => ({
+      id:           r.id,
+      labelEn:      r.label_en,
+      labelTr:      r.label_tr,
+      country:      r.country ?? null,
+      status:       r.status,
+      decisionNote: r.decision_note ?? null,
+      decidedBy:    r.decided_by ?? null,
+      createdAt:    r.created_at,
+      decidedAt:    r.decided_at ?? null,
+      requester:    r.requester ? { id: r.requester.id, username: r.requester.username } : null,
+    })),
+    pagination: { page, limit, total: count ?? 0 },
+  }));
+});
+
+/**
+ * POST /admin/cultural-tag-requests/:id/approve
+ * Approves the request and inserts the tag into cultural_tags.
+ * Admin can override labelEn, labelTr, or country before approving.
+ * label_en is required (either from the original request or admin override)
+ * because it is used to generate the unique key.
+ */
+router.post(
+  "/cultural-tag-requests/:id/approve",
+  validate(approveTagRequestSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    const admin = (req as AuthenticatedRequest).user;
+    const id = req.params["id"] as string;
+    const idNum = Number.parseInt(id, 10);
+    if (!Number.isFinite(idNum)) {
+      res.status(400).json(errorResponse("VALIDATION_ERROR", "Request id must be an integer."));
+      return;
+    }
+
+    const adminClient = getAdminClient(res);
+    if (!adminClient) return;
+
+    const { labelEn, labelTr, country, decisionNote } = req.body as z.infer<typeof approveTagRequestSchema>;
+
+    // 1. Load the request
+    const { data: tagRequest, error: loadErr } = await supabase
+      .from("cultural_tag_requests")
+      .select("id, label_en, label_tr, country, status")
+      .eq("id", idNum)
+      .maybeSingle();
+
+    if (loadErr) { res.status(500).json(errorResponse("DB_ERROR", loadErr.message)); return; }
+    if (!tagRequest) { res.status(404).json(errorResponse("NOT_FOUND", "Cultural tag request not found.")); return; }
+    if ((tagRequest as any).status !== "pending") {
+      res.status(409).json(errorResponse("REQUEST_ALREADY_DECIDED", `This request has already been ${(tagRequest as any).status}.`));
+      return;
+    }
+
+    // 2. Resolve final labels (admin override wins)
+    const finalLabelEn = labelEn ?? (tagRequest as any).label_en;
+    const finalLabelTr = labelTr ?? (tagRequest as any).label_tr;
+    const finalCountry = country !== undefined ? country : ((tagRequest as any).country ?? null);
+
+    if (!finalLabelEn) {
+      res.status(400).json(errorResponse("VALIDATION_ERROR", "labelEn is required to generate the tag key. Provide it in the request body."));
+      return;
+    }
+
+    // 3. Generate key and check uniqueness
+    const key = slugifyTagKey(finalLabelEn);
+    const { data: existing } = await supabase
+      .from("cultural_tags")
+      .select("id")
+      .eq("key", key)
+      .maybeSingle();
+
+    if (existing) {
+      res.status(409).json(errorResponse("CONFLICT", `A cultural tag with key '${key}' already exists.`));
+      return;
+    }
+
+    // 4. Insert into cultural_tags
+    const { data: newTag, error: insertErr } = await adminClient
+      .from("cultural_tags")
+      .insert({ key, label_en: finalLabelEn, label_tr: finalLabelTr, country: finalCountry })
+      .select("id, key, label_en, label_tr, country")
+      .single();
+
+    if (insertErr) { res.status(500).json(errorResponse("DB_ERROR", insertErr.message)); return; }
+
+    // 5. Mark request approved
+    const decidedAt = new Date().toISOString();
+    const { error: updateErr } = await adminClient
+      .from("cultural_tag_requests")
+      .update({ status: "approved", decision_note: decisionNote ?? null, decided_by: admin.profileId, decided_at: decidedAt })
+      .eq("id", idNum);
+
+    if (updateErr) { res.status(500).json(errorResponse("DB_ERROR", updateErr.message)); return; }
+
+    res.status(200).json(successResponse({
+      requestId:  idNum,
+      status:     "approved",
+      createdTag: {
+        id:      (newTag as any).id,
+        key:     (newTag as any).key,
+        labelEn: (newTag as any).label_en,
+        labelTr: (newTag as any).label_tr,
+        country: (newTag as any).country ?? null,
+      },
+      decisionNote: decisionNote ?? null,
+      decidedAt,
+    }));
+  }
+);
+
+/**
+ * POST /admin/cultural-tag-requests/:id/reject
+ * Rejects the request. No tag is created.
+ */
+router.post(
+  "/cultural-tag-requests/:id/reject",
+  validate(decisionSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    const admin = (req as AuthenticatedRequest).user;
+    const id = req.params["id"] as string;
+    const idNum = Number.parseInt(id, 10);
+    if (!Number.isFinite(idNum)) {
+      res.status(400).json(errorResponse("VALIDATION_ERROR", "Request id must be an integer."));
+      return;
+    }
+
+    const adminClient = getAdminClient(res);
+    if (!adminClient) return;
+
+    const { decisionNote } = req.body as z.infer<typeof decisionSchema>;
+
+    const { data: tagRequest, error: loadErr } = await supabase
+      .from("cultural_tag_requests")
+      .select("id, status")
+      .eq("id", idNum)
+      .maybeSingle();
+
+    if (loadErr) { res.status(500).json(errorResponse("DB_ERROR", loadErr.message)); return; }
+    if (!tagRequest) { res.status(404).json(errorResponse("NOT_FOUND", "Cultural tag request not found.")); return; }
+    if ((tagRequest as any).status !== "pending") {
+      res.status(409).json(errorResponse("REQUEST_ALREADY_DECIDED", `This request has already been ${(tagRequest as any).status}.`));
+      return;
+    }
+
+    const decidedAt = new Date().toISOString();
+    const { error } = await adminClient
+      .from("cultural_tag_requests")
+      .update({ status: "rejected", decision_note: decisionNote ?? null, decided_by: admin.profileId, decided_at: decidedAt })
+      .eq("id", idNum);
+
+    if (error) { res.status(500).json(errorResponse("DB_ERROR", error.message)); return; }
+
+    res.status(200).json(successResponse({ requestId: idNum, status: "rejected", decisionNote: decisionNote ?? null, decidedAt }));
+  }
+);
+
 // Lint hint: silence unused-import warnings in environments where UserRole is
 // shaken out by the bundler.
 export type _Unused = UserRole;
