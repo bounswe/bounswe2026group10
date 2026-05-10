@@ -196,3 +196,33 @@ export async function translateRecipe(recipeId: string): Promise<void> {
 
   console.log(`[translation] Recipe ${recipeId} translated to ${langCode}.`);
 }
+
+// ─── Ingredient Name Translation ──────────────────────────────────────────────
+
+/**
+ * Translates a single ingredient name from the given source language to the
+ * opposite one (EN → TR or TR → EN) using DeepL.
+ *
+ * Returns null when DEEPL_API_KEY is absent or the API call fails, so the
+ * caller can fall back to storing null without crashing.
+ */
+export async function translateIngredientName(
+  name: string,
+  sourceLang: "en" | "tr"
+): Promise<string | null> {
+  const apiKey = process.env["DEEPL_API_KEY"];
+  if (!apiKey) {
+    console.warn("[translation] DEEPL_API_KEY not set — skipping ingredient name translation.");
+    return null;
+  }
+
+  try {
+    const translator = new Translator(apiKey);
+    const targetLang = sourceLang === "en" ? "tr" : "en-US";
+    const result = (await translator.translateText(name, null, targetLang)) as TextResult;
+    return result.text.toLocaleLowerCase("tr-TR");
+  } catch (err) {
+    console.error(`[translation] Failed to translate ingredient name "${name}":`, err);
+    return null;
+  }
+}

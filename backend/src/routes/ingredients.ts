@@ -7,6 +7,7 @@ import { successResponse, errorResponse } from "../utils/response.js";
 import { parseLangParam, resolveLang } from "../utils/i18n.js";
 import { buildSearchVariants, normalizeText } from "../utils/text.js";
 import { escapeLikePattern } from "../utils/locations.js";
+import { translateIngredientName } from "../services/translationService.js";
 import type { AuthenticatedRequest } from "../types/index.js";
 
 const router = Router();
@@ -106,12 +107,23 @@ router.post(
       return res.status(409).json(errorResponse("CONFLICT", "An ingredient with this name already exists."));
     }
 
+    // When only one language is supplied, translate the other via DeepL so
+    // that both name_en and name_tr are always populated.
+    let storedEn = normalizedEn?.toLocaleLowerCase("tr-TR") ?? null;
+    let storedTr = normalizedTr?.toLocaleLowerCase("tr-TR") ?? null;
+
+    if (storedEn && !storedTr) {
+      storedTr = await translateIngredientName(storedEn, "en");
+    } else if (storedTr && !storedEn) {
+      storedEn = await translateIngredientName(storedTr, "tr");
+    }
+
     const { data, error } = await userClient
       .from("ingredients")
       .insert({
         name: primaryName,
-        name_en: normalizedEn?.toLocaleLowerCase("tr-TR") ?? null,
-        name_tr: normalizedTr?.toLocaleLowerCase("tr-TR") ?? null,
+        name_en: storedEn,
+        name_tr: storedTr,
       })
       .select("id, name, name_en, name_tr")
       .single();
