@@ -770,7 +770,7 @@ const styles = StyleSheet.create({
   },
   // ── Cultural Tags ──
   culturalTagsBlock: {
-    marginTop: spacing.lg,
+    marginTop: -spacing["2xl"],
   },
   culturalTagsHelp: {
     fontFamily: fonts.sans,
