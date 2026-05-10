@@ -764,6 +764,401 @@ router.post(
   }
 );
 
+// ─── Dish Genre Requests ──────────────────────────────────────────────────────
+
+const listContentRequestsQuery = z.object({
+  status: z.enum(["pending", "approved", "rejected"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+const approveGenreRequestSchema = z.object({
+  nameEn:        z.string().trim().min(2).max(200).optional(),
+  nameTr:        z.string().trim().min(2).max(200).optional(),
+  descriptionEn: z.string().trim().max(2000).optional(),
+  descriptionTr: z.string().trim().max(2000).optional(),
+  decisionNote:  z.string().trim().max(2000).optional(),
+});
+
+/**
+ * GET /admin/dish-genre-requests
+ * List dish genre requests. Defaults to pending only.
+ */
+router.get("/dish-genre-requests", async (req: Request, res: Response): Promise<void> => {
+  const parsed = listContentRequestsQuery.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json(errorResponse("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid query."));
+    return;
+  }
+  const { status, page, limit } = parsed.data;
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  let query = supabase
+    .from("dish_genre_requests")
+    .select(
+      `id, name_en, name_tr, description_en, description_tr, status, decision_note, decided_by, created_at, decided_at,
+       requester:profiles!dish_genre_requests_requested_by_fkey(id, username)`,
+      { count: "exact" }
+    )
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  query = status ? query.eq("status", status) : query.eq("status", "pending");
+
+  const { data, error, count } = await query;
+  if (error) {
+    res.status(500).json(errorResponse("DB_ERROR", error.message));
+    return;
+  }
+
+  res.status(200).json(successResponse({
+    requests: (data ?? []).map((r: any) => ({
+      id:            r.id,
+      nameEn:        r.name_en,
+      nameTr:        r.name_tr,
+      descriptionEn: r.description_en ?? null,
+      descriptionTr: r.description_tr ?? null,
+      status:        r.status,
+      decisionNote:  r.decision_note ?? null,
+      decidedBy:     r.decided_by ?? null,
+      createdAt:     r.created_at,
+      decidedAt:     r.decided_at ?? null,
+      requester:     r.requester ? { id: r.requester.id, username: r.requester.username } : null,
+    })),
+    pagination: { page, limit, total: count ?? 0 },
+  }));
+});
+
+/**
+ * POST /admin/dish-genre-requests/:id/approve
+ * Approves the request and inserts the genre into dish_genres.
+ * nameEn is required (either from the original request or admin override).
+ */
+router.post(
+  "/dish-genre-requests/:id/approve",
+  validate(approveGenreRequestSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    const admin = (req as AuthenticatedRequest).user;
+    const idNum = Number.parseInt(req.params["id"] as string, 10);
+    if (!Number.isFinite(idNum)) {
+      res.status(400).json(errorResponse("VALIDATION_ERROR", "Request id must be an integer."));
+      return;
+    }
+
+    const adminClient = getAdminClient(res);
+    if (!adminClient) return;
+
+    const { nameEn, nameTr, descriptionEn, descriptionTr, decisionNote } = req.body as z.infer<typeof approveGenreRequestSchema>;
+
+    // 1. Load the request
+    const { data: genreRequest, error: loadErr } = await supabase
+      .from("dish_genre_requests")
+      .select("id, name_en, name_tr, description_en, description_tr, status")
+      .eq("id", idNum)
+      .maybeSingle();
+
+    if (loadErr) { res.status(500).json(errorResponse("DB_ERROR", loadErr.message)); return; }
+    if (!genreRequest) { res.status(404).json(errorResponse("NOT_FOUND", "Dish genre request not found.")); return; }
+    if ((genreRequest as any).status !== "pending") {
+      res.status(409).json(errorResponse("REQUEST_ALREADY_DECIDED", `This request has already been ${(genreRequest as any).status}.`));
+      return;
+    }
+
+    // 2. Resolve final values (admin override wins)
+    const finalNameEn = nameEn ?? (genreRequest as any).name_en;
+    const finalNameTr = nameTr ?? (genreRequest as any).name_tr ?? null;
+    const finalDescEn = descriptionEn ?? (genreRequest as any).description_en ?? null;
+    const finalDescTr = descriptionTr ?? (genreRequest as any).description_tr ?? null;
+
+    if (!finalNameEn) {
+      res.status(400).json(errorResponse("VALIDATION_ERROR", "nameEn is required to create the genre. Provide it in the request body."));
+      return;
+    }
+
+    // 3. Insert into dish_genres
+    const { data: newGenre, error: insertErr } = await adminClient
+      .from("dish_genres")
+      .insert({
+        name:           finalNameEn,
+        name_en:        finalNameEn,
+        name_tr:        finalNameTr,
+        description:    finalDescEn ?? finalDescTr ?? null,
+        description_en: finalDescEn,
+        description_tr: finalDescTr,
+      })
+      .select("id, name, name_en, name_tr, description_en, description_tr")
+      .single();
+
+    if (insertErr) { res.status(500).json(errorResponse("DB_ERROR", insertErr.message)); return; }
+
+    // 4. Mark request approved
+    const decidedAt = new Date().toISOString();
+    const { error: updateErr } = await adminClient
+      .from("dish_genre_requests")
+      .update({ status: "approved", decision_note: decisionNote ?? null, decided_by: admin.profileId, decided_at: decidedAt })
+      .eq("id", idNum);
+
+    if (updateErr) { res.status(500).json(errorResponse("DB_ERROR", updateErr.message)); return; }
+
+    res.status(200).json(successResponse({
+      requestId:    idNum,
+      status:       "approved",
+      createdGenre: {
+        id:            (newGenre as any).id,
+        nameEn:        (newGenre as any).name_en,
+        nameTr:        (newGenre as any).name_tr,
+        descriptionEn: (newGenre as any).description_en ?? null,
+        descriptionTr: (newGenre as any).description_tr ?? null,
+      },
+      decisionNote: decisionNote ?? null,
+      decidedAt,
+    }));
+  }
+);
+
+/**
+ * POST /admin/dish-genre-requests/:id/reject
+ * Rejects the request. No genre is created.
+ */
+router.post(
+  "/dish-genre-requests/:id/reject",
+  validate(decisionSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    const admin = (req as AuthenticatedRequest).user;
+    const idNum = Number.parseInt(req.params["id"] as string, 10);
+    if (!Number.isFinite(idNum)) {
+      res.status(400).json(errorResponse("VALIDATION_ERROR", "Request id must be an integer."));
+      return;
+    }
+
+    const adminClient = getAdminClient(res);
+    if (!adminClient) return;
+
+    const { decisionNote } = req.body as z.infer<typeof decisionSchema>;
+
+    const { data: genreRequest, error: loadErr } = await supabase
+      .from("dish_genre_requests")
+      .select("id, status")
+      .eq("id", idNum)
+      .maybeSingle();
+
+    if (loadErr) { res.status(500).json(errorResponse("DB_ERROR", loadErr.message)); return; }
+    if (!genreRequest) { res.status(404).json(errorResponse("NOT_FOUND", "Dish genre request not found.")); return; }
+    if ((genreRequest as any).status !== "pending") {
+      res.status(409).json(errorResponse("REQUEST_ALREADY_DECIDED", `This request has already been ${(genreRequest as any).status}.`));
+      return;
+    }
+
+    const decidedAt = new Date().toISOString();
+    const { error } = await adminClient
+      .from("dish_genre_requests")
+      .update({ status: "rejected", decision_note: decisionNote ?? null, decided_by: admin.profileId, decided_at: decidedAt })
+      .eq("id", idNum);
+
+    if (error) { res.status(500).json(errorResponse("DB_ERROR", error.message)); return; }
+
+    res.status(200).json(successResponse({ requestId: idNum, status: "rejected", decisionNote: decisionNote ?? null, decidedAt }));
+  }
+);
+
+// ─── Dish Variety Requests ────────────────────────────────────────────────────
+
+const approveVarietyRequestSchema = z.object({
+  nameEn:        z.string().trim().min(2).max(200).optional(),
+  nameTr:        z.string().trim().min(2).max(200).optional(),
+  descriptionEn: z.string().trim().max(2000).optional(),
+  descriptionTr: z.string().trim().max(2000).optional(),
+  genreId:       z.number().int().positive().optional(),
+  decisionNote:  z.string().trim().max(2000).optional(),
+});
+
+/**
+ * GET /admin/dish-variety-requests
+ * List dish variety requests. Defaults to pending only.
+ */
+router.get("/dish-variety-requests", async (req: Request, res: Response): Promise<void> => {
+  const parsed = listContentRequestsQuery.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json(errorResponse("VALIDATION_ERROR", parsed.error.issues[0]?.message ?? "Invalid query."));
+    return;
+  }
+  const { status, page, limit } = parsed.data;
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  let query = supabase
+    .from("dish_variety_requests")
+    .select(
+      `id, genre_id, name_en, name_tr, description_en, description_tr, status, decision_note, decided_by, created_at, decided_at,
+       requester:profiles!dish_variety_requests_requested_by_fkey(id, username)`,
+      { count: "exact" }
+    )
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  query = status ? query.eq("status", status) : query.eq("status", "pending");
+
+  const { data, error, count } = await query;
+  if (error) {
+    res.status(500).json(errorResponse("DB_ERROR", error.message));
+    return;
+  }
+
+  res.status(200).json(successResponse({
+    requests: (data ?? []).map((r: any) => ({
+      id:            r.id,
+      genreId:       r.genre_id,
+      nameEn:        r.name_en,
+      nameTr:        r.name_tr,
+      descriptionEn: r.description_en ?? null,
+      descriptionTr: r.description_tr ?? null,
+      status:        r.status,
+      decisionNote:  r.decision_note ?? null,
+      decidedBy:     r.decided_by ?? null,
+      createdAt:     r.created_at,
+      decidedAt:     r.decided_at ?? null,
+      requester:     r.requester ? { id: r.requester.id, username: r.requester.username } : null,
+    })),
+    pagination: { page, limit, total: count ?? 0 },
+  }));
+});
+
+/**
+ * POST /admin/dish-variety-requests/:id/approve
+ * Approves the request and inserts the variety into dish_varieties.
+ * nameEn is required.
+ */
+router.post(
+  "/dish-variety-requests/:id/approve",
+  validate(approveVarietyRequestSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    const admin = (req as AuthenticatedRequest).user;
+    const idNum = Number.parseInt(req.params["id"] as string, 10);
+    if (!Number.isFinite(idNum)) {
+      res.status(400).json(errorResponse("VALIDATION_ERROR", "Request id must be an integer."));
+      return;
+    }
+
+    const adminClient = getAdminClient(res);
+    if (!adminClient) return;
+
+    const { nameEn, nameTr, descriptionEn, descriptionTr, genreId, decisionNote } = req.body as z.infer<typeof approveVarietyRequestSchema>;
+
+    // 1. Load the request
+    const { data: varietyRequest, error: loadErr } = await supabase
+      .from("dish_variety_requests")
+      .select("id, genre_id, name_en, name_tr, description_en, description_tr, status")
+      .eq("id", idNum)
+      .maybeSingle();
+
+    if (loadErr) { res.status(500).json(errorResponse("DB_ERROR", loadErr.message)); return; }
+    if (!varietyRequest) { res.status(404).json(errorResponse("NOT_FOUND", "Dish variety request not found.")); return; }
+    if ((varietyRequest as any).status !== "pending") {
+      res.status(409).json(errorResponse("REQUEST_ALREADY_DECIDED", `This request has already been ${(varietyRequest as any).status}.`));
+      return;
+    }
+
+    // 2. Resolve final values (admin override wins)
+    const finalNameEn = nameEn ?? (varietyRequest as any).name_en;
+    const finalNameTr = nameTr ?? (varietyRequest as any).name_tr ?? null;
+    const finalDescEn = descriptionEn ?? (varietyRequest as any).description_en ?? null;
+    const finalDescTr = descriptionTr ?? (varietyRequest as any).description_tr ?? null;
+    const finalGenreId = genreId ?? (varietyRequest as any).genre_id;
+
+    if (!finalNameEn) {
+      res.status(400).json(errorResponse("VALIDATION_ERROR", "nameEn is required to create the variety. Provide it in the request body."));
+      return;
+    }
+
+    // 3. Insert into dish_varieties
+    const { data: newVariety, error: insertErr } = await adminClient
+      .from("dish_varieties")
+      .insert({
+        name:           finalNameEn,
+        name_en:        finalNameEn,
+        name_tr:        finalNameTr,
+        description:    finalDescEn ?? finalDescTr ?? null,
+        description_en: finalDescEn,
+        description_tr: finalDescTr,
+        genre_id:       finalGenreId,
+      })
+      .select("id, name, name_en, name_tr, description_en, description_tr, genre_id")
+      .single();
+
+    if (insertErr) { res.status(500).json(errorResponse("DB_ERROR", insertErr.message)); return; }
+
+    // 4. Mark request approved
+    const decidedAt = new Date().toISOString();
+    const { error: updateErr } = await adminClient
+      .from("dish_variety_requests")
+      .update({ status: "approved", decision_note: decisionNote ?? null, decided_by: admin.profileId, decided_at: decidedAt })
+      .eq("id", idNum);
+
+    if (updateErr) { res.status(500).json(errorResponse("DB_ERROR", updateErr.message)); return; }
+
+    res.status(200).json(successResponse({
+      requestId:      idNum,
+      status:         "approved",
+      createdVariety: {
+        id:            (newVariety as any).id,
+        genreId:       (newVariety as any).genre_id,
+        nameEn:        (newVariety as any).name_en,
+        nameTr:        (newVariety as any).name_tr,
+        descriptionEn: (newVariety as any).description_en ?? null,
+        descriptionTr: (newVariety as any).description_tr ?? null,
+      },
+      decisionNote: decisionNote ?? null,
+      decidedAt,
+    }));
+  }
+);
+
+/**
+ * POST /admin/dish-variety-requests/:id/reject
+ * Rejects the request. No variety is created.
+ */
+router.post(
+  "/dish-variety-requests/:id/reject",
+  validate(decisionSchema),
+  async (req: Request, res: Response): Promise<void> => {
+    const admin = (req as AuthenticatedRequest).user;
+    const idNum = Number.parseInt(req.params["id"] as string, 10);
+    if (!Number.isFinite(idNum)) {
+      res.status(400).json(errorResponse("VALIDATION_ERROR", "Request id must be an integer."));
+      return;
+    }
+
+    const adminClient = getAdminClient(res);
+    if (!adminClient) return;
+
+    const { decisionNote } = req.body as z.infer<typeof decisionSchema>;
+
+    const { data: varietyRequest, error: loadErr } = await supabase
+      .from("dish_variety_requests")
+      .select("id, status")
+      .eq("id", idNum)
+      .maybeSingle();
+
+    if (loadErr) { res.status(500).json(errorResponse("DB_ERROR", loadErr.message)); return; }
+    if (!varietyRequest) { res.status(404).json(errorResponse("NOT_FOUND", "Dish variety request not found.")); return; }
+    if ((varietyRequest as any).status !== "pending") {
+      res.status(409).json(errorResponse("REQUEST_ALREADY_DECIDED", `This request has already been ${(varietyRequest as any).status}.`));
+      return;
+    }
+
+    const decidedAt = new Date().toISOString();
+    const { error } = await adminClient
+      .from("dish_variety_requests")
+      .update({ status: "rejected", decision_note: decisionNote ?? null, decided_by: admin.profileId, decided_at: decidedAt })
+      .eq("id", idNum);
+
+    if (error) { res.status(500).json(errorResponse("DB_ERROR", error.message)); return; }
+
+    res.status(200).json(successResponse({ requestId: idNum, status: "rejected", decisionNote: decisionNote ?? null, decidedAt }));
+  }
+);
+
 // Lint hint: silence unused-import warnings in environments where UserRole is
 // shaken out by the bundler.
 export type _Unused = UserRole;

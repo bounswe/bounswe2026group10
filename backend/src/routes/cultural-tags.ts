@@ -12,7 +12,7 @@ const router = Router();
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 // Translates a single label via DeepL. Returns null if key is missing or call fails.
-async function translateLabel(text: string, target: "en-US" | "tr"): Promise<string | null> {
+export async function translateLabel(text: string, target: "en-US" | "tr"): Promise<string | null> {
   const apiKey = process.env["DEEPL_API_KEY"];
   if (!apiKey) return null;
   try {
