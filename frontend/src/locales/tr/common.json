@@ -458,7 +458,8 @@
     "tabsAria": "Yönetici bölümleri",
     "tabs": {
       "requests": "Uzman Başvuruları",
-      "users": "Kullanıcılar"
+      "users": "Kullanıcılar",
+      "culturalTags": "Kültürel Etiket Başvuruları"
     },
     "refresh": "Yenile",
     "cancel": "İptal",
@@ -486,7 +487,7 @@
       "rejectTitle": "{{username}} kişisinin uzman başvurusu reddedilsin mi?",
       "approveConfirm": "Onayla ve yükselt",
       "rejectConfirm": "Başvuruyu reddet",
-      "decisionNoteLabel": "Karar notu (kullanıcıya görünür)",
+      "decisionNoteLabel": "Karar notu",
       "decisionNotePlaceholder": "İsteğe bağlı — başvuran için kısa bir mesaj.",
       "decisionNoteOptional": "isteğe bağlı",
       "approvedToast": "{{username}} uzman olarak yükseltildi.",
@@ -515,10 +516,37 @@
       "updatedToast": "{{username}} güncellendi.",
       "deletedToast": "{{username}} silindi."
     },
+    "culturalTags": {
+      "statusAria": "Duruma göre filtrele",
+      "empty": "Bu durumda başvuru yok.",
+      "unknownRequester": "(bilinmeyen başvuran)",
+      "labelEn": "İngilizce etiket",
+      "labelTr": "Türkçe etiket",
+      "country": "Ülke",
+      "global": "(küresel)",
+      "decisionAt": "Karar tarihi",
+      "decisionNote": "Yönetici notu",
+      "approve": "Onayla",
+      "reject": "Reddet",
+      "approveTitle": "Kültürel etiket başvurusunu onayla",
+      "rejectTitle": "Bu etiket başvurusu reddedilsin mi?",
+      "approveConfirm": "Onayla ve etiket oluştur",
+      "rejectConfirm": "Başvuruyu reddet",
+      "labelEnLabel": "İngilizce etiket (anahtar oluşturmak için kullanılır)",
+      "labelTrLabel": "Türkçe etiket",
+      "countryLabel": "Ülke (küresel için boş bırakın)",
+      "decisionNoteLabel": "Karar notu",
+      "decisionNotePlaceholder": "İsteğe bağlı — kısa bir mesaj.",
+      "decisionNoteOptional": "isteğe bağlı",
+      "approvedToast": "'{{labelEn}}' kültürel etiketi oluşturuldu ve onaylandı.",
+      "rejectedToast": "Etiket başvurusu reddedildi."
+    },
     "errors": {
       "loadRequests": "Başvurular yüklenemedi.",
       "loadUsers": "Kullanıcılar yüklenemedi.",
+      "loadCulturalTagRequests": "Kültürel etiket başvuruları yüklenemedi.",
       "decisionFailed": "Karar kaydedilemedi.",
+      "tagDecisionFailed": "Etiket kararı kaydedilemedi.",
       "updateFailed": "Kullanıcı güncellenemedi.",
       "deleteFailed": "Kullanıcı silinemedi."
     }

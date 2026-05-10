@@ -458,7 +458,8 @@
     "tabsAria": "Admin sections",
     "tabs": {
       "requests": "Expert Requests",
-      "users": "Users"
+      "users": "Users",
+      "culturalTags": "Cultural Tag Requests"
     },
     "refresh": "Refresh",
     "cancel": "Cancel",
@@ -486,7 +487,7 @@
       "rejectTitle": "Reject {{username}}'s expert request?",
       "approveConfirm": "Approve & promote",
       "rejectConfirm": "Reject request",
-      "decisionNoteLabel": "Decision note (visible to the user)",
+      "decisionNoteLabel": "Decision note",
       "decisionNotePlaceholder": "Optional — leave a short message for the applicant.",
       "decisionNoteOptional": "optional",
       "approvedToast": "{{username}} promoted to expert.",
@@ -515,10 +516,37 @@
       "updatedToast": "{{username}} updated.",
       "deletedToast": "{{username}} deleted."
     },
+    "culturalTags": {
+      "statusAria": "Filter by status",
+      "empty": "No requests in this state.",
+      "unknownRequester": "(unknown requester)",
+      "labelEn": "English label",
+      "labelTr": "Turkish label",
+      "country": "Country",
+      "global": "(global)",
+      "decisionAt": "Decision date",
+      "decisionNote": "Admin note",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approveTitle": "Approve cultural tag request",
+      "rejectTitle": "Reject this tag request?",
+      "approveConfirm": "Approve & create tag",
+      "rejectConfirm": "Reject request",
+      "labelEnLabel": "English label (used to generate the tag key)",
+      "labelTrLabel": "Turkish label",
+      "countryLabel": "Country (leave blank for global)",
+      "decisionNoteLabel": "Decision note",
+      "decisionNotePlaceholder": "Optional — leave a short message.",
+      "decisionNoteOptional": "optional",
+      "approvedToast": "Cultural tag '{{labelEn}}' created and approved.",
+      "rejectedToast": "Tag request rejected."
+    },
     "errors": {
       "loadRequests": "Could not load requests.",
       "loadUsers": "Could not load users.",
+      "loadCulturalTagRequests": "Could not load cultural tag requests.",
       "decisionFailed": "Decision could not be saved.",
+      "tagDecisionFailed": "Tag decision could not be saved.",
       "updateFailed": "Could not update user.",
       "deleteFailed": "Could not delete user."
     }

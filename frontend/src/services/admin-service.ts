@@ -3,6 +3,10 @@ import type {
   AdminUser,
   AdminUserList,
   AdminUserUpdate,
+  ApproveCulturalTagPayload,
+  CulturalTagRequest,
+  CulturalTagRequestList,
+  CulturalTagRequestStatus,
   ExpertRequest,
   ExpertRequestList,
   ExpertRequestStatus,
@@ -84,6 +88,40 @@ export const adminService = {
 
   async deleteUser(id: string): Promise<void> {
     await httpClient.delete(`/admin/users/${id}`)
+  },
+
+  // ── Cultural tag requests ──────────────────────────────────────────────────
+
+  async listCulturalTagRequests(
+    params: { status?: CulturalTagRequestStatus; page?: number; limit?: number } = {}
+  ): Promise<CulturalTagRequestList> {
+    const { data } = await httpClient.get<Envelope<CulturalTagRequestList>>(
+      '/admin/cultural-tag-requests',
+      { params: compact(params) }
+    )
+    return data.data
+  },
+
+  async approveCulturalTagRequest(
+    id: number,
+    payload: ApproveCulturalTagPayload = {}
+  ): Promise<CulturalTagRequest> {
+    const { data } = await httpClient.post<Envelope<CulturalTagRequest>>(
+      `/admin/cultural-tag-requests/${id}/approve`,
+      payload
+    )
+    return data.data
+  },
+
+  async rejectCulturalTagRequest(
+    id: number,
+    payload: { decisionNote?: string } = {}
+  ): Promise<CulturalTagRequest> {
+    const { data } = await httpClient.post<Envelope<CulturalTagRequest>>(
+      `/admin/cultural-tag-requests/${id}/reject`,
+      payload
+    )
+    return data.data
   },
 
   // ── Recipes / Comments (moderation) ────────────────────────────────────────

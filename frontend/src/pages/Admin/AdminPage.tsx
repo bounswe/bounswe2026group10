@@ -14,9 +14,12 @@ import { ExpertRequestRow } from '@/pages/Admin/Parts/ExpertRequestRow'
 import { UserRow } from '@/pages/Admin/Parts/UserRow'
 import { DecisionDialog } from '@/pages/Admin/Parts/DecisionDialog'
 import { EditUserDialog } from '@/pages/Admin/Parts/EditUserDialog'
+import { CulturalTagRequestRow } from '@/pages/Admin/Parts/CulturalTagRequestRow'
+import { ApproveCulturalTagDialog } from '@/pages/Admin/Parts/ApproveCulturalTagDialog'
+import type { CulturalTagRequest, CulturalTagRequestStatus, ApproveCulturalTagPayload } from '@/services/types/admin'
 import './AdminPage.css'
 
-type Tab = 'requests' | 'users'
+type Tab = 'requests' | 'users' | 'culturalTags'
 
 type Toast = { id: number; kind: 'success' | 'error'; message: string }
 
@@ -41,6 +44,7 @@ function extractError(err: unknown, fallback: string): string {
 }
 
 const STATUSES: ExpertRequestStatus[] = ['pending', 'approved', 'rejected']
+const TAG_STATUSES: CulturalTagRequestStatus[] = ['pending', 'approved', 'rejected']
 const ROLES_FOR_FILTER: UserRole[] = ['learner', 'cook', 'expert', 'admin']
 const PAGE_LIMIT = 20
 
@@ -190,9 +194,77 @@ export function AdminPage() {
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Cultural Tag Requests tab
+  // ─────────────────────────────────────────────────────────────────────────
+  const [tagStatus, setTagStatus] = useState<CulturalTagRequestStatus>('pending')
+  const [tagPage, setTagPage] = useState(1)
+  const [tagRequests, setTagRequests] = useState<Pending<CulturalTagRequest[]>>(initial())
+  const [tagTotal, setTagTotal] = useState(0)
+
+  const [approvingTag, setApprovingTag] = useState<CulturalTagRequest | null>(null)
+  const [rejectingTag, setRejectingTag] = useState<CulturalTagRequest | null>(null)
+  const [tagDecisionBusy, setTagDecisionBusy] = useState(false)
+
+  const reloadTagRequests = useCallback(async () => {
+    setTagRequests((s) => ({ ...s, status: 'loading', error: null }))
+    try {
+      const result = await adminService.listCulturalTagRequests({
+        status: tagStatus,
+        page: tagPage,
+        limit: PAGE_LIMIT,
+      })
+      setTagRequests({ status: 'succeeded', data: result.requests, error: null })
+      setTagTotal(result.pagination.total)
+    } catch (err) {
+      setTagRequests({
+        status: 'failed',
+        data: null,
+        error: extractError(err, t('admin.errors.loadCulturalTagRequests')),
+      })
+    }
+  }, [tagStatus, tagPage, t])
+
+  useEffect(() => {
+    if (tab === 'culturalTags') {
+      void reloadTagRequests()
+    }
+  }, [tab, reloadTagRequests])
+
+  async function handleApproveTag(payload: ApproveCulturalTagPayload) {
+    if (!approvingTag) return
+    setTagDecisionBusy(true)
+    try {
+      await adminService.approveCulturalTagRequest(approvingTag.id, payload)
+      pushToast('success', t('admin.culturalTags.approvedToast', { labelEn: payload.labelEn ?? approvingTag.labelEn ?? '' }))
+      setApprovingTag(null)
+      await reloadTagRequests()
+    } catch (err) {
+      pushToast('error', extractError(err, t('admin.errors.tagDecisionFailed')))
+    } finally {
+      setTagDecisionBusy(false)
+    }
+  }
+
+  async function handleRejectTag(decisionNote: string) {
+    if (!rejectingTag) return
+    setTagDecisionBusy(true)
+    try {
+      await adminService.rejectCulturalTagRequest(rejectingTag.id, { decisionNote: decisionNote || undefined })
+      pushToast('success', t('admin.culturalTags.rejectedToast'))
+      setRejectingTag(null)
+      await reloadTagRequests()
+    } catch (err) {
+      pushToast('error', extractError(err, t('admin.errors.tagDecisionFailed')))
+    } finally {
+      setTagDecisionBusy(false)
+    }
+  }
+
   // Pagination labels are tiny enough to compute inline.
   const requestTotalPages = Math.max(1, Math.ceil(requestTotal / PAGE_LIMIT))
   const userTotalPages = Math.max(1, Math.ceil(userTotal / PAGE_LIMIT))
+  const tagTotalPages = Math.max(1, Math.ceil(tagTotal / PAGE_LIMIT))
 
   const isApproveAction = decisionFor?.action === 'approve'
   const decisionTitle = useMemo(() => {
@@ -230,6 +302,15 @@ export function AdminPage() {
           onClick={() => setTab('users')}
         >
           {t('admin.tabs.users')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'culturalTags'}
+          className={`admin-tab ${tab === 'culturalTags' ? 'admin-tab--active' : ''}`}
+          onClick={() => setTab('culturalTags')}
+        >
+          {t('admin.tabs.culturalTags')}
         </button>
       </nav>
 
@@ -375,6 +456,72 @@ export function AdminPage() {
         </section>
       )}
 
+      {tab === 'culturalTags' && (
+        <section className="admin-section" aria-labelledby="admin-cultural-tags-h">
+          <h2 id="admin-cultural-tags-h" className="sr-only">
+            {t('admin.tabs.culturalTags')}
+          </h2>
+
+          <div className="admin-toolbar">
+            <div className="admin-chip-row" role="tablist" aria-label={t('admin.culturalTags.statusAria')}>
+              {TAG_STATUSES.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  role="tab"
+                  aria-selected={tagStatus === s}
+                  className={`admin-chip ${tagStatus === s ? 'admin-chip--active' : ''}`}
+                  onClick={() => {
+                    setTagStatus(s)
+                    setTagPage(1)
+                  }}
+                >
+                  {t(`admin.requests.status.${s}`)}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="admin-btn admin-btn--ghost"
+              onClick={() => void reloadTagRequests()}
+              disabled={tagRequests.status === 'loading'}
+            >
+              {t('admin.refresh')}
+            </button>
+          </div>
+
+          {tagRequests.status === 'loading' && (
+            <div className="admin-empty"><span className="ui-spinner" /></div>
+          )}
+          {tagRequests.status === 'failed' && (
+            <div className="admin-empty admin-empty--error">{tagRequests.error}</div>
+          )}
+          {tagRequests.status === 'succeeded' && tagRequests.data?.length === 0 && (
+            <div className="admin-empty">{t('admin.culturalTags.empty')}</div>
+          )}
+          {tagRequests.status === 'succeeded' && tagRequests.data && tagRequests.data.length > 0 && (
+            <ul className="admin-list">
+              {tagRequests.data.map((r) => (
+                <CulturalTagRequestRow
+                  key={r.id}
+                  request={r}
+                  onApprove={() => setApprovingTag(r)}
+                  onReject={() => setRejectingTag(r)}
+                />
+              ))}
+            </ul>
+          )}
+
+          <Pagination
+            page={tagPage}
+            totalPages={tagTotalPages}
+            onPrev={() => setTagPage((p) => Math.max(1, p - 1))}
+            onNext={() => setTagPage((p) => Math.min(tagTotalPages, p + 1))}
+            label={t('admin.pagination.label', { page: tagPage, total: tagTotalPages })}
+          />
+        </section>
+      )}
+
       {/* ── Modals ─────────────────────────────────────────────────────────── */}
       {decisionFor && (
         <DecisionDialog
@@ -388,6 +535,26 @@ export function AdminPage() {
           busy={decisionBusy}
           onCancel={() => (decisionBusy ? null : setDecisionFor(null))}
           onSubmit={handleDecide}
+        />
+      )}
+
+      {approvingTag && (
+        <ApproveCulturalTagDialog
+          request={approvingTag}
+          busy={tagDecisionBusy}
+          onCancel={() => (tagDecisionBusy ? null : setApprovingTag(null))}
+          onSubmit={(payload) => void handleApproveTag(payload)}
+        />
+      )}
+
+      {rejectingTag && (
+        <DecisionDialog
+          title={t('admin.culturalTags.rejectTitle')}
+          confirmLabel={t('admin.culturalTags.rejectConfirm')}
+          confirmVariant="danger"
+          busy={tagDecisionBusy}
+          onCancel={() => (tagDecisionBusy ? null : setRejectingTag(null))}
+          onSubmit={(note) => void handleRejectTag(note)}
         />
       )}
 

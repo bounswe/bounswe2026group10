@@ -56,3 +56,32 @@ export interface AdminUserUpdate {
   region?: string
   preferred_language?: string
 }
+
+// ── Cultural tag requests ──────────────────────────────────────────────────────
+
+export type CulturalTagRequestStatus = 'pending' | 'approved' | 'rejected'
+
+export interface CulturalTagRequest {
+  id: number
+  labelEn: string | null
+  labelTr: string | null
+  country: string | null
+  status: CulturalTagRequestStatus
+  decisionNote: string | null
+  decidedBy: string | null
+  createdAt: string
+  decidedAt: string | null
+  requester: { id: string; username: string } | null
+}
+
+export interface CulturalTagRequestList {
+  requests: CulturalTagRequest[]
+  pagination: { page: number; limit: number; total: number }
+}
+
+export interface ApproveCulturalTagPayload {
+  labelEn?: string
+  labelTr?: string
+  country?: string
+  decisionNote?: string
+}
