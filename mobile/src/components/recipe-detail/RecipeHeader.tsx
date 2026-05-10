@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import type { User } from '../../types/user';
@@ -19,6 +19,9 @@ interface RecipeHeaderProps {
   tags: string[];
   allergens: string[];
   onAuthorPress?: () => void;
+  isFavorited: boolean;
+  onToggleFavorite: () => void;
+  favoriteBusy?: boolean;
 }
 
 const dietaryTagColors: Record<string, string> = {
@@ -47,9 +50,11 @@ export function RecipeHeader({
   tags,
   allergens,
   onAuthorPress,
+  isFavorited,
+  onToggleFavorite,
+  favoriteBusy = false,
 }: RecipeHeaderProps) {
   const { t } = useTranslation('common');
-  const [bookmarked, setBookmarked] = useState(false);
 
   return (
     <View style={styles.container}>
@@ -106,9 +111,15 @@ export function RecipeHeader({
 
       <View style={styles.actions}>
         <IconButton
-          name={bookmarked ? 'bookmark' : 'bookmark-outline'}
-          color={bookmarked ? colors.primary : colors.onSurface}
-          onPress={() => setBookmarked((prev) => !prev)}
+          name={isFavorited ? 'heart' : 'heart-outline'}
+          color={isFavorited ? colors.negative : colors.onSurface}
+          onPress={onToggleFavorite}
+          disabled={favoriteBusy}
+          accessibilityLabel={
+            isFavorited
+              ? t('recipeDetail.unfavoriteA11y')
+              : t('recipeDetail.favoriteA11y')
+          }
         />
         <IconButton
           name="share-variant-outline"

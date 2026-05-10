@@ -144,4 +144,5 @@ export const mockRecipe: Recipe = {
   ],
   createdAt: "2025-06-01T12:00:00Z",
   updatedAt: "2025-06-15T08:30:00Z",
+  isFavorited: false,
 };

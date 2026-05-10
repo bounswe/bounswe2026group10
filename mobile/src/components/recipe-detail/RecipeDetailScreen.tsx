@@ -7,7 +7,7 @@ import type { Recipe, RecipeCard } from '../../types/recipe';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 import { useServingAdjuster } from '../../hooks/useServingAdjuster';
-import { getRecipeById } from '../../api/recipes';
+import { addFavorite, getRecipeById, removeFavorite } from '../../api/recipes';
 import { mapBackendRecipeToMobile } from '../../api/recipeMapper';
 import { IconButton } from '../shared/IconButton';
 import { HeroImage } from './HeroImage';
@@ -38,6 +38,7 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showVideoGuide, setShowVideoGuide] = useState(false);
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
 
   const fetchRecipe = useCallback((showSpinner = false) => {
     if (showSpinner) setLoading(true);
@@ -55,6 +56,28 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
   useEffect(() => {
     fetchRecipe(true);
   }, [fetchRecipe]);
+
+  const toggleFavorite = useCallback(async () => {
+    if (!recipe || favoriteBusy) return;
+    const next = !recipe.isFavorited;
+    setRecipe((prev) => (prev ? { ...prev, isFavorited: next } : prev));
+    setFavoriteBusy(true);
+    try {
+      if (next) {
+        await addFavorite(recipe.id);
+      } else {
+        await removeFavorite(recipe.id);
+      }
+    } catch (err) {
+      setRecipe((prev) => (prev ? { ...prev, isFavorited: !next } : prev));
+      Alert.alert(
+        t('recipeDetail.favoriteErrorTitle'),
+        err instanceof Error ? err.message : t('recipeDetail.favoriteError'),
+      );
+    } finally {
+      setFavoriteBusy(false);
+    }
+  }, [recipe, favoriteBusy, t]);
 
   const { servings, increment, decrement } = useServingAdjuster(recipe?.servings ?? 1);
 
@@ -99,6 +122,9 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
           tags={recipe.tags}
           allergens={recipe.allergens}
           onAuthorPress={() => Alert.alert('Profile', t('common.comingSoon'))}
+          isFavorited={recipe.isFavorited}
+          onToggleFavorite={toggleFavorite}
+          favoriteBusy={favoriteBusy}
         />
 
         {recipe.story ? <StoryCard story={recipe.story} /> : null}

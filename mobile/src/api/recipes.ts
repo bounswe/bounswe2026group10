@@ -169,6 +169,7 @@ export interface BackendRecipeDetail {
   district: string | null;
   createdAt: string;
   updatedAt: string;
+  isFavorited?: boolean;
 }
 
 export interface UserRating {
@@ -198,6 +199,93 @@ export async function getUserRating(id: string): Promise<UserRating | null> {
 
 export async function deleteUserRating(id: string): Promise<void> {
   await fetchApi<null>(`/recipes/${id}/ratings/me`, { method: 'DELETE' });
+}
+
+export interface FavoriteRecipe {
+  id: string;
+  title: string;
+  type: 'community' | 'cultural';
+  averageRating: number | null;
+  ratingCount: number;
+  creatorId: string | null;
+  creatorUsername: string | null;
+  dishVarietyId: number | null;
+  dishVarietyName: string | null;
+  genreName: string | null;
+  coverImageUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FavoritesPagination {
+  page: number;
+  limit: number;
+  total: number;
+}
+
+export interface FavoritesResponse {
+  recipes: FavoriteRecipe[];
+  pagination: FavoritesPagination;
+}
+
+export async function addFavorite(
+  recipeId: string,
+): Promise<{ recipeId: string; favorited: boolean }> {
+  try {
+    return await fetchApi<{ recipeId: string; favorited: boolean }>(
+      `/users/me/favorites/${recipeId}`,
+      { method: 'POST' },
+    );
+  } catch (err) {
+    // Already favorited — treat as success.
+    if (err instanceof Error && /409|conflict/i.test(err.message)) {
+      return { recipeId, favorited: true };
+    }
+    throw err;
+  }
+}
+
+export async function removeFavorite(recipeId: string): Promise<void> {
+  try {
+    await fetchApi<null>(`/users/me/favorites/${recipeId}`, { method: 'DELETE' });
+  } catch (err) {
+    // Not in favorites — treat as success.
+    if (err instanceof Error && /404|not found/i.test(err.message)) {
+      return;
+    }
+    throw err;
+  }
+}
+
+export async function getFavorites(
+  page = 1,
+  limit = 20,
+): Promise<FavoritesResponse> {
+  const raw = await fetchApi<any>(
+    `/users/me/favorites?page=${page}&limit=${limit}`,
+  );
+  const list = Array.isArray(raw?.recipes) ? raw.recipes : [];
+  const recipes: FavoriteRecipe[] = list.map((r: any) => ({
+    id: String(r.id),
+    title: r.title ?? '',
+    type: r.type === 'cultural' ? 'cultural' : 'community',
+    averageRating: r.averageRating ?? null,
+    ratingCount: r.ratingCount ?? 0,
+    creatorId: r.creatorId ?? null,
+    creatorUsername: r.creatorUsername ?? null,
+    dishVarietyId: r.dishVarietyId ?? null,
+    dishVarietyName: r.dishVarietyName ?? null,
+    genreName: r.genreName ?? null,
+    coverImageUrl: r.coverImageUrl ?? null,
+    createdAt: r.createdAt ?? '',
+    updatedAt: r.updatedAt ?? '',
+  }));
+  const pagination: FavoritesPagination = {
+    page: raw?.pagination?.page ?? page,
+    limit: raw?.pagination?.limit ?? limit,
+    total: raw?.pagination?.total ?? recipes.length,
+  };
+  return { recipes, pagination };
 }
 
 export async function attachRecipeMedia(

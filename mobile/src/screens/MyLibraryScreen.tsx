@@ -12,23 +12,25 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   deleteRecipe,
+  getFavorites,
   getMyRecipes,
   publishRecipe,
+  type FavoriteRecipe,
   type MyRecipeSummary,
 } from '../api/recipes';
 import type { LibraryStackParamList } from '../navigation/types';
 import { colors, fontSizes, spacing } from '../theme';
 
-type StatusFilter = 'all' | 'published' | 'draft';
+type LibraryTab = 'all' | 'published' | 'draft' | 'favorites';
 type SortKey = 'date_desc' | 'date_asc' | 'rating_desc' | 'rating_asc';
 
-const TABS: StatusFilter[] = ['all', 'published', 'draft'];
+const TABS: LibraryTab[] = ['all', 'published', 'draft', 'favorites'];
 const SORT_OPTIONS: SortKey[] = ['date_desc', 'date_asc', 'rating_desc', 'rating_asc'];
 
 function sortRecipes(recipes: MyRecipeSummary[], sort: SortKey): MyRecipeSummary[] {
@@ -54,11 +56,12 @@ export function MyLibraryScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<LibraryStackParamList>>();
 
-  const [filter, setFilter] = useState<StatusFilter>('all');
+  const [filter, setFilter] = useState<LibraryTab>('all');
   const [sort, setSort] = useState<SortKey>('date_desc');
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [recipes, setRecipes] = useState<MyRecipeSummary[]>([]);
+  const [favorites, setFavorites] = useState<FavoriteRecipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -72,17 +75,24 @@ export function MyLibraryScreen() {
   const [countryModalOpen, setCountryModalOpen] = useState(false);
   const [cityModalOpen, setCityModalOpen] = useState(false);
 
+  const isFavoritesTab = filter === 'favorites';
+
   const load = useCallback(
     async (showSpinner = true) => {
       if (showSpinner) setLoading(true);
       setError(null);
       try {
-        const status = filter === 'all' ? undefined : filter;
-        const data = await getMyRecipes(status);
-        setRecipes(data);
-        if (showSpinner) {
-          setSelectedCountry('');
-          setSelectedCity('');
+        if (filter === 'favorites') {
+          const data = await getFavorites();
+          setFavorites(data.recipes);
+        } else {
+          const status = filter === 'all' ? undefined : filter;
+          const data = await getMyRecipes(status);
+          setRecipes(data);
+          if (showSpinner) {
+            setSelectedCountry('');
+            setSelectedCity('');
+          }
         }
       } catch {
         setError(t('library.errorRetry'));
@@ -96,6 +106,12 @@ export function MyLibraryScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useFocusEffect(
+    useCallback(() => {
+      load(false);
+    }, [load]),
+  );
 
   const countries = useMemo(
     () =>
@@ -121,6 +137,16 @@ export function MyLibraryScreen() {
     if (selectedCity) result = result.filter((r) => r.city === selectedCity);
     return sortRecipes(result, sort);
   }, [recipes, selectedCountry, selectedCity, sort]);
+
+  const displayedFavorites = useMemo(
+    () =>
+      [...favorites].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [favorites],
+  );
+
+  const listIsEmpty = isFavoritesTab
+    ? displayedFavorites.length === 0
+    : displayedRecipes.length === 0;
 
   const hasLocationData = countries.length > 0;
 
@@ -155,6 +181,87 @@ export function MyLibraryScreen() {
   function openDeleteConfirm(recipe: MyRecipeSummary) {
     setActionError(null);
     setDeleteTarget({ id: recipe.id, title: recipe.title });
+  }
+
+  function renderFavoriteItem({ item }: { item: FavoriteRecipe }) {
+    const subtitle = [item.dishVarietyName, item.genreName]
+      .filter(Boolean)
+      .join(' · ');
+    return (
+      <TouchableOpacity
+        activeOpacity={0.85}
+        style={styles.card}
+        onPress={() =>
+          navigation.navigate('RecipeDetail', { recipeId: item.id })
+        }
+      >
+        <View style={styles.thumb}>
+          {item.coverImageUrl ? (
+            <Image
+              source={{ uri: item.coverImageUrl }}
+              style={styles.thumbImage}
+            />
+          ) : (
+            <View style={styles.thumbPlaceholder}>
+              <Ionicons
+                name="image-outline"
+                size={28}
+                color={colors.onSurfaceVariant}
+              />
+            </View>
+          )}
+        </View>
+        <View style={styles.cardBody}>
+          <Text style={styles.cardTitle} numberOfLines={2}>
+            {item.title}
+          </Text>
+          <View style={styles.metaRow}>
+            <View
+              style={[
+                styles.typeBadge,
+                item.type === 'cultural'
+                  ? styles.typeCultural
+                  : styles.typeCommunity,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.typeText,
+                  item.type === 'cultural'
+                    ? styles.typeCulturalText
+                    : styles.typeCommunityText,
+                ]}
+              >
+                {t(
+                  item.type === 'cultural'
+                    ? 'library.typeCultural'
+                    : 'library.typeCommunity',
+                )}
+              </Text>
+            </View>
+            {item.averageRating !== null && (
+              <View style={styles.ratingRow}>
+                <Ionicons name="star" size={13} color={colors.starYellow} />
+                <Text style={styles.ratingText}>
+                  {item.averageRating.toFixed(1)}
+                </Text>
+                <Text style={styles.ratingCount}>({item.ratingCount})</Text>
+              </View>
+            )}
+          </View>
+          {!!subtitle && (
+            <Text style={styles.locationText} numberOfLines={1}>
+              {subtitle}
+            </Text>
+          )}
+          {!!item.creatorUsername && (
+            <Text style={styles.locationText} numberOfLines={1}>
+              {t('library.byAuthor', { name: item.creatorUsername })}
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
   }
 
   function renderItem({ item }: { item: MyRecipeSummary }) {
@@ -309,7 +416,7 @@ export function MyLibraryScreen() {
         })}
       </View>
 
-      {!loading && recipes.length > 0 && (
+      {!loading && !isFavoritesTab && recipes.length > 0 && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -365,29 +472,40 @@ export function MyLibraryScreen() {
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loaderText}>{t('library.loading')}</Text>
         </View>
-      ) : displayedRecipes.length === 0 ? (
+      ) : listIsEmpty ? (
         <View style={styles.empty}>
           <Ionicons
-            name="book-outline"
+            name={isFavoritesTab ? 'heart-outline' : 'book-outline'}
             size={48}
             color={colors.onSurfaceVariant}
           />
-          <Text style={styles.emptyText}>{t('library.empty')}</Text>
-          {(filter !== 'all' || selectedCountry || selectedCity) && (
-            <TouchableOpacity
-              style={styles.emptyAction}
-              onPress={() => {
-                setFilter('all');
-                setSelectedCountry('');
-                setSelectedCity('');
-              }}
-            >
-              <Text style={styles.emptyActionText}>
-                {t('library.showAll')}
-              </Text>
-            </TouchableOpacity>
-          )}
+          <Text style={styles.emptyText}>
+            {isFavoritesTab ? t('library.favoritesEmpty') : t('library.empty')}
+          </Text>
+          {!isFavoritesTab &&
+            (filter !== 'all' || selectedCountry || selectedCity) && (
+              <TouchableOpacity
+                style={styles.emptyAction}
+                onPress={() => {
+                  setFilter('all');
+                  setSelectedCountry('');
+                  setSelectedCity('');
+                }}
+              >
+                <Text style={styles.emptyActionText}>
+                  {t('library.showAll')}
+                </Text>
+              </TouchableOpacity>
+            )}
         </View>
+      ) : isFavoritesTab ? (
+        <FlatList
+          data={displayedFavorites}
+          keyExtractor={(r) => r.id}
+          renderItem={renderFavoriteItem}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+        />
       ) : (
         <FlatList
           data={displayedRecipes}
