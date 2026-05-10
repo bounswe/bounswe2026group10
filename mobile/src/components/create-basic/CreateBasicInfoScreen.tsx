@@ -24,6 +24,7 @@ import { ChipSelector } from "../shared/ChipSelector";
 import { StepHeader } from "./StepHeader";
 import { ImportCards } from "./ImportCards";
 import { RecipeParseModal } from "./RecipeParseModal";
+import { VoiceRecordingModal } from "./VoiceRecordingModal";
 import { OriginSection } from "./OriginSection";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
@@ -80,6 +81,7 @@ export function CreateBasicInfoScreen() {
   const [story, setStory] = useState(draft.story);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [parseModalVisible, setParseModalVisible] = useState(false);
+  const [voiceModalVisible, setVoiceModalVisible] = useState(false);
 
   // Images — restore already-uploaded ones from draft on back-nav
   const [images, setImages] = useState<ImageItem[]>(
@@ -120,6 +122,7 @@ export function CreateBasicInfoScreen() {
     );
     setErrors({});
     setParseModalVisible(false);
+    setVoiceModalVisible(false);
   }, [isFocused]);
 
   // Build dropdown options from API data
@@ -349,10 +352,18 @@ export function CreateBasicInfoScreen() {
           subtitle={t("create.steps.1subtitle")}
         />
 
-        <ImportCards onPasteText={() => setParseModalVisible(true)} />
+        <ImportCards
+          onPasteText={() => setParseModalVisible(true)}
+          onVoiceRecording={() => setVoiceModalVisible(true)}
+        />
         <RecipeParseModal
           visible={parseModalVisible}
           onClose={() => setParseModalVisible(false)}
+          onApplied={(parsedTitle) => setTitle(parsedTitle)}
+        />
+        <VoiceRecordingModal
+          visible={voiceModalVisible}
+          onClose={() => setVoiceModalVisible(false)}
           onApplied={(parsedTitle) => setTitle(parsedTitle)}
         />
 
