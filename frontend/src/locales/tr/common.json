@@ -317,8 +317,9 @@
     "steps": {
       "1": "Temel Bilgiler",
       "2": "Malzemeler ve Araçlar",
-      "3": "Talimatlar",
-      "4": "İncele ve Yayınla"
+      "3": "Alerjenler",
+      "4": "Talimatlar",
+      "5": "İncele ve Yayınla"
     },
     "fields": {
       "recipeTitle": "Tarif Adı",
@@ -345,7 +346,9 @@
       "districtPlaceholder": "İlçe",
       "dietaryTags": "Diyet tercihleri (isteğe bağlı)",
       "allergenTags": "Bu tarifte bulunan alerjenler",
-      "allergenTagsHint": "Malzemelerde bulunan tüm alerjenleri seçin."
+      "allergenTagsHint": "Malzemelerde bulunan tüm alerjenleri seçin.",
+      "detectedAllergens": "Tespit Edilen Alerjenler",
+      "detectedAllergensHint": "Malzemelerinizden otomatik olarak tespit edildi."
     },
     "parse": {
       "label": "Serbest metin tarif girişi",
@@ -432,6 +435,16 @@
       "errorMediaAfterCreate": "Tarif kaydedildi ancak medya yüklenemedi. Daha sonra tekrar deneyebilirsiniz.",
       "uploading": "Medyalar yükleniyor…",
       "chooseAria": "Cihazınızdan fotoğraf veya MP4 video dosyası seçin"
+    },
+    "allergens": {
+      "title": "Alerjenler",
+      "hint": "Bu alerjenler malzemelerinizden otomatik tespit edildi. Geçerli olmayanları kaldırın veya eksik olanları ekleyin.",
+      "none": "Malzemelerinizden herhangi bir alerjen tespit edilmedi.",
+      "manualAdd": "Alerjen Ekle",
+      "searchPlaceholder": "Alerjen ara...",
+      "removeAria": "{{name}} kaldır",
+      "addAria": "{{name}} ekle",
+      "detecting": "Alerjenler tespit ediliyor..."
     }
   },
   "comments": {

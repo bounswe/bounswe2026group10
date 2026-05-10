@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { isAxiosError } from 'axios'
 import { discoveryService, type DishVariety, type Genre, type DietaryTag } from '@/services/discovery-service'
+import { allergenService, type Allergen } from '@/services/allergen-service'
 import { recipeService, type CreateRecipeIngredient } from '@/services/recipe-service'
 import { ingredientService, type IngredientOption } from '@/services/ingredient-service'
 import { parseService, type ParsedRecipeOutput } from '@/services/parse-service'
@@ -125,6 +126,8 @@ interface RecipeDraft {
   dietaryTagIds: number[]
   /** Numeric IDs from GET /dietary-tags where category === 'allergen' */
   allergenTagIds: number[]
+  /** Allergen IDs from GET /allergens — auto-detected via POST /allergens/detect */
+  allergenIds: number[]
 }
 
 const INITIAL_DRAFT: RecipeDraft = {
@@ -142,6 +145,7 @@ const INITIAL_DRAFT: RecipeDraft = {
   steps: [{ text: '' }],
   dietaryTagIds: [],
   allergenTagIds: [],
+  allergenIds: [],
 }
 
 // ── Inline SVG icons (no lucide-react in frontend) ─────────────────────────────
@@ -182,11 +186,11 @@ function CheckIcon() {
 
 // ── Progress bar ───────────────────────────────────────────────────────────────
 
-function ProgressBar({ step, label }: { step: number; label: string }) {
+function ProgressBar({ step, total, label }: { step: number; total: number; label: string }) {
   return (
     <div className="cr-progress">
       <div className="cr-progress__bars">
-        {[1, 2, 3, 4].map((n) => (
+        {Array.from({ length: total }, (_, i) => i + 1).map((n) => (
           <div
             key={n}
             className={`cr-progress__bar${n <= step ? ' cr-progress__bar--filled' : ''}`}
@@ -205,7 +209,9 @@ export function CreateRecipePage() {
   const navigate = useNavigate()
   const role = useUserRole()
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1)
+  const [allAllergens, setAllAllergens] = useState<Allergen[]>([])
+  const [allergenSearch, setAllergenSearch] = useState('')
   const [draft, setDraft] = useState<RecipeDraft>(INITIAL_DRAFT)
   const [genres, setGenres] = useState<Genre[]>([])
   const [varieties, setVarieties] = useState<DishVariety[]>([])
@@ -228,7 +234,10 @@ export function CreateRecipePage() {
   useEffect(() => {
     discoveryService.getGenres().then(setGenres).catch(() => setGenres([]))
     discoveryService.getDietaryTags().then(setAllTags).catch(() => setAllTags([]))
+    allergenService.list().then(setAllAllergens).catch(() => setAllAllergens([]))
   }, [])
+
+  const [detectingAllergens, setDetectingAllergens] = useState(false)
 
   useEffect(() => {
     if (!draft.genreId) {
@@ -364,6 +373,7 @@ export function CreateRecipePage() {
           .map((t) => ({ name: t.trim() })),
         isPublished: publish,
         tagIds: [...draft.dietaryTagIds, ...draft.allergenTagIds],
+        allergenIds: draft.allergenIds,
       })
       recipeCreated = true
 
@@ -473,11 +483,26 @@ export function CreateRecipePage() {
 
   const canContinueStep1 = draft.title.trim().length >= 3
   const canContinueStep2 = ingredientsStepValid(draft.ingredients)
-  const canContinueStep3 = draft.steps.some((s) => s.text.trim().length > 0)
+  // step 3 (allergens) is always skippable — no required field
+  const canContinueStep4 = draft.steps.some((s) => s.text.trim().length > 0)
 
-  const goNext = () => {
-    if (step === 2 && !ingredientsStepValid(draft.ingredients)) return
-    if (step < 4) setStep((s) => (s + 1) as typeof step)
+  const goNext = async () => {
+    if (step === 2) {
+      if (!ingredientsStepValid(draft.ingredients)) return
+      const ingredientIds = draft.ingredients
+        .map((r) => r.ingredientId)
+        .filter((id): id is number => id !== null)
+      setDetectingAllergens(true)
+      try {
+        const found = await allergenService.detect(ingredientIds)
+        setDraft((d) => ({ ...d, allergenIds: found.map((a) => a.id) }))
+      } catch {
+        // ignore — step 3 will show empty list
+      } finally {
+        setDetectingAllergens(false)
+      }
+    }
+    if (step < 5) setStep((s) => (s + 1) as typeof step)
   }
   const goBack = () => {
     if (step > 1) setStep((s) => (s - 1) as typeof step)
@@ -497,11 +522,27 @@ export function CreateRecipePage() {
 
   // ── Step labels ───────────────────────────────────────────────────────────────
 
-  const stepLabels: Record<1 | 2 | 3 | 4, string> = {
+  const stepLabels: Record<1 | 2 | 3 | 4 | 5, string> = {
     1: t('create.stepLabel', { step: 1, label: t('create.steps.1') }),
     2: t('create.stepLabel', { step: 2, label: t('create.steps.2') }),
     3: t('create.stepLabel', { step: 3, label: t('create.steps.3') }),
     4: t('create.stepLabel', { step: 4, label: t('create.steps.4') }),
+    5: t('create.stepLabel', { step: 5, label: t('create.steps.5') }),
+  }
+
+  // allergen helpers for step 3
+  const filteredAvailableAllergens = allAllergens.filter(
+    (a) =>
+      !draft.allergenIds.includes(a.id) &&
+      a.name.toLowerCase().includes(allergenSearch.toLowerCase()),
+  )
+  const addAllergen = (a: Allergen) => {
+    setDraft((d) =>
+      d.allergenIds.includes(a.id) ? d : { ...d, allergenIds: [...d.allergenIds, a.id] },
+    )
+  }
+  const removeAllergen = (id: number) => {
+    setDraft((d) => ({ ...d, allergenIds: d.allergenIds.filter((x) => x !== id) }))
   }
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -515,7 +556,7 @@ export function CreateRecipePage() {
           <ChevronLeftIcon />
         </button>
         <h2 className="cr-header__title">
-          {step === 4 ? t('create.review.title') : t('create.title')}
+          {step === 5 ? t('create.review.title') : t('create.title')}
         </h2>
         <button
           type="button"
@@ -528,7 +569,7 @@ export function CreateRecipePage() {
       </div>
 
       {/* ── Progress ─────────────────────────────────────────────────────── */}
-      <ProgressBar step={step} label={stepLabels[step]} />
+      <ProgressBar step={step} total={5} label={stepLabels[step]} />
 
       {/* ── Step content ─────────────────────────────────────────────────── */}
       <div className="cr-body">
@@ -791,6 +832,7 @@ export function CreateRecipePage() {
               </div>
             )}
 
+
             {/* Photos & video (upload after recipe is created) */}
             <div className="cr-field cr-media">
               <span className="cr-label">{t('create.media.title')}</span>
@@ -933,8 +975,77 @@ export function CreateRecipePage() {
           </div>
         )}
 
-        {/* ── STEP 3: Instructions ──────────────────────────────────────────── */}
+        {/* ── STEP 3: Allergens ────────────────────────────────────────────── */}
         {step === 3 && (
+          <div className="cr-section">
+            <div className="cr-block">
+              <div className="cr-block__header">
+                <h3 className="cr-block__title">{t('create.allergens.title')}</h3>
+              </div>
+              <p className="cr-info-note">{t('create.allergens.hint')}</p>
+
+              {/* Detected allergens */}
+              {detectingAllergens ? (
+                <div className="cr-allergen-loading" role="status" aria-live="polite">
+                  <span className="ui-spinner" aria-hidden />
+                  <span>{t('create.allergens.detecting')}</span>
+                </div>
+              ) : draft.allergenIds.length === 0 ? (
+                <p className="cr-info-note cr-info-note--muted">{t('create.allergens.none')}</p>
+              ) : (
+                <div className="cr-tag-grid cr-tag-grid--allergens">
+                  {allAllergens
+                    .filter((a) => draft.allergenIds.includes(a.id))
+                    .map((a) => (
+                      <span key={a.id} className="cr-tag-chip cr-tag-chip--allergen cr-tag-chip--active">
+                        ⚠ {a.name}
+                        <button
+                          type="button"
+                          className="cr-tag-chip__remove"
+                          onClick={() => removeAllergen(a.id)}
+                          aria-label={t('create.allergens.removeAria', { name: a.name })}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {/* Manual add from full allergen list */}
+            <div className="cr-block">
+              <div className="cr-block__header">
+                <h3 className="cr-block__title">{t('create.allergens.manualAdd')}</h3>
+              </div>
+              <input
+                type="search"
+                className="cr-input"
+                value={allergenSearch}
+                onChange={(e) => setAllergenSearch(e.target.value)}
+                placeholder={t('create.allergens.searchPlaceholder')}
+              />
+              {filteredAvailableAllergens.length > 0 && (
+                <div className="cr-tag-grid cr-tag-grid--allergens">
+                  {filteredAvailableAllergens.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      className="cr-tag-chip"
+                      onClick={() => addAllergen(a)}
+                      aria-label={t('create.allergens.addAria', { name: a.name })}
+                    >
+                      + {a.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 4: Instructions ──────────────────────────────────────────── */}
+        {step === 4 && (
           <div className="cr-section">
             <div className="cr-block">
               <div className="cr-block__header">
@@ -973,8 +1084,8 @@ export function CreateRecipePage() {
           </div>
         )}
 
-        {/* ── STEP 4: Review & Publish ──────────────────────────────────────── */}
-        {step === 4 && (
+        {/* ── STEP 5: Review & Publish ──────────────────────────────────────── */}
+        {step === 5 && (
           <div className="cr-section">
             {/* Preview card */}
             <div className="cr-review-card">
@@ -1009,7 +1120,7 @@ export function CreateRecipePage() {
                 )}
               </div>
 
-              {(draft.dietaryTagIds.length > 0 || draft.allergenTagIds.length > 0) && (
+              {(draft.dietaryTagIds.length > 0 || draft.allergenTagIds.length > 0 || draft.allergenIds.length > 0) && (
                 <div className="cr-review-card__tags">
                   {draft.dietaryTagIds.map((id) => {
                     const tag = allTags.find((t) => Number(t.id) === id)
@@ -1021,6 +1132,12 @@ export function CreateRecipePage() {
                     const tag = allTags.find((t) => Number(t.id) === id)
                     return tag ? (
                       <span key={id} className="cr-review-tag cr-review-tag--allergen">⚠ {tag.name}</span>
+                    ) : null
+                  })}
+                  {draft.allergenIds.map((id) => {
+                    const allergen = allAllergens.find((a) => a.id === id)
+                    return allergen ? (
+                      <span key={`al-${id}`} className="cr-review-tag cr-review-tag--allergen">⚠ {allergen.name}</span>
                     ) : null
                   })}
                 </div>
@@ -1080,18 +1197,22 @@ export function CreateRecipePage() {
 
       {/* ── Fixed bottom action bar ───────────────────────────────────────── */}
       <div className="cr-actions">
-        {step < 4 ? (
+        {step < 5 ? (
           <button
             type="button"
             className="cr-btn cr-btn--primary"
-            onClick={goNext}
+            onClick={() => void goNext()}
             disabled={
+              detectingAllergens ||
               (step === 1 && !canContinueStep1) ||
               (step === 2 && !canContinueStep2) ||
-              (step === 3 && !canContinueStep3)
+              (step === 4 && !canContinueStep4)
             }
+            aria-busy={detectingAllergens}
           >
-            {t('create.continue')}
+            {detectingAllergens
+              ? <span className="ui-spinner" aria-hidden />
+              : t('create.continue')}
           </button>
         ) : (
           <>
@@ -1099,7 +1220,7 @@ export function CreateRecipePage() {
               type="button"
               className="cr-btn cr-btn--primary"
               onClick={() => handleSubmit(true)}
-              disabled={submitting || !canContinueStep3}
+              disabled={submitting || !canContinueStep4}
               aria-busy={submitting}
             >
               {submitting ? <span className="ui-spinner" aria-hidden /> : t('create.review.publish')}

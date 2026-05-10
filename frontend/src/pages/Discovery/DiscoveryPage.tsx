@@ -12,6 +12,7 @@ import {
   type LocationOptions,
   type RecipeSummary,
 } from '@/services/discovery-service'
+import { allergenService, type Allergen } from '@/services/allergen-service'
 import './DiscoveryPage.css'
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -45,6 +46,7 @@ export function DiscoveryPage() {
 
   // Recipe filters (only apply to recipe section)
   const [allTags, setAllTags] = useState<DietaryTag[]>([])
+  const [allergens, setAllergens] = useState<Allergen[]>([])
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
   const [excludedAllergenIds, setExcludedAllergenIds] = useState<string[]>([])
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -68,13 +70,15 @@ export function DiscoveryPage() {
       discoveryService.getVarieties(),
       discoveryService.getDietaryTags(),
       discoveryService.getLocations(),
+      allergenService.list(),
     ])
-      .then(([genreData, varietyData, tagData, locationData]) => {
+      .then(([genreData, varietyData, tagData, locationData, allergenData]) => {
         if (!cancelled) {
           setGenres(genreData)
           setAllVarieties(varietyData)
           setAllTags(tagData)
           setLocationOptions(locationData)
+          setAllergens(allergenData)
         }
       })
       .catch(() => {
@@ -201,7 +205,6 @@ export function DiscoveryPage() {
   }
 
   const dietaryTags = useMemo(() => allTags.filter((t) => t.category === 'dietary'), [allTags])
-  const allergenTags = useMemo(() => allTags.filter((t) => t.category === 'allergen'), [allTags])
   const activeFilterCount =
     selectedTagIds.length +
     excludedAllergenIds.length +
@@ -343,21 +346,24 @@ export function DiscoveryPage() {
               </div>
             </div>
           )}
-          {allergenTags.length > 0 && (
+          {allergens.length > 0 && (
             <div className="discovery-page__filter-group">
               <p className="discovery-page__filter-group-label">{t('discovery.allergens')}</p>
               <div className="discovery-page__filter-chips">
-                {allergenTags.map((tag) => (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    className={`discovery-page__filter-chip${excludedAllergenIds.includes(tag.id) ? ' discovery-page__filter-chip--active' : ''}`}
-                    data-testid="allergen-chip"
-                    onClick={() => toggleAllergen(tag.id)}
-                  >
-                    {tag.name}
-                  </button>
-                ))}
+                {allergens.map((allergen) => {
+                  const id = String(allergen.id)
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      className={`discovery-page__filter-chip${excludedAllergenIds.includes(id) ? ' discovery-page__filter-chip--active' : ''}`}
+                      data-testid="allergen-chip"
+                      onClick={() => toggleAllergen(id)}
+                    >
+                      {allergen.name}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
