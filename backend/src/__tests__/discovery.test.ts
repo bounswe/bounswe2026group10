@@ -422,6 +422,100 @@ describe("GET /discovery/recipes", () => {
     expect(chain.not).toHaveBeenCalledWith("allergen_ids", "ov", "{1,2,3}");
   });
 
+  // ─── Derived allergen exclusion via ingredient_allergens (#518) ──────────
+  // The manual allergen_ids column is mostly empty in real data, so the
+  // overlap filter alone never excludes anything. Discovery must also derive
+  // the exclusion set from ingredient_allergens → recipe_ingredients.
+
+  it("excludes recipes whose ingredients carry the excluded allergen (via ingredient_allergens)", async () => {
+    const recipeChain = chainable({ data: [], error: null, count: 0 });
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "ingredient_allergens") {
+        // Allergen 1 is contained in ingredients 10 and 11.
+        return chainable({
+          data: [{ ingredient_id: 10 }, { ingredient_id: 11 }],
+          error: null,
+        });
+      }
+      if (table === "recipe_ingredients") {
+        // Recipes "r-uuid-a" and "r-uuid-b" use those ingredients.
+        return chainable({
+          data: [
+            { recipe_id: "r-uuid-a" },
+            { recipe_id: "r-uuid-b" },
+            { recipe_id: "r-uuid-a" }, // duplicate to verify dedup
+          ],
+          error: null,
+        });
+      }
+      return recipeChain;
+    });
+
+    const res = await request(app).get("/discovery/recipes?excludeAllergens=1");
+
+    expect(res.status).toBe(200);
+    // Manual overlap filter still applied
+    expect(recipeChain.not).toHaveBeenCalledWith("allergen_ids", "ov", "{1}");
+    // Derived exclusion applied to the main query (and cascade via applyFilters)
+    expect(recipeChain.not).toHaveBeenCalledWith(
+      "id",
+      "in",
+      "(r-uuid-a,r-uuid-b)"
+    );
+  });
+
+  it("skips the derived exclusion when no ingredients carry the excluded allergen", async () => {
+    const recipeChain = chainable({ data: [], error: null, count: 0 });
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "ingredient_allergens") {
+        return chainable({ data: [], error: null });
+      }
+      // recipe_ingredients should NOT be queried in this path.
+      return recipeChain;
+    });
+
+    const res = await request(app).get("/discovery/recipes?excludeAllergens=99");
+
+    expect(res.status).toBe(200);
+    expect(recipeChain.not).toHaveBeenCalledWith("allergen_ids", "ov", "{99}");
+    // No derived "id" NOT IN filter.
+    const idNotInCall = (recipeChain.not as jest.Mock).mock.calls.find(
+      (c: any[]) => c[0] === "id" && c[1] === "in"
+    );
+    expect(idNotInCall).toBeUndefined();
+  });
+
+  it("returns 500 when ingredient_allergens query fails", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "ingredient_allergens") {
+        return chainable({ data: null, error: { message: "DB timeout" } });
+      }
+      return chainable({ data: [], error: null, count: 0 });
+    });
+
+    const res = await request(app).get("/discovery/recipes?excludeAllergens=1");
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("DB_ERROR");
+  });
+
+  it("returns 500 when recipe_ingredients lookup for derived allergens fails", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "ingredient_allergens") {
+        return chainable({ data: [{ ingredient_id: 10 }], error: null });
+      }
+      if (table === "recipe_ingredients") {
+        return chainable({ data: null, error: { message: "DB timeout" } });
+      }
+      return chainable({ data: [], error: null, count: 0 });
+    });
+
+    const res = await request(app).get("/discovery/recipes?excludeAllergens=1");
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("DB_ERROR");
+  });
+
   it("returns empty when genreId has no varieties", async () => {
     (supabase.from as jest.Mock).mockImplementation((table) => {
       if (table === "dish_varieties") return chainable({ data: [], error: null });
