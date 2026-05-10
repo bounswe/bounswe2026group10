@@ -632,3 +632,462 @@ describe("POST /admin/cultural-tag-requests/:id/reject", () => {
     expect(res.body.error.code).toBe("REQUEST_ALREADY_DECIDED");
   });
 });
+
+// ─── GET /admin/dish-genre-requests ──────────────────────────────────────────
+
+describe("GET /admin/dish-genre-requests", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("lists pending genre requests with 200", async () => {
+    const profileLookup = mockAuthAs("admin", "admin-1");
+
+    const rows = [
+      {
+        id: 1,
+        name_en: "Pastries",
+        name_tr: "Börek Çeşitleri",
+        description_en: null,
+        description_tr: null,
+        status: "pending",
+        decision_note: null,
+        decided_by: null,
+        created_at: "2026-01-01T00:00:00Z",
+        decided_at: null,
+        requester: { id: "p1", username: "expert_user" },
+      },
+    ];
+
+    const mockChain: any = {};
+    ["select", "order", "range", "eq"].forEach((m) => {
+      mockChain[m] = jest.fn().mockReturnValue(mockChain);
+    });
+    mockChain.then = (resolve: any) =>
+      Promise.resolve({ data: rows, error: null, count: 1 }).then(resolve);
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "dish_genre_requests") return mockChain;
+      return {};
+    });
+
+    const res = await request(app)
+      .get("/admin/dish-genre-requests")
+      .set("Authorization", "Bearer t");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.requests).toHaveLength(1);
+    expect(res.body.data.requests[0].nameEn).toBe("Pastries");
+    expect(res.body.data.requests[0].requester.username).toBe("expert_user");
+    expect(res.body.data.pagination).toBeDefined();
+  });
+});
+
+// ─── POST /admin/dish-genre-requests/:id/approve ─────────────────────────────
+
+describe("POST /admin/dish-genre-requests/:id/approve", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  function mockGenreRequest(status: string) {
+    return {
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { id: 1, name_en: "Pastries", name_tr: "Börek Çeşitleri", description_en: null, description_tr: null, status },
+            error: null,
+          }),
+        }),
+      }),
+    };
+  }
+
+  it("approves a pending request and inserts the genre", async () => {
+    const profileLookup = mockAuthAs("admin", "admin-1");
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "dish_genre_requests") return mockGenreRequest("pending");
+      return {};
+    });
+
+    const newGenre = { id: 5, name: "Pastries", name_en: "Pastries", name_tr: "Börek Çeşitleri", description_en: null, description_tr: null };
+    const mockInsert = jest.fn().mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        single: jest.fn().mockResolvedValue({ data: newGenre, error: null }),
+      }),
+    });
+    const mockUpdate = jest.fn().mockReturnValue({
+      eq: jest.fn().mockResolvedValue({ error: null }),
+    });
+
+    (supabaseAdmin.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_genres") return { insert: mockInsert };
+      if (table === "dish_genre_requests") return { update: mockUpdate };
+      return {};
+    });
+
+    const res = await request(app)
+      .post("/admin/dish-genre-requests/1/approve")
+      .set("Authorization", "Bearer t")
+      .send({ decisionNote: "Looks good." });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe("approved");
+    expect(res.body.data.createdGenre.nameEn).toBe("Pastries");
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ name_en: "Pastries" })
+    );
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "approved", decided_by: "admin-1" })
+    );
+  });
+
+  it("returns 404 when request does not exist", async () => {
+    const profileLookup = mockAuthAs("admin", "admin-1");
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "dish_genre_requests") {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+            }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    const res = await request(app)
+      .post("/admin/dish-genre-requests/999/approve")
+      .set("Authorization", "Bearer t")
+      .send({});
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("NOT_FOUND");
+  });
+
+  it("returns 409 when request is already decided", async () => {
+    const profileLookup = mockAuthAs("admin", "admin-1");
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "dish_genre_requests") return mockGenreRequest("approved");
+      return {};
+    });
+
+    const res = await request(app)
+      .post("/admin/dish-genre-requests/1/approve")
+      .set("Authorization", "Bearer t")
+      .send({});
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("REQUEST_ALREADY_DECIDED");
+  });
+
+  it("returns 400 when nameEn cannot be resolved", async () => {
+    const profileLookup = mockAuthAs("admin", "admin-1");
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "dish_genre_requests") {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              maybeSingle: jest.fn().mockResolvedValue({
+                data: { id: 1, name_en: null, name_tr: "Test", description_en: null, description_tr: null, status: "pending" },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    const res = await request(app)
+      .post("/admin/dish-genre-requests/1/approve")
+      .set("Authorization", "Bearer t")
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+});
+
+// ─── POST /admin/dish-genre-requests/:id/reject ───────────────────────────────
+
+describe("POST /admin/dish-genre-requests/:id/reject", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("rejects a pending genre request with 200", async () => {
+    const profileLookup = mockAuthAs("admin", "admin-1");
+
+    const mockReqLoad = {
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { id: 1, status: "pending" },
+            error: null,
+          }),
+        }),
+      }),
+    };
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "dish_genre_requests") return mockReqLoad;
+      return {};
+    });
+
+    const mockUpdate = jest.fn().mockReturnValue({
+      eq: jest.fn().mockResolvedValue({ error: null }),
+    });
+    (supabaseAdmin.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_genre_requests") return { update: mockUpdate };
+      return {};
+    });
+
+    const res = await request(app)
+      .post("/admin/dish-genre-requests/1/reject")
+      .set("Authorization", "Bearer t")
+      .send({ decisionNote: "Not needed." });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe("rejected");
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "rejected", decision_note: "Not needed.", decided_by: "admin-1" })
+    );
+  });
+});
+
+// ─── GET /admin/dish-variety-requests ────────────────────────────────────────
+
+describe("GET /admin/dish-variety-requests", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("lists pending variety requests with 200", async () => {
+    const profileLookup = mockAuthAs("admin", "admin-1");
+
+    const rows = [
+      {
+        id: 1,
+        genre_id: 2,
+        name_en: "Börek",
+        name_tr: "Börek",
+        description_en: null,
+        description_tr: null,
+        status: "pending",
+        decision_note: null,
+        decided_by: null,
+        created_at: "2026-01-01T00:00:00Z",
+        decided_at: null,
+        requester: { id: "p1", username: "expert_user" },
+      },
+    ];
+
+    const mockChain: any = {};
+    ["select", "order", "range", "eq"].forEach((m) => {
+      mockChain[m] = jest.fn().mockReturnValue(mockChain);
+    });
+    mockChain.then = (resolve: any) =>
+      Promise.resolve({ data: rows, error: null, count: 1 }).then(resolve);
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "dish_variety_requests") return mockChain;
+      return {};
+    });
+
+    const res = await request(app)
+      .get("/admin/dish-variety-requests")
+      .set("Authorization", "Bearer t");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.requests).toHaveLength(1);
+    expect(res.body.data.requests[0].nameEn).toBe("Börek");
+    expect(res.body.data.requests[0].genreId).toBe(2);
+    expect(res.body.data.requests[0].requester.username).toBe("expert_user");
+    expect(res.body.data.pagination).toBeDefined();
+  });
+});
+
+// ─── POST /admin/dish-variety-requests/:id/approve ───────────────────────────
+
+describe("POST /admin/dish-variety-requests/:id/approve", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  function mockVarietyRequest(status: string) {
+    return {
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { id: 1, genre_id: 2, name_en: "Börek", name_tr: "Börek", description_en: null, description_tr: null, status },
+            error: null,
+          }),
+        }),
+      }),
+    };
+  }
+
+  it("approves a pending request and inserts the variety", async () => {
+    const profileLookup = mockAuthAs("admin", "admin-1");
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "dish_variety_requests") return mockVarietyRequest("pending");
+      return {};
+    });
+
+    const newVariety = { id: 10, name: "Börek", name_en: "Börek", name_tr: "Börek", description_en: null, description_tr: null, genre_id: 2 };
+    const mockInsert = jest.fn().mockReturnValue({
+      select: jest.fn().mockReturnValue({
+        single: jest.fn().mockResolvedValue({ data: newVariety, error: null }),
+      }),
+    });
+    const mockUpdate = jest.fn().mockReturnValue({
+      eq: jest.fn().mockResolvedValue({ error: null }),
+    });
+
+    (supabaseAdmin.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_varieties") return { insert: mockInsert };
+      if (table === "dish_variety_requests") return { update: mockUpdate };
+      return {};
+    });
+
+    const res = await request(app)
+      .post("/admin/dish-variety-requests/1/approve")
+      .set("Authorization", "Bearer t")
+      .send({ decisionNote: "Looks good." });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe("approved");
+    expect(res.body.data.createdVariety.nameEn).toBe("Börek");
+    expect(res.body.data.createdVariety.genreId).toBe(2);
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ name_en: "Börek", genre_id: 2 })
+    );
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "approved", decided_by: "admin-1" })
+    );
+  });
+
+  it("returns 404 when request does not exist", async () => {
+    const profileLookup = mockAuthAs("admin", "admin-1");
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "dish_variety_requests") {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+            }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    const res = await request(app)
+      .post("/admin/dish-variety-requests/999/approve")
+      .set("Authorization", "Bearer t")
+      .send({});
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe("NOT_FOUND");
+  });
+
+  it("returns 409 when request is already decided", async () => {
+    const profileLookup = mockAuthAs("admin", "admin-1");
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "dish_variety_requests") return mockVarietyRequest("approved");
+      return {};
+    });
+
+    const res = await request(app)
+      .post("/admin/dish-variety-requests/1/approve")
+      .set("Authorization", "Bearer t")
+      .send({});
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("REQUEST_ALREADY_DECIDED");
+  });
+
+  it("returns 400 when nameEn cannot be resolved", async () => {
+    const profileLookup = mockAuthAs("admin", "admin-1");
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "dish_variety_requests") {
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              maybeSingle: jest.fn().mockResolvedValue({
+                data: { id: 1, genre_id: 2, name_en: null, name_tr: "Test", description_en: null, description_tr: null, status: "pending" },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    const res = await request(app)
+      .post("/admin/dish-variety-requests/1/approve")
+      .set("Authorization", "Bearer t")
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+  });
+});
+
+// ─── POST /admin/dish-variety-requests/:id/reject ────────────────────────────
+
+describe("POST /admin/dish-variety-requests/:id/reject", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("rejects a pending variety request with 200", async () => {
+    const profileLookup = mockAuthAs("admin", "admin-1");
+
+    const mockReqLoad = {
+      select: jest.fn().mockReturnValue({
+        eq: jest.fn().mockReturnValue({
+          maybeSingle: jest.fn().mockResolvedValue({
+            data: { id: 1, status: "pending" },
+            error: null,
+          }),
+        }),
+      }),
+    };
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "dish_variety_requests") return mockReqLoad;
+      return {};
+    });
+
+    const mockUpdate = jest.fn().mockReturnValue({
+      eq: jest.fn().mockResolvedValue({ error: null }),
+    });
+    (supabaseAdmin.from as jest.Mock).mockImplementation((table) => {
+      if (table === "dish_variety_requests") return { update: mockUpdate };
+      return {};
+    });
+
+    const res = await request(app)
+      .post("/admin/dish-variety-requests/1/reject")
+      .set("Authorization", "Bearer t")
+      .send({ decisionNote: "Not needed." });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe("rejected");
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "rejected", decision_note: "Not needed.", decided_by: "admin-1" })
+    );
+  });
+});
