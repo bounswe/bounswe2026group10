@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { session } from '@/auth/session'
 import { refreshSession } from '@/lib/refresh-session'
+import { getStoredLanguage } from '@/lib/language-storage'
 
 /**
  * Tek HTTP istemcisi. `npm run dev`: `.env.development` → `/api` + Vite proxy (localhost:3000).
@@ -66,6 +67,7 @@ httpClient.interceptors.request.use((config) => {
       config.headers.Authorization = `Bearer ${token}`
     }
   }
+  config.params = { lang: getStoredLanguage(), ...config.params }
   return config
 })
 

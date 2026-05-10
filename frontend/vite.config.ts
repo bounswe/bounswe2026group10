@@ -20,7 +20,15 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    environmentOptions: {
+      jsdom: {
+        url: 'http://localhost',
+      },
+    },
     setupFiles: ['./src/test/setup.ts'],
+    env: {
+      VITE_API_BASE_URL: '/api',
+    },
     css: true,
     exclude: [
       '**/node_modules/**',

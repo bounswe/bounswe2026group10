@@ -1,6 +1,23 @@
 import '@testing-library/jest-dom'
 import { server } from './mocks/server'
 
+// ── Ensure localStorage is writable (vitest 4.x + jsdom 29 passes an invalid
+//    --localstorage-file path which makes jsdom return a read-only storage).
+if (typeof localStorage === 'undefined' || typeof localStorage.setItem !== 'function') {
+  const store: Record<string, string> = {}
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (k: string) => store[k] ?? null,
+      setItem: (k: string, v: string) => { store[k] = String(v) },
+      removeItem: (k: string) => { delete store[k] },
+      clear: () => { for (const k in store) delete store[k] },
+      get length() { return Object.keys(store).length },
+      key: (i: number) => Object.keys(store)[i] ?? null,
+    },
+  })
+}
+
 // ── Seed localStorage so session/auth-slice sees an authenticated user ──────
 localStorage.setItem('rr_access_token', 'fake-test-token')
 localStorage.setItem('rr_refresh_token', 'fake-refresh-token')
