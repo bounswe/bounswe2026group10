@@ -124,8 +124,6 @@ interface RecipeDraft {
   steps: StepItem[]
   /** Numeric IDs from GET /dietary-tags where category === 'dietary' */
   dietaryTagIds: number[]
-  /** Numeric IDs from GET /dietary-tags where category === 'allergen' */
-  allergenTagIds: number[]
   /** Allergen IDs from GET /allergens — auto-detected via POST /allergens/detect */
   allergenIds: number[]
 }
@@ -144,7 +142,6 @@ const INITIAL_DRAFT: RecipeDraft = {
   tools: [''],
   steps: [{ text: '' }],
   dietaryTagIds: [],
-  allergenTagIds: [],
   allergenIds: [],
 }
 
@@ -298,7 +295,7 @@ export function CreateRecipePage() {
     setDraft((d) => ({ ...d, tools: d.tools.filter((_, i) => i !== idx) }))
 
   // tags
-  const toggleTag = (field: 'dietaryTagIds' | 'allergenTagIds', id: number) =>
+  const toggleTag = (field: 'dietaryTagIds', id: number) =>
     setDraft((d) => {
       const current = d[field]
       const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
@@ -372,7 +369,7 @@ export function CreateRecipePage() {
           .filter((t) => t.trim())
           .map((t) => ({ name: t.trim() })),
         isPublished: publish,
-        tagIds: [...draft.dietaryTagIds, ...draft.allergenTagIds],
+        tagIds: draft.dietaryTagIds,
         allergenIds: draft.allergenIds,
       })
       recipeCreated = true
@@ -805,33 +802,6 @@ export function CreateRecipePage() {
               </div>
             )}
 
-            {/* Allergen Tags */}
-            {allTags.filter((tag) => tag.category === 'allergen').length > 0 && (
-              <div className="cr-field">
-                <label className="cr-label">{t('create.fields.allergenTags')}</label>
-                <p className="cr-field-hint">{t('create.fields.allergenTagsHint')}</p>
-                <div className="cr-tag-grid">
-                  {allTags
-                    .filter((tag) => tag.category === 'allergen')
-                    .map((tag) => {
-                      const id = Number(tag.id)
-                      const checked = draft.allergenTagIds.includes(id)
-                      return (
-                        <label key={tag.id} className={`cr-tag-chip cr-tag-chip--allergen${checked ? ' cr-tag-chip--active' : ''}`}>
-                          <input
-                            type="checkbox"
-                            className="cr-tag-chip__input"
-                            checked={checked}
-                            onChange={() => toggleTag('allergenTagIds', id)}
-                          />
-                          {tag.name}
-                        </label>
-                      )
-                    })}
-                </div>
-              </div>
-            )}
-
 
             {/* Photos & video (upload after recipe is created) */}
             <div className="cr-field cr-media">
@@ -1120,18 +1090,12 @@ export function CreateRecipePage() {
                 )}
               </div>
 
-              {(draft.dietaryTagIds.length > 0 || draft.allergenTagIds.length > 0 || draft.allergenIds.length > 0) && (
+              {(draft.dietaryTagIds.length > 0 || draft.allergenIds.length > 0) && (
                 <div className="cr-review-card__tags">
                   {draft.dietaryTagIds.map((id) => {
                     const tag = allTags.find((t) => Number(t.id) === id)
                     return tag ? (
                       <span key={id} className="cr-review-tag cr-review-tag--dietary">{tag.name}</span>
-                    ) : null
-                  })}
-                  {draft.allergenTagIds.map((id) => {
-                    const tag = allTags.find((t) => Number(t.id) === id)
-                    return tag ? (
-                      <span key={id} className="cr-review-tag cr-review-tag--allergen">⚠ {tag.name}</span>
                     ) : null
                   })}
                   {draft.allergenIds.map((id) => {

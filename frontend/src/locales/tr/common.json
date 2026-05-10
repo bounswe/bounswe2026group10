@@ -164,7 +164,16 @@
     "noRecipes": "Henüz tarif yok. Oluşturmaya başla!",
     "favorites": "Favorilerim",
     "noFavorites": "Henüz favori yok. Tarifleri keşfet!",
-    "seeAllFavorites": "Tüm {{count}} favoriyi gör"
+    "seeAllFavorites": "Tüm {{count}} favoriyi gör",
+    "drafts": "Taslaklar",
+    "noDrafts": "Henüz taslak yok. Tarif oluşturmaya başlayın!",
+    "draftEdit": "Düzenle",
+    "draftPublish": "Yayınla",
+    "draftDelete": "Sil",
+    "draftPublishConfirm": "Bu tarif yayınlansın mı? Herkese görünür olacak.",
+    "draftDeleteConfirm": "Bu taslak silinsin mi? Bu işlem geri alınamaz.",
+    "draftPublished": "Tarif başarıyla yayınlandı.",
+    "draftDeleted": "Taslak silindi."
   },
   "home": {
     "featured": "Öne Çıkan Tarif",
