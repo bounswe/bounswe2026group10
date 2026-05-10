@@ -20,10 +20,12 @@ import {
   deleteRecipe,
   getFavorites,
   getMyRecipes,
-  publishRecipe,
+  getRecipeById,
   type FavoriteRecipe,
   type MyRecipeSummary,
 } from '../api/recipes';
+import { mapBackendToDraft } from '../utils/draftHelpers';
+import { useRecipeForm } from '../context/RecipeFormContext';
 import type { LibraryStackParamList } from '../navigation/types';
 import { colors, fontSizes, spacing } from '../theme';
 
@@ -65,7 +67,6 @@ export function MyLibraryScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [publishBusyId, setPublishBusyId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
     title: string;
@@ -74,6 +75,9 @@ export function MyLibraryScreen() {
   const [sortModalOpen, setSortModalOpen] = useState(false);
   const [countryModalOpen, setCountryModalOpen] = useState(false);
   const [cityModalOpen, setCityModalOpen] = useState(false);
+
+  const { updateDraft } = useRecipeForm();
+  const [resumingId, setResumingId] = useState<string | null>(null);
 
   const isFavoritesTab = filter === 'favorites';
 
@@ -149,19 +153,6 @@ export function MyLibraryScreen() {
     : displayedRecipes.length === 0;
 
   const hasLocationData = countries.length > 0;
-
-  async function handlePublish(id: string) {
-    setActionError(null);
-    setPublishBusyId(id);
-    try {
-      await publishRecipe(id);
-      await load(false);
-    } catch {
-      setActionError(t('library.publishError'));
-    } finally {
-      setPublishBusyId(null);
-    }
-  }
 
   async function confirmDelete() {
     if (!deleteTarget) return;
@@ -266,16 +257,37 @@ export function MyLibraryScreen() {
 
   function renderItem({ item }: { item: MyRecipeSummary }) {
     const location = [item.city, item.country].filter(Boolean).join(', ');
+    const isResuming = resumingId === item.id;
     return (
       <TouchableOpacity
         activeOpacity={0.85}
         style={styles.card}
-        onPress={() =>
-          navigation.navigate('RecipeDetail', { recipeId: item.id })
-        }
+        disabled={isResuming}
+        onPress={async () => {
+          if (!item.isPublished) {
+            try {
+              setResumingId(item.id);
+              const detail = await getRecipeById(item.id);
+              const draftState = mapBackendToDraft(detail);
+              updateDraft(draftState);
+              navigation.getParent()?.navigate('CreateTab' as never);
+            } catch (err) {
+              console.error(err);
+              setActionError(t('library.errorRetry'));
+            } finally {
+              setResumingId(null);
+            }
+          } else {
+            navigation.navigate('RecipeDetail', { recipeId: item.id });
+          }
+        }}
       >
         <View style={styles.thumb}>
-          {item.coverImageUrl ? (
+          {isResuming ? (
+            <View style={styles.thumbPlaceholder}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          ) : item.coverImageUrl ? (
             <Image
               source={{ uri: item.coverImageUrl }}
               style={styles.thumbImage}
@@ -368,19 +380,6 @@ export function MyLibraryScreen() {
           </View>
 
           <View style={styles.actionsRow}>
-            {!item.isPublished && (
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.publishBtn]}
-                disabled={publishBusyId === item.id}
-                onPress={() => handlePublish(item.id)}
-              >
-                <Text style={styles.publishBtnText}>
-                  {publishBusyId === item.id
-                    ? t('library.publishing')
-                    : t('library.publish')}
-                </Text>
-              </TouchableOpacity>
-            )}
             <TouchableOpacity
               style={[styles.actionBtn, styles.deleteBtn]}
               onPress={() => openDeleteConfirm(item)}

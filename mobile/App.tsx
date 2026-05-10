@@ -17,6 +17,7 @@ import {
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { RecipeFormProvider } from './src/context/RecipeFormContext';
 import { AuthStack } from './src/navigation/AuthStack';
 import { TabNavigator } from './src/navigation/TabNavigator';
 import { colors } from './src/theme';
@@ -66,9 +67,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
+        <RecipeFormProvider>
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+        </RecipeFormProvider>
       </AuthProvider>
       <StatusBar style="dark" />
     </SafeAreaProvider>

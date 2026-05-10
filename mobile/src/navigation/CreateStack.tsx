@@ -5,7 +5,6 @@ import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useTranslation } from 'react-i18next';
 import type { CreateStackParamList, RootTabParamList } from './types';
-import { RecipeFormProvider } from '../context/RecipeFormContext';
 import { useAuth } from '../context/AuthContext';
 import { CreateBasicInfoScreen } from '../components/create-basic/CreateBasicInfoScreen';
 import { CreateIngredientsToolsScreen } from '../components/create-ingredients/CreateIngredientsToolsScreen';
@@ -32,13 +31,11 @@ export function CreateStack() {
   if (!canCreate) return null;
 
   return (
-    <RecipeFormProvider>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="CreateBasicInfo" component={CreateBasicInfoScreen} />
-        <Stack.Screen name="CreateIngredientsTools" component={CreateIngredientsToolsScreen} />
-        <Stack.Screen name="CreateSteps" component={CreateStepsScreen} />
-        <Stack.Screen name="CreateReview" component={CreateReviewScreen} />
-      </Stack.Navigator>
-    </RecipeFormProvider>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="CreateBasicInfo" component={CreateBasicInfoScreen} />
+      <Stack.Screen name="CreateIngredientsTools" component={CreateIngredientsToolsScreen} />
+      <Stack.Screen name="CreateSteps" component={CreateStepsScreen} />
+      <Stack.Screen name="CreateReview" component={CreateReviewScreen} />
+    </Stack.Navigator>
   );
 }

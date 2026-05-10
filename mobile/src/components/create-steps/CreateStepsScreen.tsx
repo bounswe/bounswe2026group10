@@ -48,7 +48,8 @@ function createEmptyStep(): StepFormItem {
 export function CreateStepsScreen() {
   const { t } = useTranslation('common');
   const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
-  const { draft, updateDraft, resetDraft } = useRecipeForm();
+  const { draft, updateDraft, resetDraft, saveDraft } = useRecipeForm();
+  const [savingDraft, setSavingDraft] = useState(false);
 
   // Single recipe video — restore from draft when coming back
   const [videoFileName, setVideoFileName] = useState<string | null>(draft.videoFileName);
@@ -156,8 +157,31 @@ export function CreateStepsScreen() {
     navigation.navigate('CreateReview');
   };
 
-  const handleSaveDraft = () => {
-    Alert.alert(t('create.draftSaved'), t('create.draftSavedMsg'));
+  const handleSaveDraft = async () => {
+    try {
+      setSavingDraft(true);
+      await saveDraft({
+        steps: steps.map((s) => ({
+          description: s.description,
+          timestamp: s.timestamp,
+        })),
+      });
+      Alert.alert(t("create.draftSaved"), t("create.draftSavedMsg2"), [
+        {
+          text: "OK",
+          onPress: () => {
+            resetDraft();
+            navigation.navigate("CreateBasicInfo" as never);
+            navigation.getParent()?.navigate("HomeTab" as never);
+          },
+        },
+      ]);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Could not save draft. Please try again.");
+    } finally {
+      setSavingDraft(false);
+    }
   };
 
   const handleClose = () => {
@@ -168,7 +192,7 @@ export function CreateStepsScreen() {
         style: 'destructive',
         onPress: () => {
           resetDraft();
-          navigation.popToTop();
+          navigation.navigate("CreateBasicInfo" as never);
           navigation.getParent()?.navigate('HomeTab' as never);
         },
       },
@@ -283,8 +307,12 @@ export function CreateStepsScreen() {
           <MaterialCommunityIcons name="arrow-right" size={20} color={colors.white} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.saveDraftButton} onPress={handleSaveDraft} activeOpacity={0.7}>
-          <Text style={styles.saveDraftText}>{t('create.saveDraft')}</Text>
+        <TouchableOpacity style={styles.saveDraftButton} onPress={handleSaveDraft} activeOpacity={0.7} disabled={savingDraft}>
+          {savingDraft ? (
+            <ActivityIndicator color={colors.onSurfaceVariant} size="small" />
+          ) : (
+            <Text style={styles.saveDraftText}>{t('create.saveDraft')}</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
