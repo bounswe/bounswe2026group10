@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { isAxiosError } from 'axios'
@@ -225,6 +225,8 @@ export function CreateRecipePage() {
   const [parseError, setParseError] = useState<string | null>(null)
   const [parsedOutput, setParsedOutput] = useState<ParsedRecipeOutput | null>(null)
   const [unmatchedParsedIngredients, setUnmatchedParsedIngredients] = useState<string[]>([])
+  const [recording, setRecording] = useState(false)
+  const [voiceLanguage, setVoiceLanguage] = useState<'auto' | 'en' | 'tr'>('auto')
   // Cook can only create community; expert can create both
   const canCreateCultural = role === 'expert'
 
@@ -415,6 +417,50 @@ export function CreateRecipePage() {
     return exact ?? candidates[0] ?? null
   }
 
+  /** Maps a parsed recipe (from text or audio) into the draft form. */
+  const applyParsedRecipe = async (parsed: ParsedRecipeOutput) => {
+    setParsedOutput(parsed)
+
+    const ingredientMatches = await Promise.all(
+      parsed.ingredients.map(async (ing) => {
+        try {
+          const match = await findBestIngredientMatch(ing.name)
+          return { ing, match }
+        } catch {
+          return { ing, match: null }
+        }
+      }),
+    )
+
+    const matchedRows: IngredientRow[] = ingredientMatches
+      .filter((item) => item.match !== null)
+      .map((item) => ({
+        ingredientId: item.match?.id ?? null,
+        name: item.match?.name ?? '',
+        searchQuery: '',
+        quantity: item.ing.quantity !== null ? String(item.ing.quantity) : '',
+        unit: item.ing.unit,
+      }))
+
+    const unmatched = uniqueNonEmpty(
+      ingredientMatches
+        .filter((item) => item.match === null)
+        .map((item) => item.ing.name),
+    )
+    setUnmatchedParsedIngredients(unmatched)
+
+    setDraft((current) => ({
+      ...current,
+      title: current.title.trim() ? current.title : parsed.title,
+      tools: parsed.tools.length > 0 ? parsed.tools : current.tools,
+      steps:
+        parsed.steps.length > 0
+          ? parsed.steps.map((step) => ({ text: step.description }))
+          : current.steps,
+      ingredients: matchedRows.length > 0 ? matchedRows : current.ingredients,
+    }))
+  }
+
   const handleParseNarrative = async () => {
     if (parseText.trim().length < 10 || parsing) return
     setParsing(true)
@@ -423,46 +469,7 @@ export function CreateRecipePage() {
 
     try {
       const parsed = await parseService.parseRecipeText(parseText.trim())
-      setParsedOutput(parsed)
-
-      const ingredientMatches = await Promise.all(
-        parsed.ingredients.map(async (ing) => {
-          try {
-            const match = await findBestIngredientMatch(ing.name)
-            return { ing, match }
-          } catch {
-            return { ing, match: null }
-          }
-        }),
-      )
-
-      const matchedRows: IngredientRow[] = ingredientMatches
-        .filter((item) => item.match !== null)
-        .map((item) => ({
-          ingredientId: item.match?.id ?? null,
-          name: item.match?.name ?? '',
-          searchQuery: '',
-          quantity: item.ing.quantity !== null ? String(item.ing.quantity) : '',
-          unit: item.ing.unit,
-        }))
-
-      const unmatched = uniqueNonEmpty(
-        ingredientMatches
-          .filter((item) => item.match === null)
-          .map((item) => item.ing.name),
-      )
-      setUnmatchedParsedIngredients(unmatched)
-
-      setDraft((current) => ({
-        ...current,
-        title: current.title.trim() ? current.title : parsed.title,
-        tools: parsed.tools.length > 0 ? parsed.tools : current.tools,
-        steps:
-          parsed.steps.length > 0
-            ? parsed.steps.map((step) => ({ text: step.description }))
-            : current.steps,
-        ingredients: matchedRows.length > 0 ? matchedRows : current.ingredients,
-      }))
+      await applyParsedRecipe(parsed)
     } catch (err: unknown) {
       if (isAxiosError(err)) {
         const msg = (err.response?.data as { error?: { message?: string } } | undefined)?.error?.message
@@ -475,6 +482,96 @@ export function CreateRecipePage() {
       setParsing(false)
     }
   }
+
+  // ── Voice input (Faz 13) ─────────────────────────────────────────────────────
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const recordedChunksRef = useRef<Blob[]>([])
+  const recordingStreamRef = useRef<MediaStream | null>(null)
+
+  const sendAudioForParsing = async (blob: Blob) => {
+    setParsing(true)
+    setParseError(null)
+    setUnmatchedParsedIngredients([])
+    try {
+      const result = await parseService.parseRecipeAudio(blob, voiceLanguage)
+      if (result.transcription.text.trim()) {
+        setParseText(result.transcription.text)
+      }
+      await applyParsedRecipe(result.recipe)
+    } catch (err) {
+      if (isAxiosError(err)) {
+        const msg = (err.response?.data as { error?: { message?: string } } | undefined)?.error?.message
+        setParseError(msg || t('create.parse.error'))
+      } else {
+        setParseError(t('create.parse.error'))
+      }
+    } finally {
+      setParsing(false)
+    }
+  }
+
+  const handleStartRecording = async () => {
+    setParseError(null)
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setParseError(t('create.voice.notSupported'))
+      return
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      recordingStreamRef.current = stream
+      recordedChunksRef.current = []
+      const mime = MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : ''
+      const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream)
+      mediaRecorderRef.current = recorder
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) recordedChunksRef.current.push(e.data)
+      }
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, {
+          type: recorder.mimeType || 'audio/webm',
+        })
+        recordingStreamRef.current?.getTracks().forEach((tr) => tr.stop())
+        recordingStreamRef.current = null
+        if (blob.size > 0) void sendAudioForParsing(blob)
+      }
+      recorder.start()
+      setRecording(true)
+    } catch {
+      setParseError(t('create.voice.permissionDenied'))
+    }
+  }
+
+  const handleStopRecording = () => {
+    const recorder = mediaRecorderRef.current
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.stop()
+    }
+    setRecording(false)
+  }
+
+  const handleAudioFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (file.size > 100 * 1024 * 1024) {
+      setParseError(t('create.voice.fileTooLarge'))
+      return
+    }
+    await sendAudioForParsing(file)
+  }
+
+  // Cleanup on unmount: stop any running recorder + tracks
+  useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop()
+      }
+      recordingStreamRef.current?.getTracks().forEach((tr) => tr.stop())
+    }
+  }, [])
 
   // ── Navigation guards ────────────────────────────────────────────────────────
 
@@ -598,6 +695,63 @@ export function CreateRecipePage() {
                 </button>
                 <span className="cr-parse__hint">{t('create.parse.hint')}</span>
               </div>
+
+              {/* Voice input (Faz 13) */}
+              <div className="cr-voice">
+                <p className="cr-voice__label">{t('create.voice.label')}</p>
+                <p className="cr-voice__hint">{t('create.voice.hint')}</p>
+                <div className="cr-voice__row">
+                  {!recording ? (
+                    <button
+                      type="button"
+                      className="cr-add-btn cr-voice__btn"
+                      disabled={parsing}
+                      onClick={() => void handleStartRecording()}
+                    >
+                      🎙 {t('create.voice.start')}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="cr-add-btn cr-voice__btn cr-voice__btn--stop"
+                      onClick={handleStopRecording}
+                    >
+                      ⏹ {t('create.voice.stop')}
+                    </button>
+                  )}
+
+                  <label className="cr-voice__upload">
+                    <input
+                      type="file"
+                      accept="audio/*,video/mp4,video/quicktime,video/webm,video/x-matroska"
+                      className="cr-media__input"
+                      disabled={parsing || recording}
+                      onChange={(e) => void handleAudioFileUpload(e)}
+                    />
+                    <span className="cr-add-btn cr-voice__btn">
+                      📎 {t('create.voice.upload')}
+                    </span>
+                  </label>
+
+                  <select
+                    className="cr-input cr-voice__lang"
+                    value={voiceLanguage}
+                    onChange={(e) => setVoiceLanguage(e.target.value as 'auto' | 'en' | 'tr')}
+                    disabled={recording || parsing}
+                    aria-label={t('create.voice.languageAria')}
+                  >
+                    <option value="auto">{t('create.voice.langAuto')}</option>
+                    <option value="en">EN</option>
+                    <option value="tr">TR</option>
+                  </select>
+                </div>
+                {recording && (
+                  <p className="cr-voice__recording" role="status" aria-live="polite">
+                    ● {t('create.voice.recording')}
+                  </p>
+                )}
+              </div>
+
               {parseError && <p className="cr-error cr-error--inline">{parseError}</p>}
 
               {parsedOutput && (
