@@ -472,7 +472,8 @@
     "tabs": {
       "requests": "Expert Requests",
       "users": "Users",
-      "culturalTags": "Cultural Tag Requests"
+      "culturalTags": "Cultural Tag Requests",
+      "contentRequests": "Content Requests"
     },
     "refresh": "Refresh",
     "cancel": "Cancel",
@@ -554,12 +555,45 @@
       "approvedToast": "Cultural tag '{{labelEn}}' created and approved.",
       "rejectedToast": "Tag request rejected."
     },
+    "contentRequests": {
+      "statusAria": "Filter by status",
+      "subfilterAria": "Content type",
+      "subfilter": { "genre": "Genres", "variety": "Varieties" },
+      "empty": "No requests in this state.",
+      "unknownRequester": "(unknown requester)",
+      "nameEn": "English name",
+      "nameTr": "Turkish name",
+      "descriptionEn": "English description",
+      "descriptionTr": "Turkish description",
+      "genreId": "Genre ID",
+      "decisionAt": "Decision date",
+      "decisionNote": "Admin note",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approveTitle": "Approve content request",
+      "rejectTitle": "Reject this content request?",
+      "approveConfirm": "Approve & create",
+      "rejectConfirm": "Reject request",
+      "nameEnLabel": "English name (required)",
+      "nameTrLabel": "Turkish name",
+      "descriptionEnLabel": "English description (optional)",
+      "descriptionTrLabel": "Turkish description (optional)",
+      "genreIdLabel": "Genre ID",
+      "decisionNoteLabel": "Decision note",
+      "decisionNotePlaceholder": "Optional — leave a short message.",
+      "decisionNoteOptional": "optional",
+      "approvedGenreToast": "Genre '{{nameEn}}' created and approved.",
+      "approvedVarietyToast": "Variety '{{nameEn}}' created and approved.",
+      "rejectedToast": "Content request rejected."
+    },
     "errors": {
       "loadRequests": "Could not load requests.",
       "loadUsers": "Could not load users.",
       "loadCulturalTagRequests": "Could not load cultural tag requests.",
+      "loadContentRequests": "Could not load content requests.",
       "decisionFailed": "Decision could not be saved.",
       "tagDecisionFailed": "Tag decision could not be saved.",
+      "contentDecisionFailed": "Decision could not be saved.",
       "updateFailed": "Could not update user.",
       "deleteFailed": "Could not delete user."
     }

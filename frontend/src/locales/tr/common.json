@@ -472,7 +472,8 @@
     "tabs": {
       "requests": "Uzman Başvuruları",
       "users": "Kullanıcılar",
-      "culturalTags": "Kültürel Etiket Başvuruları"
+      "culturalTags": "Kültürel Etiket Başvuruları",
+      "contentRequests": "İçerik Başvuruları"
     },
     "refresh": "Yenile",
     "cancel": "İptal",
@@ -554,12 +555,45 @@
       "approvedToast": "'{{labelEn}}' kültürel etiketi oluşturuldu ve onaylandı.",
       "rejectedToast": "Etiket başvurusu reddedildi."
     },
+    "contentRequests": {
+      "statusAria": "Duruma göre filtrele",
+      "subfilterAria": "İçerik türü",
+      "subfilter": { "genre": "Türler", "variety": "Çeşitler" },
+      "empty": "Bu durumda başvuru yok.",
+      "unknownRequester": "(bilinmeyen başvuran)",
+      "nameEn": "İngilizce ad",
+      "nameTr": "Türkçe ad",
+      "descriptionEn": "İngilizce açıklama",
+      "descriptionTr": "Türkçe açıklama",
+      "genreId": "Tür ID",
+      "decisionAt": "Karar tarihi",
+      "decisionNote": "Yönetici notu",
+      "approve": "Onayla",
+      "reject": "Reddet",
+      "approveTitle": "İçerik başvurusunu onayla",
+      "rejectTitle": "Bu içerik başvurusu reddedilsin mi?",
+      "approveConfirm": "Onayla ve oluştur",
+      "rejectConfirm": "Başvuruyu reddet",
+      "nameEnLabel": "İngilizce ad (zorunlu)",
+      "nameTrLabel": "Türkçe ad",
+      "descriptionEnLabel": "İngilizce açıklama (isteğe bağlı)",
+      "descriptionTrLabel": "Türkçe açıklama (isteğe bağlı)",
+      "genreIdLabel": "Tür ID",
+      "decisionNoteLabel": "Karar notu",
+      "decisionNotePlaceholder": "İsteğe bağlı — kısa bir mesaj.",
+      "decisionNoteOptional": "isteğe bağlı",
+      "approvedGenreToast": "'{{nameEn}}' türü oluşturuldu ve onaylandı.",
+      "approvedVarietyToast": "'{{nameEn}}' çeşidi oluşturuldu ve onaylandı.",
+      "rejectedToast": "İçerik başvurusu reddedildi."
+    },
     "errors": {
       "loadRequests": "Başvurular yüklenemedi.",
       "loadUsers": "Kullanıcılar yüklenemedi.",
       "loadCulturalTagRequests": "Kültürel etiket başvuruları yüklenemedi.",
+      "loadContentRequests": "İçerik başvuruları yüklenemedi.",
       "decisionFailed": "Karar kaydedilemedi.",
       "tagDecisionFailed": "Etiket kararı kaydedilemedi.",
+      "contentDecisionFailed": "Karar kaydedilemedi.",
       "updateFailed": "Kullanıcı güncellenemedi.",
       "deleteFailed": "Kullanıcı silinemedi."
     }

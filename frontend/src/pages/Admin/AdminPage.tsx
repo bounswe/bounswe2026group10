@@ -5,6 +5,14 @@ import { adminService } from '@/services/admin-service'
 import type {
   AdminUser,
   AdminUserUpdate,
+  ApproveCulturalTagPayload,
+  ApproveDishGenrePayload,
+  ApproveDishVarietyPayload,
+  ContentRequestStatus,
+  CulturalTagRequest,
+  CulturalTagRequestStatus,
+  DishGenreRequest,
+  DishVarietyRequest,
   ExpertRequest,
   ExpertRequestStatus,
 } from '@/services/types/admin'
@@ -16,10 +24,11 @@ import { DecisionDialog } from '@/pages/Admin/Parts/DecisionDialog'
 import { EditUserDialog } from '@/pages/Admin/Parts/EditUserDialog'
 import { CulturalTagRequestRow } from '@/pages/Admin/Parts/CulturalTagRequestRow'
 import { ApproveCulturalTagDialog } from '@/pages/Admin/Parts/ApproveCulturalTagDialog'
-import type { CulturalTagRequest, CulturalTagRequestStatus, ApproveCulturalTagPayload } from '@/services/types/admin'
+import { ContentRequestRow } from '@/pages/Admin/Parts/ContentRequestRow'
+import { ApproveContentRequestDialog } from '@/pages/Admin/Parts/ApproveContentRequestDialog'
 import './AdminPage.css'
 
-type Tab = 'requests' | 'users' | 'culturalTags'
+type Tab = 'requests' | 'users' | 'culturalTags' | 'contentRequests'
 
 type Toast = { id: number; kind: 'success' | 'error'; message: string }
 
@@ -45,6 +54,7 @@ function extractError(err: unknown, fallback: string): string {
 
 const STATUSES: ExpertRequestStatus[] = ['pending', 'approved', 'rejected']
 const TAG_STATUSES: CulturalTagRequestStatus[] = ['pending', 'approved', 'rejected']
+const CONTENT_STATUSES: ContentRequestStatus[] = ['pending', 'approved', 'rejected']
 const ROLES_FOR_FILTER: UserRole[] = ['learner', 'cook', 'expert', 'admin']
 const PAGE_LIMIT = 20
 
@@ -261,10 +271,114 @@ export function AdminPage() {
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Content Requests tab (dish genres + varieties)
+  // ─────────────────────────────────────────────────────────────────────────
+  const [contentSubtype, setContentSubtype] = useState<'genre' | 'variety'>('genre')
+  const [contentStatus, setContentStatus] = useState<ContentRequestStatus>('pending')
+  const [contentPage, setContentPage] = useState(1)
+  const [genreRequests, setGenreRequests] = useState<Pending<DishGenreRequest[]>>(initial())
+  const [genreTotal, setGenreTotal] = useState(0)
+  const [varietyRequests, setVarietyRequests] = useState<Pending<DishVarietyRequest[]>>(initial())
+  const [varietyTotal, setVarietyTotal] = useState(0)
+
+  const [approvingContent, setApprovingContent] = useState<DishGenreRequest | DishVarietyRequest | null>(null)
+  const [rejectingContent, setRejectingContent] = useState<DishGenreRequest | DishVarietyRequest | null>(null)
+  const [contentDecisionBusy, setContentDecisionBusy] = useState(false)
+
+  const reloadGenreRequests = useCallback(async () => {
+    setGenreRequests((s) => ({ ...s, status: 'loading', error: null }))
+    try {
+      const result = await adminService.listDishGenreRequests({
+        status: contentStatus,
+        page: contentPage,
+        limit: PAGE_LIMIT,
+      })
+      setGenreRequests({ status: 'succeeded', data: result.requests, error: null })
+      setGenreTotal(result.pagination.total)
+    } catch (err) {
+      setGenreRequests({
+        status: 'failed',
+        data: null,
+        error: extractError(err, t('admin.errors.loadContentRequests')),
+      })
+    }
+  }, [contentStatus, contentPage, t])
+
+  const reloadVarietyRequests = useCallback(async () => {
+    setVarietyRequests((s) => ({ ...s, status: 'loading', error: null }))
+    try {
+      const result = await adminService.listDishVarietyRequests({
+        status: contentStatus,
+        page: contentPage,
+        limit: PAGE_LIMIT,
+      })
+      setVarietyRequests({ status: 'succeeded', data: result.requests, error: null })
+      setVarietyTotal(result.pagination.total)
+    } catch (err) {
+      setVarietyRequests({
+        status: 'failed',
+        data: null,
+        error: extractError(err, t('admin.errors.loadContentRequests')),
+      })
+    }
+  }, [contentStatus, contentPage, t])
+
+  useEffect(() => {
+    if (tab === 'contentRequests') {
+      if (contentSubtype === 'genre') void reloadGenreRequests()
+      else void reloadVarietyRequests()
+    }
+  }, [tab, contentSubtype, reloadGenreRequests, reloadVarietyRequests])
+
+  async function handleApproveContent(payload: ApproveDishGenrePayload | ApproveDishVarietyPayload) {
+    if (!approvingContent) return
+    setContentDecisionBusy(true)
+    try {
+      if (contentSubtype === 'genre') {
+        await adminService.approveDishGenreRequest(approvingContent.id, payload as ApproveDishGenrePayload)
+        pushToast('success', t('admin.contentRequests.approvedGenreToast', { nameEn: (payload as ApproveDishGenrePayload).nameEn ?? approvingContent.nameEn ?? '' }))
+        setApprovingContent(null)
+        await reloadGenreRequests()
+      } else {
+        await adminService.approveDishVarietyRequest(approvingContent.id, payload as ApproveDishVarietyPayload)
+        pushToast('success', t('admin.contentRequests.approvedVarietyToast', { nameEn: (payload as ApproveDishVarietyPayload).nameEn ?? approvingContent.nameEn ?? '' }))
+        setApprovingContent(null)
+        await reloadVarietyRequests()
+      }
+    } catch (err) {
+      pushToast('error', extractError(err, t('admin.errors.contentDecisionFailed')))
+    } finally {
+      setContentDecisionBusy(false)
+    }
+  }
+
+  async function handleRejectContent(decisionNote: string) {
+    if (!rejectingContent) return
+    setContentDecisionBusy(true)
+    try {
+      if (contentSubtype === 'genre') {
+        await adminService.rejectDishGenreRequest(rejectingContent.id, { decisionNote: decisionNote || undefined })
+        await reloadGenreRequests()
+      } else {
+        await adminService.rejectDishVarietyRequest(rejectingContent.id, { decisionNote: decisionNote || undefined })
+        await reloadVarietyRequests()
+      }
+      pushToast('success', t('admin.contentRequests.rejectedToast'))
+      setRejectingContent(null)
+    } catch (err) {
+      pushToast('error', extractError(err, t('admin.errors.contentDecisionFailed')))
+    } finally {
+      setContentDecisionBusy(false)
+    }
+  }
+
   // Pagination labels are tiny enough to compute inline.
   const requestTotalPages = Math.max(1, Math.ceil(requestTotal / PAGE_LIMIT))
   const userTotalPages = Math.max(1, Math.ceil(userTotal / PAGE_LIMIT))
   const tagTotalPages = Math.max(1, Math.ceil(tagTotal / PAGE_LIMIT))
+  const genreTotalPages = Math.max(1, Math.ceil(genreTotal / PAGE_LIMIT))
+  const varietyTotalPages = Math.max(1, Math.ceil(varietyTotal / PAGE_LIMIT))
 
   const isApproveAction = decisionFor?.action === 'approve'
   const decisionTitle = useMemo(() => {
@@ -311,6 +425,15 @@ export function AdminPage() {
           onClick={() => setTab('culturalTags')}
         >
           {t('admin.tabs.culturalTags')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'contentRequests'}
+          className={`admin-tab ${tab === 'contentRequests' ? 'admin-tab--active' : ''}`}
+          onClick={() => setTab('contentRequests')}
+        >
+          {t('admin.tabs.contentRequests')}
         </button>
       </nav>
 
@@ -522,6 +645,141 @@ export function AdminPage() {
         </section>
       )}
 
+      {tab === 'contentRequests' && (
+        <section className="admin-section" aria-labelledby="admin-content-requests-h">
+          <h2 id="admin-content-requests-h" className="sr-only">
+            {t('admin.tabs.contentRequests')}
+          </h2>
+
+          {/* Sub-type filter */}
+          <div className="admin-toolbar">
+            <div className="admin-chip-row" role="tablist" aria-label={t('admin.contentRequests.subfilterAria')}>
+              {(['genre', 'variety'] as const).map((sub) => (
+                <button
+                  key={sub}
+                  type="button"
+                  role="tab"
+                  aria-selected={contentSubtype === sub}
+                  className={`admin-chip ${contentSubtype === sub ? 'admin-chip--active' : ''}`}
+                  onClick={() => {
+                    setContentSubtype(sub)
+                    setContentPage(1)
+                  }}
+                >
+                  {t(`admin.contentRequests.subfilter.${sub}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Status filter */}
+          <div className="admin-toolbar">
+            <div className="admin-chip-row" role="tablist" aria-label={t('admin.contentRequests.statusAria')}>
+              {CONTENT_STATUSES.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  role="tab"
+                  aria-selected={contentStatus === s}
+                  className={`admin-chip ${contentStatus === s ? 'admin-chip--active' : ''}`}
+                  onClick={() => {
+                    setContentStatus(s)
+                    setContentPage(1)
+                  }}
+                >
+                  {t(`admin.requests.status.${s}`)}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="admin-btn admin-btn--ghost"
+              onClick={() => {
+                if (contentSubtype === 'genre') void reloadGenreRequests()
+                else void reloadVarietyRequests()
+              }}
+              disabled={
+                contentSubtype === 'genre'
+                  ? genreRequests.status === 'loading'
+                  : varietyRequests.status === 'loading'
+              }
+            >
+              {t('admin.refresh')}
+            </button>
+          </div>
+
+          {/* Genre requests list */}
+          {contentSubtype === 'genre' && (
+            <>
+              {genreRequests.status === 'loading' && (
+                <div className="admin-empty"><span className="ui-spinner" /></div>
+              )}
+              {genreRequests.status === 'failed' && (
+                <div className="admin-empty admin-empty--error">{genreRequests.error}</div>
+              )}
+              {genreRequests.status === 'succeeded' && genreRequests.data?.length === 0 && (
+                <div className="admin-empty">{t('admin.contentRequests.empty')}</div>
+              )}
+              {genreRequests.status === 'succeeded' && genreRequests.data && genreRequests.data.length > 0 && (
+                <ul className="admin-list">
+                  {genreRequests.data.map((r) => (
+                    <ContentRequestRow
+                      key={r.id}
+                      type="genre"
+                      request={r}
+                      onApprove={() => setApprovingContent(r)}
+                      onReject={() => setRejectingContent(r)}
+                    />
+                  ))}
+                </ul>
+              )}
+              <Pagination
+                page={contentPage}
+                totalPages={genreTotalPages}
+                onPrev={() => setContentPage((p) => Math.max(1, p - 1))}
+                onNext={() => setContentPage((p) => Math.min(genreTotalPages, p + 1))}
+                label={t('admin.pagination.label', { page: contentPage, total: genreTotalPages })}
+              />
+            </>
+          )}
+
+          {/* Variety requests list */}
+          {contentSubtype === 'variety' && (
+            <>
+              {varietyRequests.status === 'loading' && (
+                <div className="admin-empty"><span className="ui-spinner" /></div>
+              )}
+              {varietyRequests.status === 'failed' && (
+                <div className="admin-empty admin-empty--error">{varietyRequests.error}</div>
+              )}
+              {varietyRequests.status === 'succeeded' && varietyRequests.data?.length === 0 && (
+                <div className="admin-empty">{t('admin.contentRequests.empty')}</div>
+              )}
+              {varietyRequests.status === 'succeeded' && varietyRequests.data && varietyRequests.data.length > 0 && (
+                <ul className="admin-list">
+                  {varietyRequests.data.map((r) => (
+                    <ContentRequestRow
+                      key={r.id}
+                      type="variety"
+                      request={r}
+                      onApprove={() => setApprovingContent(r)}
+                      onReject={() => setRejectingContent(r)}
+                    />
+                  ))}
+                </ul>
+              )}
+              <Pagination
+                page={contentPage}
+                totalPages={varietyTotalPages}
+                onPrev={() => setContentPage((p) => Math.max(1, p - 1))}
+                onNext={() => setContentPage((p) => Math.min(varietyTotalPages, p + 1))}
+                label={t('admin.pagination.label', { page: contentPage, total: varietyTotalPages })}
+              />
+            </>
+          )}
+        </section>
+      )}
+
       {/* ── Modals ─────────────────────────────────────────────────────────── */}
       {decisionFor && (
         <DecisionDialog
@@ -555,6 +813,27 @@ export function AdminPage() {
           busy={tagDecisionBusy}
           onCancel={() => (tagDecisionBusy ? null : setRejectingTag(null))}
           onSubmit={(note) => void handleRejectTag(note)}
+        />
+      )}
+
+      {approvingContent && (
+        <ApproveContentRequestDialog
+          type={contentSubtype}
+          request={approvingContent}
+          busy={contentDecisionBusy}
+          onCancel={() => (contentDecisionBusy ? null : setApprovingContent(null))}
+          onSubmit={(payload) => void handleApproveContent(payload)}
+        />
+      )}
+
+      {rejectingContent && (
+        <DecisionDialog
+          title={t('admin.contentRequests.rejectTitle')}
+          confirmLabel={t('admin.contentRequests.rejectConfirm')}
+          confirmVariant="danger"
+          busy={contentDecisionBusy}
+          onCancel={() => (contentDecisionBusy ? null : setRejectingContent(null))}
+          onSubmit={(note) => void handleRejectContent(note)}
         />
       )}
 

@@ -85,3 +85,65 @@ export interface ApproveCulturalTagPayload {
   country?: string
   decisionNote?: string
 }
+
+// ── Dish genre requests ────────────────────────────────────────────────────────
+
+export type ContentRequestStatus = 'pending' | 'approved' | 'rejected'
+
+export interface DishGenreRequest {
+  id: number
+  nameEn: string | null
+  nameTr: string | null
+  descriptionEn: string | null
+  descriptionTr: string | null
+  status: ContentRequestStatus
+  decisionNote: string | null
+  decidedBy: string | null
+  createdAt: string
+  decidedAt: string | null
+  requester: { id: string; username: string } | null
+}
+
+export interface DishGenreRequestList {
+  requests: DishGenreRequest[]
+  pagination: { page: number; limit: number; total: number }
+}
+
+export interface ApproveDishGenrePayload {
+  nameEn?: string
+  nameTr?: string
+  descriptionEn?: string
+  descriptionTr?: string
+  decisionNote?: string
+}
+
+// ── Dish variety requests ──────────────────────────────────────────────────────
+
+export interface DishVarietyRequest {
+  id: number
+  genreId: number
+  nameEn: string | null
+  nameTr: string | null
+  descriptionEn: string | null
+  descriptionTr: string | null
+  status: ContentRequestStatus
+  decisionNote: string | null
+  decidedBy: string | null
+  createdAt: string
+  decidedAt: string | null
+  requester: { id: string; username: string } | null
+}
+
+export interface DishVarietyRequestList {
+  requests: DishVarietyRequest[]
+  pagination: { page: number; limit: number; total: number }
+}
+
+export interface ApproveDishVarietyPayload {
+  nameEn?: string
+  nameTr?: string
+  descriptionEn?: string
+  descriptionTr?: string
+  genreId?: number
+  decisionNote?: string
+}
