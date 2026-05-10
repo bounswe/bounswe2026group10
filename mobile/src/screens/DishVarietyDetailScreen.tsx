@@ -141,6 +141,7 @@ export function DishVarietyDetailScreen() {
     const hasActive =
       routeFilters.excludeAllergenIds.length > 0 ||
       routeFilters.dietaryTagIds.length > 0 ||
+      routeFilters.culturalTagIds.length > 0 ||
       routeFilters.country !== '';
     if (!hasActive) {
       setFilteredRecipeIds(null);
@@ -150,6 +151,7 @@ export function DishVarietyDetailScreen() {
       varietyId,
       excludeAllergenIds: routeFilters.excludeAllergenIds,
       dietaryTagIds: routeFilters.dietaryTagIds,
+      culturalTagIds: routeFilters.culturalTagIds,
       country: routeFilters.country || undefined,
       city: routeFilters.city || undefined,
     }).then((recipes) => {
