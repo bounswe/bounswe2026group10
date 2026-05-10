@@ -1,6 +1,7 @@
 import request from "supertest";
 import app from "../index.js";
 import { supabase } from "../config/supabase.js";
+import * as translationService from "../services/translationService.js";
 
 jest.mock("../config/supabase.js", () => {
   const mockFrom = jest.fn();
@@ -12,6 +13,13 @@ jest.mock("../config/supabase.js", () => {
     createUserClient: jest.fn(() => ({ from: mockFrom })),
   };
 });
+
+jest.mock("../services/translationService.js", () => ({
+  translateIngredientName: jest.fn().mockResolvedValue(null),
+  translateRecipe: jest.fn().mockResolvedValue(undefined),
+}));
+
+const mockTranslateIngredientName = translationService.translateIngredientName as jest.Mock;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -418,5 +426,102 @@ describe("POST /ingredients (#412)", () => {
 
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe("CONFLICT");
+  });
+});
+
+// ─── POST /ingredients — auto-translation (#409) ─────────────────────────────
+
+describe("POST /ingredients — auto-translation (#409)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockTranslateIngredientName.mockResolvedValue(null);
+  });
+
+  const setupInsertMock = (insertedRow: object) => {
+    (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+      data: { user: { id: "auth-user-1" } },
+      error: null,
+    });
+
+    let ingredientsCalls = 0;
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "profiles") {
+        const chain: any = {};
+        chain.select = jest.fn().mockReturnValue(chain);
+        chain.eq = jest.fn().mockReturnValue(chain);
+        chain.single = jest.fn().mockResolvedValue({
+          data: { id: "profile-1", username: "cook1", role: "cook" },
+          error: null,
+        });
+        return chain;
+      }
+      if (table === "ingredients") {
+        ingredientsCalls++;
+        if (ingredientsCalls === 1) {
+          const check: any = {};
+          check.select = jest.fn().mockReturnValue(check);
+          check.ilike = jest.fn().mockReturnValue(check);
+          check.maybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
+          return check;
+        }
+        const insert: any = {};
+        insert.insert = jest.fn().mockReturnValue(insert);
+        insert.select = jest.fn().mockReturnValue(insert);
+        insert.single = jest.fn().mockResolvedValue({ data: insertedRow, error: null });
+        return insert;
+      }
+      return {};
+    });
+  };
+
+  it("translates TR→EN when only name_tr is provided", async () => {
+    mockTranslateIngredientName.mockResolvedValue("soy sauce");
+    setupInsertMock({ id: 1, name: "soya sosu", name_en: "soy sauce", name_tr: "soya sosu" });
+
+    const res = await request(app)
+      .post("/ingredients")
+      .set("Authorization", "Bearer test-token")
+      .send({ name_tr: "soya sosu" });
+
+    expect(res.status).toBe(201);
+    expect(mockTranslateIngredientName).toHaveBeenCalledWith("soya sosu", "tr");
+  });
+
+  it("translates EN→TR when only name_en is provided", async () => {
+    mockTranslateIngredientName.mockResolvedValue("tuz");
+    setupInsertMock({ id: 2, name: "salt", name_en: "salt", name_tr: "tuz" });
+
+    const res = await request(app)
+      .post("/ingredients")
+      .set("Authorization", "Bearer test-token")
+      .send({ name_en: "Salt" });
+
+    expect(res.status).toBe(201);
+    expect(mockTranslateIngredientName).toHaveBeenCalledWith("salt", "en");
+  });
+
+  it("skips translation when both name_en and name_tr are provided", async () => {
+    setupInsertMock({ id: 3, name: "salt", name_en: "salt", name_tr: "tuz" });
+
+    const res = await request(app)
+      .post("/ingredients")
+      .set("Authorization", "Bearer test-token")
+      .send({ name_en: "Salt", name_tr: "Tuz" });
+
+    expect(res.status).toBe(201);
+    expect(mockTranslateIngredientName).not.toHaveBeenCalled();
+  });
+
+  it("stores null for name_en gracefully when DeepL is unavailable", async () => {
+    mockTranslateIngredientName.mockResolvedValue(null);
+    setupInsertMock({ id: 4, name: "soya sosu", name_en: null, name_tr: "soya sosu" });
+
+    const res = await request(app)
+      .post("/ingredients")
+      .set("Authorization", "Bearer test-token")
+      .send({ name_tr: "soya sosu" });
+
+    expect(res.status).toBe(201);
+    expect(mockTranslateIngredientName).toHaveBeenCalledWith("soya sosu", "tr");
   });
 });
