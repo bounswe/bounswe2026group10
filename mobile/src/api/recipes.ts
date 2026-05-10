@@ -1,4 +1,5 @@
 import { fetchApi } from './client';
+import type { CulturalTagItem } from './cultural-tags';
 
 export interface CreateRecipeStep {
   stepOrder: number;
@@ -164,6 +165,7 @@ export interface BackendRecipeDetail {
   tools: BackendTool[];
   media: BackendMedia[];
   tags: BackendTag[];
+  culturalTags?: CulturalTagItem[];
   country: string | null;
   city: string | null;
   district: string | null;
