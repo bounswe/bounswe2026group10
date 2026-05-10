@@ -19,9 +19,14 @@ void i18n.use(initReactI18next).init({
 })
 
 i18n.on('languageChanged', (lng) => {
+  const prev = getStoredLanguage()
   persistLanguage(lng)
   if (typeof document !== 'undefined') {
     document.documentElement.lang = lng.split('-')[0] || 'en'
+    const next = lng.split('-')[0]
+    if (prev !== next) {
+      window.location.reload()
+    }
   }
 })
 
