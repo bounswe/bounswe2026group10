@@ -109,6 +109,8 @@ export interface CreateRecipePayload {
   district?: string
   /** Dietary + allergen tag IDs from GET /dietary-tags */
   tagIds?: number[]
+  /** Allergen IDs from GET /allergens — auto-detected from ingredients */
+  allergenIds?: number[]
 }
 
 export interface CreatedRecipe {

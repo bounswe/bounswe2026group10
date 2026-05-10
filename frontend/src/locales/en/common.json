@@ -317,8 +317,9 @@
     "steps": {
       "1": "Basic Information",
       "2": "Ingredients & Tools",
-      "3": "Instructions",
-      "4": "Review & Publish"
+      "3": "Allergens",
+      "4": "Instructions",
+      "5": "Review & Publish"
     },
     "fields": {
       "recipeTitle": "Recipe Title",
@@ -345,7 +346,9 @@
       "districtPlaceholder": "District",
       "dietaryTags": "Dietary preferences (optional)",
       "allergenTags": "Allergens in this recipe",
-      "allergenTagsHint": "Select all allergens present in the ingredients."
+      "allergenTagsHint": "Select all allergens present in the ingredients.",
+      "detectedAllergens": "Detected Allergens",
+      "detectedAllergensHint": "Automatically detected from your ingredients."
     },
     "parse": {
       "label": "Free-text recipe input",
@@ -432,6 +435,16 @@
       "errorMediaAfterCreate": "Recipe saved, but uploading media failed. You can try adding files again later.",
       "uploading": "Uploading media…",
       "chooseAria": "Select photos or MP4 video files from your device"
+    },
+    "allergens": {
+      "title": "Allergens",
+      "hint": "These allergens were detected from your ingredients. Remove any that do not apply, or add missing ones.",
+      "none": "No allergens detected from your ingredients.",
+      "manualAdd": "Add Allergen",
+      "searchPlaceholder": "Search allergens...",
+      "removeAria": "Remove {{name}}",
+      "addAria": "Add {{name}}",
+      "detecting": "Detecting allergens..."
     }
   },
   "comments": {

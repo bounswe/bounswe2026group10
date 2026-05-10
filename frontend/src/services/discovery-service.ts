@@ -51,6 +51,7 @@ export interface RecipeSummary {
   author: { username: string; role?: string }
   variety?: { id: string; name: string }
   genre?: { id: string; name: string }
+  allergens?: { id: number; name: string }[]
 }
 
 export interface LocationOptions {
@@ -128,6 +129,9 @@ function normalizeRecipe(r: any): RecipeSummary {
       : undefined,
     genre: r.dish_variety?.dish_genre
       ? { id: String(r.dish_variety.dish_genre.id), name: r.dish_variety.dish_genre.name }
+      : undefined,
+    allergens: Array.isArray(r.allergens)
+      ? r.allergens.map((a: any) => ({ id: Number(a.id), name: a.name ?? '' }))
       : undefined,
   }
 }
