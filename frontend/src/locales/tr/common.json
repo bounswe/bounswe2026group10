@@ -303,7 +303,10 @@
     "substituteNoResults": "Bu malzeme için alternatif bulunamadı.",
     "substituteLoadError": "Alternatifler yüklenemedi.",
     "substituteClose": "Kapat",
-    "substituteConfidence": "Güven: %{{pct}}"
+    "substituteConfidence": "Güven: %{{pct}}",
+    "videoAnnotations": {
+      "seekAria": "{{start}} zamanına git: {{note}}"
+    }
   },
   "dishVariety": {
     "notFound": "Yemek çeşidi bulunamadı.",
@@ -454,6 +457,19 @@
       "removeAria": "{{name}} kaldır",
       "addAria": "{{name}} ekle",
       "detecting": "Alerjenler tespit ediliyor..."
+    },
+    "voice": {
+      "label": "Ya da sesinle anlat",
+      "hint": "Ses kaydı yapın veya bir ses/video dosyası yükleyin. Transkripsiyonunu yapıp tarife dönüştüreceğiz.",
+      "start": "Kaydı başlat",
+      "stop": "Durdur ve işle",
+      "upload": "Dosya yükle",
+      "recording": "Kaydediliyor...",
+      "languageAria": "Kayıt dili",
+      "langAuto": "Otomatik",
+      "notSupported": "Bu tarayıcı ses kaydını desteklemiyor. Lütfen dosya yükleme seçeneğini kullanın.",
+      "permissionDenied": "Mikrofon izni reddedildi. Lütfen izin verin ya da dosya yükleyin.",
+      "fileTooLarge": "Dosya 100 MBdan küçük olmalı."
     }
   },
   "comments": {
@@ -567,7 +583,10 @@
     "contentRequests": {
       "statusAria": "Duruma göre filtrele",
       "subfilterAria": "İçerik türü",
-      "subfilter": { "genre": "Türler", "variety": "Çeşitler" },
+      "subfilter": {
+        "genre": "Türler",
+        "variety": "Çeşitler"
+      },
       "empty": "Bu durumda başvuru yok.",
       "unknownRequester": "(bilinmeyen başvuran)",
       "nameEn": "İngilizce ad",
