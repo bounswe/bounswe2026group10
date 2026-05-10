@@ -1,11 +1,11 @@
 import request from "supertest";
 import app from "../index.js";
-import { supabase } from "../config/supabase.js";
+import { supabase, createUserClient } from "../config/supabase.js";
 
 jest.mock("../config/supabase.js", () => {
   const mockFrom = jest.fn();
   return {
-    supabase: { from: mockFrom },
+    supabase: { auth: { getUser: jest.fn() }, from: mockFrom },
     createUserClient: jest.fn(() => ({ from: mockFrom })),
   };
 });
@@ -348,5 +348,243 @@ describe("GET /discovery/recipes?culturalTagIds", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.recipes).toBeDefined();
+  });
+});
+
+// ─── POST /cultural-tags/requests ────────────────────────────────────────────
+
+function mockAuthAsRole(role: "expert" | "cook" | "learner", profileId = "p1") {
+  (supabase.auth.getUser as jest.Mock).mockResolvedValue({
+    data: { user: { id: "u1", email: "e@e.com" } },
+    error: null,
+  });
+  return {
+    select: jest.fn().mockReturnValue({
+      eq: jest.fn().mockReturnValue({
+        single: jest.fn().mockResolvedValue({
+          data: { id: profileId, username: "u", role },
+          error: null,
+        }),
+      }),
+    }),
+  };
+}
+
+describe("POST /cultural-tags/requests", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("returns 401 without a token", async () => {
+    const res = await request(app).post("/cultural-tags/requests").send({ labelEn: "Test" });
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 403 for a non-expert caller", async () => {
+    const profileLookup = mockAuthAsRole("cook");
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      return {};
+    });
+
+    const res = await request(app)
+      .post("/cultural-tags/requests")
+      .set("Authorization", "Bearer t")
+      .send({ labelEn: "Test" });
+
+    expect(res.status).toBe(403);
+  });
+
+  it("returns 400 when neither labelEn nor labelTr is provided", async () => {
+    const profileLookup = mockAuthAsRole("expert");
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      return {};
+    });
+
+    const res = await request(app)
+      .post("/cultural-tags/requests")
+      .set("Authorization", "Bearer t")
+      .send({ country: "Turkey" });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("creates a request with 201 when both labels are provided", async () => {
+    const profileLookup = mockAuthAsRole("expert", "expert-1");
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      return {};
+    });
+
+    const insertedRow = {
+      id: 1,
+      label_en: "Holiday Meal",
+      label_tr: "Bayram Yemeği",
+      country: "Turkey",
+      status: "pending",
+      created_at: "2026-01-01T00:00:00Z",
+    };
+    const mockUserClient = {
+      from: jest.fn().mockReturnValue({
+        insert: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({ data: insertedRow, error: null }),
+          }),
+        }),
+      }),
+    };
+    (createUserClient as jest.Mock).mockReturnValue(mockUserClient);
+
+    const res = await request(app)
+      .post("/cultural-tags/requests")
+      .set("Authorization", "Bearer t")
+      .send({ labelEn: "Holiday Meal", labelTr: "Bayram Yemeği", country: "Turkey" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.labelEn).toBe("Holiday Meal");
+    expect(res.body.data.labelTr).toBe("Bayram Yemeği");
+    expect(res.body.data.status).toBe("pending");
+  });
+
+  it("accepts labelTr-only and attempts DeepL translation for labelEn", async () => {
+    const profileLookup = mockAuthAsRole("expert", "expert-1");
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      return {};
+    });
+
+    const insertedRow = {
+      id: 2,
+      label_en: "",
+      label_tr: "Sıra Gecesi",
+      country: "Turkey",
+      status: "pending",
+      created_at: "2026-01-01T00:00:00Z",
+    };
+    const mockUserClient = {
+      from: jest.fn().mockReturnValue({
+        insert: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({ data: insertedRow, error: null }),
+          }),
+        }),
+      }),
+    };
+    (createUserClient as jest.Mock).mockReturnValue(mockUserClient);
+
+    const res = await request(app)
+      .post("/cultural-tags/requests")
+      .set("Authorization", "Bearer t")
+      .send({ labelTr: "Sıra Gecesi", country: "Turkey" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.status).toBe("pending");
+  });
+
+  it("returns 500 on DB insert error", async () => {
+    const profileLookup = mockAuthAsRole("expert", "expert-1");
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      return {};
+    });
+
+    const mockUserClient = {
+      from: jest.fn().mockReturnValue({
+        insert: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({ data: null, error: { message: "DB error" } }),
+          }),
+        }),
+      }),
+    };
+    (createUserClient as jest.Mock).mockReturnValue(mockUserClient);
+
+    const res = await request(app)
+      .post("/cultural-tags/requests")
+      .set("Authorization", "Bearer t")
+      .send({ labelEn: "Test Tag" });
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("DB_ERROR");
+  });
+});
+
+// ─── GET /cultural-tags/requests/me ──────────────────────────────────────────
+
+describe("GET /cultural-tags/requests/me", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("returns 401 without a token", async () => {
+    const res = await request(app).get("/cultural-tags/requests/me");
+    expect(res.status).toBe(401);
+  });
+
+  it("returns own requests as an array", async () => {
+    const profileLookup = mockAuthAsRole("expert", "expert-1");
+
+    const rows = [
+      {
+        id: 1,
+        label_en: "Holiday Meal",
+        label_tr: "Bayram Yemeği",
+        country: "Turkey",
+        status: "pending",
+        decision_note: null,
+        created_at: "2026-01-01T00:00:00Z",
+        decided_at: null,
+      },
+    ];
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "cultural_tag_requests")
+        return chainable({ data: rows, error: null });
+      return {};
+    });
+
+    const res = await request(app)
+      .get("/cultural-tags/requests/me")
+      .set("Authorization", "Bearer t");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].labelEn).toBe("Holiday Meal");
+    expect(res.body.data[0].status).toBe("pending");
+    expect(res.body.data[0].decisionNote).toBeNull();
+  });
+
+  it("returns empty array when user has no requests", async () => {
+    const profileLookup = mockAuthAsRole("expert", "expert-1");
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "cultural_tag_requests")
+        return chainable({ data: [], error: null });
+      return {};
+    });
+
+    const res = await request(app)
+      .get("/cultural-tags/requests/me")
+      .set("Authorization", "Bearer t");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(0);
+  });
+
+  it("returns 500 on DB error", async () => {
+    const profileLookup = mockAuthAsRole("expert", "expert-1");
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "profiles") return profileLookup;
+      if (table === "cultural_tag_requests")
+        return chainable({ data: null, error: { message: "fail" } });
+      return {};
+    });
+
+    const res = await request(app)
+      .get("/cultural-tags/requests/me")
+      .set("Authorization", "Bearer t");
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("DB_ERROR");
   });
 });
