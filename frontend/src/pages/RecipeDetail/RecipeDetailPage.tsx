@@ -9,6 +9,7 @@ import { favoriteService } from '@/services/favorite-service'
 import { RecipeRating } from '@/components/RecipeRating/RecipeRating'
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal'
 import { CommentsSection } from '@/components/Comments/CommentsSection'
+import { VideoPlayerWithAnnotations } from '@/pages/RecipeDetail/VideoPlayerWithAnnotations'
 import { useAppSelector } from '@/store/hooks'
 import './RecipeDetailPage.css'
 
@@ -564,18 +565,14 @@ export function RecipeDetailPage() {
           <section className="recipe-detail__block">
             <h2 className="recipe-detail__h2">{t('recipeDetail.video')}</h2>
             <div className="recipe-detail__uploaded-videos">
-              {uploadedVideos.map((m) => (
-                <video
+              {uploadedVideos.map((m, idx) => (
+                <VideoPlayerWithAnnotations
                   key={m.id}
-                  className="recipe-detail__uploaded-video"
-                  controls
-                  playsInline
-                  preload="metadata"
                   src={m.url}
-                  aria-label={t('recipeDetail.videoPlayerAria')}
-                >
-                  {t('recipeDetail.video')}
-                </video>
+                  // attach annotations only to the first video — backend ties annotations to recipe, not media item
+                  annotations={idx === 0 ? recipe.videoAnnotations : []}
+                  ariaLabel={t('recipeDetail.videoPlayerAria')}
+                />
               ))}
             </div>
           </section>

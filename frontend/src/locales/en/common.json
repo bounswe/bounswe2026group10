@@ -303,7 +303,10 @@
     "substituteNoResults": "No substitutes found for this ingredient.",
     "substituteLoadError": "Could not load substitutes.",
     "substituteClose": "Close",
-    "substituteConfidence": "Confidence: {{pct}}%"
+    "substituteConfidence": "Confidence: {{pct}}%",
+    "videoAnnotations": {
+      "seekAria": "Jump to {{start}}: {{note}}"
+    }
   },
   "dishVariety": {
     "notFound": "Dish variety not found.",
@@ -454,6 +457,19 @@
       "removeAria": "Remove {{name}}",
       "addAria": "Add {{name}}",
       "detecting": "Detecting allergens..."
+    },
+    "voice": {
+      "label": "Or describe with your voice",
+      "hint": "Record audio or upload an audio/video file. We will transcribe and parse it into a recipe.",
+      "start": "Start recording",
+      "stop": "Stop & parse",
+      "upload": "Upload file",
+      "recording": "Recording...",
+      "languageAria": "Recording language",
+      "langAuto": "Auto",
+      "notSupported": "Audio recording is not supported by this browser. Please use the upload option.",
+      "permissionDenied": "Microphone permission denied. Please use the upload option or grant access.",
+      "fileTooLarge": "File must be smaller than 100 MB."
     }
   },
   "comments": {
@@ -567,7 +583,10 @@
     "contentRequests": {
       "statusAria": "Filter by status",
       "subfilterAria": "Content type",
-      "subfilter": { "genre": "Genres", "variety": "Varieties" },
+      "subfilter": {
+        "genre": "Genres",
+        "variety": "Varieties"
+      },
       "empty": "No requests in this state.",
       "unknownRequester": "(unknown requester)",
       "nameEn": "English name",

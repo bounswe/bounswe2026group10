@@ -98,7 +98,66 @@ export interface StandardizeUnitsOutput {
 
 // ── service ───────────────────────────────────────────────────────────────────
 
+export interface AudioTranscription {
+  text: string
+  languageCode: string
+  languageProbability: number
+  truncated: boolean
+  source: 'audio' | 'video'
+}
+
+export interface ParsedRecipeAudioOutput {
+  transcription: AudioTranscription
+  recipe: ParsedRecipeOutput
+}
+
 export const parseService = {
+  /**
+   * POST /parse/recipe-audio — multipart upload of an audio/video recording.
+   * Returns the raw transcription plus the structured recipe parsed from it.
+   */
+  parseRecipeAudio: async (
+    blob: Blob,
+    language: 'auto' | 'en' | 'tr' = 'auto',
+    filename = 'recording.webm',
+  ): Promise<ParsedRecipeAudioOutput> => {
+    const fd = new FormData()
+    fd.append('audio', blob, filename)
+    fd.append('language', language)
+    // Let axios set the multipart Content-Type with its own boundary.
+    const res = await httpClient.post('/parse/recipe-audio', fd)
+    const payload = (res.data?.data ?? {}) as Record<string, unknown>
+    const t = (payload.transcription ?? {}) as Record<string, unknown>
+    const r = (payload.recipe ?? {}) as Record<string, unknown>
+
+    const ingredients = (Array.isArray(r.ingredients) ? r.ingredients : [])
+      .map(normalizeIngredient)
+      .filter((row): row is ParsedIngredient => row !== null)
+    const steps = (Array.isArray(r.steps) ? r.steps : [])
+      .map((row, idx) => normalizeStep(row, idx + 1))
+      .filter((row): row is ParsedStep => row !== null)
+      .sort((a, b) => a.stepOrder - b.stepOrder)
+    const tools = (Array.isArray(r.tools) ? r.tools : [])
+      .map(normalizeTool)
+      .filter((row): row is string => row !== null)
+
+    return {
+      transcription: {
+        text: typeof t.text === 'string' ? t.text : '',
+        languageCode: typeof t.languageCode === 'string' ? t.languageCode : '',
+        languageProbability: toNumber(t.languageProbability) ?? 0,
+        truncated: Boolean(t.truncated),
+        source: t.source === 'video' ? 'video' : 'audio',
+      },
+      recipe: {
+        title: typeof r.title === 'string' ? r.title.trim() : '',
+        ingredients,
+        steps,
+        tools,
+      },
+    }
+  },
+
   parseRecipeText: async (text: string): Promise<ParsedRecipeOutput> => {
     const res = await httpClient.post('/parse/recipe-text', { text })
     const payload = (res.data?.data ?? {}) as Record<string, unknown>

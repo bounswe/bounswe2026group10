@@ -37,6 +37,16 @@ export interface RecipeMedia {
   type: 'image' | 'video'
 }
 
+export interface VideoAnnotation {
+  id: string
+  recipeId: string
+  startTime: number
+  endTime: number
+  note: string
+  technique: string | null
+  createdAt: string
+}
+
 export interface RecipeDetail {
   id: string
   title: string
@@ -60,6 +70,7 @@ export interface RecipeDetail {
   tools: RecipeTool[]
   media: RecipeMedia[]
   tags: { id: string; name: string; category: 'dietary' | 'allergen' }[]
+  videoAnnotations: VideoAnnotation[]
   createdAt: string
   updatedAt: string
   isFavorited: boolean
@@ -187,6 +198,15 @@ export const recipeService = {
         id: String(tag.id),
         name: tag.name ?? '',
         category: tag.category === 'allergen' ? 'allergen' : 'dietary',
+      })),
+      videoAnnotations: (d.videoAnnotations ?? []).map((a: any) => ({
+        id: String(a.id),
+        recipeId: String(a.recipeId ?? a.recipe_id ?? ''),
+        startTime: Number(a.startTime ?? a.start_time ?? 0),
+        endTime: Number(a.endTime ?? a.end_time ?? 0),
+        note: String(a.note ?? ''),
+        technique: a.technique ?? null,
+        createdAt: a.createdAt ?? a.created_at ?? '',
       })),
       country: d.country ?? null,
       city: d.city ?? null,
