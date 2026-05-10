@@ -18,9 +18,20 @@ export type HomeStackParamList = {
   CommentsRatings: { recipeId: string; recipeTitle: string; rating: number; ratingCount: number; creatorUsername?: string };
 };
 
+export interface ActiveFilters {
+  excludeAllergenIds: number[];
+  excludeAllergenNames: string[];
+  dietaryTagIds: number[];
+  dietaryTagNames: string[];
+  culturalTagIds: number[];
+  culturalTagNames: string[];
+  country: string;
+  city: string;
+}
+
 export type SearchStackParamList = {
   Search: { initialQuery?: string } | undefined;
-  DishVarietyDetail: { id: number };
+  DishVarietyDetail: { id: number; filters?: ActiveFilters };
   RecipeDetail: { recipeId: string };
 };
 

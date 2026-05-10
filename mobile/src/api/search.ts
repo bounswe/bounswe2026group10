@@ -116,6 +116,7 @@ export async function fetchLocations(country?: string): Promise<string[]> {
 export async function fetchDiscoveryRecipes(params: {
   search?: string;
   genreId?: number;
+  varietyId?: number;
   excludeAllergenIds?: number[];
   dietaryTagIds?: number[];
   culturalTagIds?: number[];
@@ -126,6 +127,7 @@ export async function fetchDiscoveryRecipes(params: {
     const qs = new URLSearchParams();
     if (params.search?.trim()) qs.set('search', params.search.trim());
     if (params.genreId !== undefined) qs.set('genreId', String(params.genreId));
+    if (params.varietyId !== undefined) qs.set('varietyId', String(params.varietyId));
     if (params.excludeAllergenIds?.length) qs.set('excludeAllergens', params.excludeAllergenIds.join(','));
     if (params.dietaryTagIds?.length) qs.set('tagIds', params.dietaryTagIds.join(','));
     // Forwarded for the (not-yet-shipped) cultural-tagging endpoint; the current

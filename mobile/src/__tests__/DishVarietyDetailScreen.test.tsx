@@ -1,7 +1,8 @@
 import React from 'react';
-import { render, fireEvent, act } from '@testing-library/react-native';
+import { render, fireEvent, act, waitFor } from '@testing-library/react-native';
 import { DishVarietyDetailScreen } from '../screens/DishVarietyDetailScreen';
 import * as client from '../api/client';
+import * as searchApi from '../api/search';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -16,16 +17,24 @@ jest.mock('react-native-safe-area-context', () => ({
 const mockGoBack = jest.fn();
 const mockNavigate = jest.fn();
 
+// Mutable so individual tests can inject filters via route params
+let mockRouteParams: { id: number; filters?: any } = { id: 42 };
+
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ goBack: mockGoBack, navigate: mockNavigate }),
-  useRoute: () => ({ params: { id: 42 } }),
+  useRoute: () => ({ params: mockRouteParams }),
 }));
 
 jest.mock('../api/client', () => ({
   fetchApi: jest.fn(),
 }));
 
+jest.mock('../api/search', () => ({
+  fetchDiscoveryRecipes: jest.fn(),
+}));
+
 const mockFetchApi = client.fetchApi as jest.MockedFunction<typeof client.fetchApi>;
+const mockFetchDiscoveryRecipes = searchApi.fetchDiscoveryRecipes as jest.MockedFunction<typeof searchApi.fetchDiscoveryRecipes>;
 
 // ─── Test data ────────────────────────────────────────────────────────────────
 
@@ -83,6 +92,8 @@ async function renderAndFlush() {
 describe('DishVarietyDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRouteParams = { id: 42 };
+    mockFetchDiscoveryRecipes.mockResolvedValue([]);
     mockFetchApi.mockImplementation((path: string) => {
       if (path === '/dish-varieties/42') return Promise.resolve(mockVariety);
       if (path === '/recipes/r-cultural') return Promise.resolve(mockCulturalRecipeDetail);
@@ -166,6 +177,81 @@ describe('DishVarietyDetailScreen', () => {
       const { getByText } = await renderAndFlush();
       fireEvent.press(getByText('Home Style Adana'));
       expect(mockNavigate).toHaveBeenCalledWith('RecipeDetail', { recipeId: 'r-community' });
+    });
+  });
+
+  // ─── Filter propagation from navigation ────────────────────────────────────
+
+  describe('filter propagation from navigation params', () => {
+    const activeFilters = {
+      excludeAllergenIds: [1],
+      excludeAllergenNames: ['Gluten'],
+      dietaryTagIds: [],
+      dietaryTagNames: [],
+      country: '',
+      city: '',
+    };
+
+    beforeEach(() => {
+      mockRouteParams = { id: 42, filters: activeFilters };
+      // Only the cultural recipe passes the filter
+      mockFetchDiscoveryRecipes.mockResolvedValue([
+        {
+          id: 'r-cultural',
+          title: 'Traditional Adana Kebap',
+          creatorUsername: 'master_chef',
+          averageRating: 4.8,
+          ratingCount: 35,
+          dishVarietyId: 42,
+          varietyName: 'Adana Kebap',
+          recipeType: 'cultural' as const,
+          imageUrl: null,
+        },
+      ]);
+    });
+
+    it('calls fetchDiscoveryRecipes with varietyId and filter params', async () => {
+      render(<DishVarietyDetailScreen />);
+      await act(async () => { await Promise.resolve(); });
+      await waitFor(() =>
+        expect(mockFetchDiscoveryRecipes).toHaveBeenCalledWith(
+          expect.objectContaining({
+            varietyId: 42,
+            excludeAllergenIds: [1],
+          })
+        )
+      );
+    });
+
+    it('shows only recipes that pass the active filter', async () => {
+      const { queryByText } = render(<DishVarietyDetailScreen />);
+      await waitFor(() => expect(mockFetchDiscoveryRecipes).toHaveBeenCalled());
+      await act(async () => { await Promise.resolve(); });
+      // Community recipe is filtered out
+      expect(queryByText('Home Style Adana')).toBeNull();
+    });
+
+    it('shows filtered recipe count in section title', async () => {
+      const { getByText } = render(<DishVarietyDetailScreen />);
+      await waitFor(() => expect(mockFetchDiscoveryRecipes).toHaveBeenCalled());
+      await act(async () => { await Promise.resolve(); });
+      // i18n uses `{{count}} Recipes` without a separate singular key
+      expect(getByText('1 Recipes')).toBeTruthy();
+    });
+  });
+
+  // ─── No filters in route ───────────────────────────────────────────────────
+
+  describe('without filters in route params', () => {
+    it('does not call fetchDiscoveryRecipes when no filters passed', async () => {
+      await renderAndFlush();
+      expect(mockFetchDiscoveryRecipes).not.toHaveBeenCalled();
+    });
+
+    it('shows all variety recipes when no filters passed', async () => {
+      const { getByText } = await renderAndFlush();
+      expect(getByText('Traditional Adana Kebap')).toBeTruthy();
+      expect(getByText('Home Style Adana')).toBeTruthy();
     });
   });
 });

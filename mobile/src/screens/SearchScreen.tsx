@@ -71,7 +71,6 @@ export function SearchScreen() {
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const normalizedSearch = debouncedSearch.trim().toLowerCase();
-  const isSearchActive = query.trim().length > 0 || selectedGenreId !== null;
   const hasFilters =
     filters.excludeAllergenIds.length > 0 ||
     filters.dietaryTagIds.length > 0 ||
@@ -79,14 +78,46 @@ export function SearchScreen() {
     filters.country !== '' ||
     filters.city !== '';
 
-  // Client-side filtered genres (by search text)
+  // Filter modal tags count as "active search" so genre chips replace the bento grid.
+  const isSearchActive = query.trim().length > 0 || selectedGenreId !== null || hasFilters;
+
+  // When non-search filters (allergen/dietary/location) are active, derive which
+  // variety and genre IDs have at least one recipe that passed all API filters.
+  // null means "no restriction" (show everything via client-side logic).
+  const visibleVarietyIds = useMemo<Set<number> | null>(() => {
+    if (!hasFilters) return null;
+    return new Set(recipes.map((r) => r.dishVarietyId));
+  }, [hasFilters, recipes]);
+
+  const visibleGenreIds = useMemo<Set<number> | null>(() => {
+    if (visibleVarietyIds === null) return null;
+    const ids = new Set<number>();
+    for (const id of visibleVarietyIds) {
+      const variety = allVarieties.find((v) => v.id === id);
+      if (variety) ids.add(variety.genreId);
+    }
+    return ids;
+  }, [visibleVarietyIds, allVarieties]);
+
+  // Genres: when filters active, restrict to genres with matching recipes.
+  // Otherwise, client-side text filter only.
   const filteredGenres = useMemo(() => {
+    if (visibleGenreIds !== null) {
+      return allGenres.filter((g) => visibleGenreIds.has(g.id));
+    }
     if (!normalizedSearch) return allGenres;
     return allGenres.filter((g) => searchIncludes(g.name, normalizedSearch));
-  }, [allGenres, normalizedSearch]);
+  }, [allGenres, normalizedSearch, visibleGenreIds]);
 
-  // Client-side filtered varieties (by selected genre + search text)
+  // Varieties: when filters active, restrict to varieties with matching recipes.
+  // Otherwise, client-side genre + text filter.
   const filteredVarieties = useMemo(() => {
+    if (visibleVarietyIds !== null) {
+      return sortVarieties(
+        allVarieties.filter((v) => visibleVarietyIds.has(v.id)),
+        sort,
+      );
+    }
     let result = allVarieties;
     if (selectedGenreId !== null) {
       result = result.filter((v) => v.genreId === selectedGenreId);
@@ -99,7 +130,7 @@ export function SearchScreen() {
       );
     }
     return sortVarieties(result, sort);
-  }, [allVarieties, selectedGenreId, normalizedSearch, sort]);
+  }, [allVarieties, selectedGenreId, normalizedSearch, sort, visibleVarietyIds]);
 
   // ── Load genres + varieties once on mount ─────────────────────────────────
   useEffect(() => {
@@ -146,7 +177,10 @@ export function SearchScreen() {
   }, []);
 
   const handleVarietyPress = (variety: DishVarietyResult) => {
-    navigation.navigate('DishVarietyDetail', { id: variety.id });
+    navigation.navigate('DishVarietyDetail', {
+      id: variety.id,
+      ...(hasFilters ? { filters } : {}),
+    });
     setSheetVisible(false);
   };
 
@@ -201,42 +235,78 @@ export function SearchScreen() {
           onFilterPress={() => setFilterModalVisible(true)}
         />
         {(hasFilters || selectedGenreId !== null) && (
-          <TouchableOpacity
-            style={styles.filterBadge}
-            onPress={() => setFilterModalVisible(true)}
-          >
-            <View style={styles.filterBadgeContent}>
-              {selectedGenreId !== null && (
-                <View style={styles.filterTag}>
-                  <Text style={styles.filterTagText}>
-                    {allGenres.find((g) => g.id === selectedGenreId)?.name ?? ''}
-                  </Text>
-                </View>
-              )}
-              {filters.excludeAllergenNames.map((name) => (
-                <View key={name} style={styles.filterTag}>
-                  <Text style={styles.filterTagText}>{name}</Text>
-                </View>
-              ))}
-              {filters.dietaryTagNames.map((name) => (
-                <View key={name} style={styles.filterTag}>
-                  <Text style={styles.filterTagText}>{name}</Text>
-                </View>
-              ))}
-              {filters.culturalTagNames.map((name) => (
-                <View key={`cultural-${name}`} style={styles.filterTag}>
-                  <Text style={styles.filterTagText}>{name}</Text>
-                </View>
-              ))}
-              {filters.country !== '' && (
-                <View style={styles.filterTag}>
-                  <Text style={styles.filterTagText}>
-                    {filters.city ? `${filters.city}, ${filters.country}` : filters.country}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </TouchableOpacity>
+          <View style={styles.filterTagsRow}>
+            {selectedGenreId !== null && (
+              <TouchableOpacity
+                style={styles.filterTag}
+                onPress={() => setSelectedGenreId(null)}
+              >
+                <Text style={styles.filterTagText}>
+                  {allGenres.find((g) => g.id === selectedGenreId)?.name ?? ''}
+                </Text>
+                <MaterialCommunityIcons name="close-circle" size={13} color={colors.white} />
+              </TouchableOpacity>
+            )}
+            {filters.excludeAllergenNames.map((name, i) => (
+              <TouchableOpacity
+                key={`allergen-${name}`}
+                style={styles.filterTag}
+                onPress={() =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    excludeAllergenIds: prev.excludeAllergenIds.filter((_, idx) => idx !== i),
+                    excludeAllergenNames: prev.excludeAllergenNames.filter((_, idx) => idx !== i),
+                  }))
+                }
+              >
+                <Text style={styles.filterTagText}>{name}</Text>
+                <MaterialCommunityIcons name="close-circle" size={13} color={colors.white} />
+              </TouchableOpacity>
+            ))}
+            {filters.dietaryTagNames.map((name, i) => (
+              <TouchableOpacity
+                key={`dietary-${name}`}
+                style={styles.filterTag}
+                onPress={() =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    dietaryTagIds: prev.dietaryTagIds.filter((_, idx) => idx !== i),
+                    dietaryTagNames: prev.dietaryTagNames.filter((_, idx) => idx !== i),
+                  }))
+                }
+              >
+                <Text style={styles.filterTagText}>{name}</Text>
+                <MaterialCommunityIcons name="close-circle" size={13} color={colors.white} />
+              </TouchableOpacity>
+            ))}
+            {filters.culturalTagNames.map((name, i) => (
+              <TouchableOpacity
+                key={`cultural-${name}`}
+                style={styles.filterTag}
+                onPress={() =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    culturalTagIds: prev.culturalTagIds.filter((_, idx) => idx !== i),
+                    culturalTagNames: prev.culturalTagNames.filter((_, idx) => idx !== i),
+                  }))
+                }
+              >
+                <Text style={styles.filterTagText}>{name}</Text>
+                <MaterialCommunityIcons name="close-circle" size={13} color={colors.white} />
+              </TouchableOpacity>
+            ))}
+            {filters.country !== '' && (
+              <TouchableOpacity
+                style={styles.filterTag}
+                onPress={() => setFilters((prev) => ({ ...prev, country: '', city: '' }))}
+              >
+                <Text style={styles.filterTagText}>
+                  {filters.city ? `${filters.city}, ${filters.country}` : filters.country}
+                </Text>
+                <MaterialCommunityIcons name="close-circle" size={13} color={colors.white} />
+              </TouchableOpacity>
+            )}
+          </View>
         )}
       </View>
 
@@ -385,20 +455,16 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
   },
-  filterBadge: {
+  filterTagsRow: {
     marginTop: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.primary + '15',
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  filterBadgeContent: {
     flexDirection: 'row',
-    gap: spacing.xs,
     flexWrap: 'wrap',
+    gap: spacing.xs,
   },
   filterTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: colors.primary,
     borderRadius: 4,
     paddingHorizontal: spacing.sm,

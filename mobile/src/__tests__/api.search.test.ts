@@ -202,6 +202,20 @@ describe('fetchDiscoveryRecipes', () => {
     expect(call).toContain('genreId=3');
   });
 
+  it('passes varietyId param', async () => {
+    mockFetchApi.mockResolvedValueOnce({ recipes: [] });
+    await fetchDiscoveryRecipes({ varietyId: 7 });
+    const call = (mockFetchApi as jest.Mock).mock.calls[0][0] as string;
+    expect(call).toContain('varietyId=7');
+  });
+
+  it('omits varietyId when not provided', async () => {
+    mockFetchApi.mockResolvedValueOnce({ recipes: [] });
+    await fetchDiscoveryRecipes({ search: 'test' });
+    const call = (mockFetchApi as jest.Mock).mock.calls[0][0] as string;
+    expect(call).not.toContain('varietyId');
+  });
+
   it('passes country and city params', async () => {
     mockFetchApi.mockResolvedValueOnce({ recipes: [] });
     await fetchDiscoveryRecipes({ country: 'Turkey', city: 'Istanbul' });
