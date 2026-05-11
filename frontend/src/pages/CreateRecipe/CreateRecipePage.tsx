@@ -246,13 +246,9 @@ export function CreateRecipePage() {
   }, [])
 
   /** Fetch cultural tags scoped to the recipe's country (global tags always included).
-   * Only relevant when the user selects type='cultural'. Drops selections that fall
-   * out of scope when the country changes. */
+   * Available for both community and cultural recipes (mirrors mobile). Drops
+   * selections that fall out of scope when the country changes. */
   useEffect(() => {
-    if (draft.type !== 'cultural') {
-      setCulturalTags([])
-      return
-    }
     let cancelled = false
     culturalTagService
       .list(draft.country.trim() || undefined)
@@ -270,7 +266,7 @@ export function CreateRecipePage() {
     return () => {
       cancelled = true
     }
-  }, [draft.type, draft.country])
+  }, [draft.country])
 
   const [detectingAllergens, setDetectingAllergens] = useState(false)
 
@@ -409,10 +405,7 @@ export function CreateRecipePage() {
         isPublished: publish,
         tagIds: draft.dietaryTagIds,
         allergenIds: draft.allergenIds,
-        culturalTagIds:
-          draft.type === 'cultural' && draft.culturalTagIds.length > 0
-            ? draft.culturalTagIds
-            : undefined,
+        culturalTagIds: draft.culturalTagIds.length > 0 ? draft.culturalTagIds : undefined,
       })
       recipeCreated = true
 
@@ -848,37 +841,35 @@ export function CreateRecipePage() {
               />
             </div>
 
-            {/* Cultural tags — only for cultural recipes; region-scoped picker */}
-            {draft.type === 'cultural' && (
-              <div className="cr-field">
-                <label className="cr-label">{t('create.fields.culturalTags')}</label>
-                <p className="cr-hint">{t('create.fields.culturalTagsHint')}</p>
-                {culturalTags.length === 0 ? (
-                  <p className="cr-hint">{t('create.fields.culturalTagsEmpty')}</p>
-                ) : (
-                  <div className="cr-tag-grid">
-                    {culturalTags.map((tag) => {
-                      const lang = i18n.language.startsWith('tr') ? 'tr' : 'en'
-                      const checked = draft.culturalTagIds.includes(tag.id)
-                      return (
-                        <label
-                          key={tag.id}
-                          className={`cr-tag-chip${checked ? ' cr-tag-chip--active' : ''}`}
-                        >
-                          <input
-                            type="checkbox"
-                            className="cr-tag-chip__input"
-                            checked={checked}
-                            onChange={() => toggleTag('culturalTagIds', tag.id)}
-                          />
-                          {culturalTagLabel(tag, lang)}
-                        </label>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Cultural tags — region-scoped picker, available for both recipe types */}
+            <div className="cr-field">
+              <label className="cr-label">{t('create.fields.culturalTags')}</label>
+              <p className="cr-hint">{t('create.fields.culturalTagsHint')}</p>
+              {culturalTags.length === 0 ? (
+                <p className="cr-hint">{t('create.fields.culturalTagsEmpty')}</p>
+              ) : (
+                <div className="cr-tag-grid">
+                  {culturalTags.map((tag) => {
+                    const lang = i18n.language.startsWith('tr') ? 'tr' : 'en'
+                    const checked = draft.culturalTagIds.includes(tag.id)
+                    return (
+                      <label
+                        key={tag.id}
+                        className={`cr-tag-chip${checked ? ' cr-tag-chip--active' : ''}`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="cr-tag-chip__input"
+                          checked={checked}
+                          onChange={() => toggleTag('culturalTagIds', tag.id)}
+                        />
+                        {culturalTagLabel(tag, lang)}
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* Genre → Variety (two-step; varieties loaded per genre) */}
             <div className="cr-field">
