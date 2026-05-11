@@ -169,7 +169,7 @@ export function CreateBasicInfoScreen() {
         setAllTags(data);
       })
       .catch((err) => console.error("[BasicInfo] dietary-tags error:", err));
-  }, []);
+  }, [i18n.language]);
 
   // Refetch cultural tags whenever the selected country changes (region scoping).
   useEffect(() => {
@@ -186,7 +186,7 @@ export function CreateBasicInfoScreen() {
     return () => {
       cancelled = true;
     };
-  }, [country]);
+  }, [country, i18n.language]);
 
   const handleGenreChange = (id: string) => {
     setGenreId(Number(id));

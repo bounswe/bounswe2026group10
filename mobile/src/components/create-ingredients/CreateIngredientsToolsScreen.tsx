@@ -46,7 +46,7 @@ function createEmptyIngredient(): IngredientFormItem {
 }
 
 export function CreateIngredientsToolsScreen() {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const navigation =
     useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const isFocused = useIsFocused();
@@ -114,7 +114,7 @@ export function CreateIngredientsToolsScreen() {
         setUnitOptions(data.map((u) => ({ label: u, value: u })));
       })
       .catch((err) => console.error("[Units] failed to load:", err));
-  }, []);
+  }, [i18n.language]);
 
   const handleAddIngredient = () => {
     setIngredients((prev) => [...prev, createEmptyIngredient()]);
