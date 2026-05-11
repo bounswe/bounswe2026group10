@@ -8,6 +8,9 @@ import {
   getLocationVariants,
 } from "../utils/locations.js";
 import { buildSearchVariants } from "../utils/text.js";
+import { resolveLocalizedName } from "../utils/i18n.js";
+import { fetchRecipeTitleTranslations } from "../services/translationService.js";
+import type { LanguageRequest } from "../types/index.js";
 
 // Apply a case-insensitive location filter that also expands known aliases
 // (so a filter for "tr"/"Türkiye" still matches recipes stored as "Turkey").
@@ -287,6 +290,9 @@ router.get("/recipes", async (req, res) => {
       return q;
     };
 
+    const lang = (req as LanguageRequest).lang;
+    const langParam: "EN" | "TR" | null = lang === "en" ? "EN" : lang === "tr" ? "TR" : null;
+
     let recipeQuery = supabase
       .from("recipes")
       .select(
@@ -294,8 +300,8 @@ router.get("/recipes", async (req, res) => {
          country, city, district,
          created_at, updated_at,
          dish_variety:dish_varieties!recipes_dish_variety_id_fkey(
-           id, name,
-           dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name)
+           id, name, name_en, name_tr,
+           dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name, name_en, name_tr)
          ),
          profile:profiles!recipes_creator_id_fkey(id, username),
          recipe_media(id, url, type)`,
@@ -317,8 +323,8 @@ router.get("/recipes", async (req, res) => {
       .from("recipes")
       .select(
         `dish_variety:dish_varieties!recipes_dish_variety_id_fkey(
-           id, name,
-           dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name)
+           id, name, name_en, name_tr,
+           dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name, name_en, name_tr)
          )`
       )
       .eq("is_published", true);
@@ -341,17 +347,27 @@ router.get("/recipes", async (req, res) => {
         .json(errorResponse("DB_ERROR", cascadeError.message));
     }
 
-    const varietyMap = new Map<number, { id: number; name: string; dish_genre: any }>();
-    const genreMap = new Map<number, { id: number; name: string }>();
+    const varietyMap = new Map<number, { id: number; name: string | null; dish_genre: any }>();
+    const genreMap = new Map<number, { id: number; name: string | null }>();
 
     for (const r of cascadeRows ?? []) {
       const v = (r as any).dish_variety;
       if (v) {
         if (!varietyMap.has(v.id)) {
-          varietyMap.set(v.id, { id: v.id, name: v.name, dish_genre: v.dish_genre ?? null });
+          const localizedGenre = v.dish_genre
+            ? { id: v.dish_genre.id, name: resolveLocalizedName(v.dish_genre, langParam) }
+            : null;
+          varietyMap.set(v.id, {
+            id: v.id,
+            name: resolveLocalizedName(v, langParam),
+            dish_genre: localizedGenre,
+          });
         }
         if (v.dish_genre && !genreMap.has(v.dish_genre.id)) {
-          genreMap.set(v.dish_genre.id, { id: v.dish_genre.id, name: v.dish_genre.name });
+          genreMap.set(v.dish_genre.id, {
+            id: v.dish_genre.id,
+            name: resolveLocalizedName(v.dish_genre, langParam),
+          });
         }
       }
     }
@@ -372,15 +388,41 @@ router.get("/recipes", async (req, res) => {
       }
     }
 
+    // Batch-fetch translated titles when ?lang= is set; recipes without a
+    // translation row fall back to their authored title.
+    let titleMap = new Map<string, string>();
+    if (langParam) {
+      const ids = (recipes ?? []).map((r: any) => r.id);
+      titleMap = await fetchRecipeTitleTranslations(ids, langParam);
+    }
+
     return res.status(200).json(
       successResponse({
         recipes: (recipes ?? []).map((r: any) => {
           const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
-          const { recipe_media, allergen_ids, ...rest } = r;
+          const { recipe_media, allergen_ids, dish_variety, title, ...rest } = r;
           const allergens = (allergen_ids ?? [])
             .map((id: number) => ({ id, name: allergenMap.get(id) ?? null }))
             .filter((a: any) => a.name !== null);
-          return { ...rest, image_url: firstImage?.url ?? null, allergens };
+          const localizedVariety = dish_variety
+            ? {
+                id: dish_variety.id,
+                name: resolveLocalizedName(dish_variety, langParam),
+                dish_genre: dish_variety.dish_genre
+                  ? {
+                      id: dish_variety.dish_genre.id,
+                      name: resolveLocalizedName(dish_variety.dish_genre, langParam),
+                    }
+                  : null,
+              }
+            : null;
+          return {
+            ...rest,
+            title: titleMap.get(r.id) ?? title,
+            dish_variety: localizedVariety,
+            image_url: firstImage?.url ?? null,
+            allergens,
+          };
         }),
         varieties: [...varietyMap.values()],
         genres: [...genreMap.values()],
@@ -477,6 +519,9 @@ router.get("/recipes/by-ingredients", async (req, res) => {
       );
     }
 
+    const lang = (req as LanguageRequest).lang;
+    const langParam: "EN" | "TR" | null = lang === "en" ? "EN" : lang === "tr" ? "TR" : null;
+
     // ── Step 3: Fetch full recipe data for eligible IDs ──────────────────────
     let query = supabase
       .from("recipes")
@@ -485,8 +530,8 @@ router.get("/recipes/by-ingredients", async (req, res) => {
          country, city, district,
          created_at, updated_at,
          dish_variety:dish_varieties!recipes_dish_variety_id_fkey(
-           id, name,
-           dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name)
+           id, name, name_en, name_tr,
+           dish_genre:dish_genres!dish_varieties_genre_id_fkey(id, name, name_en, name_tr)
          ),
          profile:profiles!recipes_creator_id_fkey(id, username),
          recipe_media(id, url, type)`,
@@ -508,12 +553,35 @@ router.get("/recipes/by-ingredients", async (req, res) => {
         .json(errorResponse("DB_ERROR", recipesError.message));
     }
 
+    let titleMap = new Map<string, string>();
+    if (langParam) {
+      const ids = (recipes ?? []).map((r: any) => r.id);
+      titleMap = await fetchRecipeTitleTranslations(ids, langParam);
+    }
+
     return res.status(200).json(
       successResponse({
         recipes: (recipes ?? []).map((r: any) => {
           const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
-          const { recipe_media, ...rest } = r;
-          return { ...rest, image_url: firstImage?.url ?? null };
+          const { recipe_media, dish_variety, title, ...rest } = r;
+          const localizedVariety = dish_variety
+            ? {
+                id: dish_variety.id,
+                name: resolveLocalizedName(dish_variety, langParam),
+                dish_genre: dish_variety.dish_genre
+                  ? {
+                      id: dish_variety.dish_genre.id,
+                      name: resolveLocalizedName(dish_variety.dish_genre, langParam),
+                    }
+                  : null,
+              }
+            : null;
+          return {
+            ...rest,
+            title: titleMap.get(r.id) ?? title,
+            dish_variety: localizedVariety,
+            image_url: firstImage?.url ?? null,
+          };
         }),
         pagination: {
           page,
