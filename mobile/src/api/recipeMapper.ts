@@ -88,6 +88,18 @@ export function mapBackendRecipeToMobile(data: BackendRecipeDetail): Recipe {
       }
     }
   }
+  // Top-level allergens come from `recipes.allergen_ids` (resolved by the
+  // backend through the `allergens` table) and are the source of truth for
+  // creator-tagged allergens. The dietary-tag-driven path above is kept for
+  // backward compatibility with older recipes that stored allergens via the
+  // `dietary_tags(category='allergen')` route.
+  if (data.allergens) {
+    for (const a of data.allergens) {
+      if (a.name && !allergens.includes(a.name)) {
+        allergens.push(a.name);
+      }
+    }
+  }
 
   const username = data.creatorUsername ?? '';
   const parts = username.split(/[_\s]+/);

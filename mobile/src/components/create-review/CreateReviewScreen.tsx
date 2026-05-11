@@ -127,10 +127,10 @@ export function CreateReviewScreen() {
         showsVerticalScrollIndicator={false}
       >
         <StepHeader
-          currentStep={4}
-          totalSteps={4}
-          title={t("create.steps.4")}
-          subtitle={t("create.steps.4subtitle")}
+          currentStep={5}
+          totalSteps={5}
+          title={t("create.steps.5")}
+          subtitle={t("create.steps.5subtitle")}
         />
 
         {/* Recipe title */}
