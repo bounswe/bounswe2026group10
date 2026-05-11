@@ -78,8 +78,8 @@ export async function translateRecipe(recipeId: string): Promise<void> {
 
   const translator = new Translator(apiKey);
 
-  // 1. Fetch recipe fields, steps, and ingredients in parallel
-  const [recipeResult, stepsResult, ingredientsResult] = await Promise.all([
+  // 1. Fetch recipe fields, steps, ingredients, and tools in parallel
+  const [recipeResult, stepsResult, ingredientsResult, toolsResult] = await Promise.all([
     supabase.from("recipes").select("title, story").eq("id", recipeId).single(),
     supabase
       .from("recipe_steps")
@@ -89,6 +89,10 @@ export async function translateRecipe(recipeId: string): Promise<void> {
     supabase
       .from("recipe_ingredients")
       .select("id, unit")
+      .eq("recipe_id", recipeId),
+    supabase
+      .from("recipe_tools")
+      .select("id, name")
       .eq("recipe_id", recipeId),
   ]);
 
@@ -100,6 +104,7 @@ export async function translateRecipe(recipeId: string): Promise<void> {
   const recipe = recipeResult.data;
   const steps = stepsResult.data ?? [];
   const ingredients = ingredientsResult.data ?? [];
+  const tools = toolsResult.data ?? [];
 
   // 2. Detect source language by translating title to EN-US
   let detectedSource: string;
@@ -117,14 +122,16 @@ export async function translateRecipe(recipeId: string): Promise<void> {
   const sourceIsEnglish = detectedSource === "en";
   const langCode: "EN" | "TR" = sourceIsEnglish ? "TR" : "EN";
 
-  // 3. Translate title, story, step descriptions via DeepL
+  // 3. Translate title, story, step descriptions, and tool names via DeepL
   let translatedTitle: string;
   let translatedStory: string | null = null;
   let translatedStepDescriptions: string[] = [];
+  let translatedToolNames: string[] = [];
 
   const extraTexts: string[] = [];
   if (recipe.story) extraTexts.push(recipe.story as string);
   for (const step of steps) extraTexts.push(step.description);
+  for (const tool of tools) extraTexts.push(tool.name);
 
   try {
     if (sourceIsEnglish) {
@@ -133,14 +140,18 @@ export async function translateRecipe(recipeId: string): Promise<void> {
       translatedTitle = results[0]!.text;
       let idx = 1;
       if (recipe.story) translatedStory = results[idx++]!.text;
-      translatedStepDescriptions = results.slice(idx).map((r) => r.text);
+      translatedStepDescriptions = results.slice(idx, idx + steps.length).map((r) => r.text);
+      idx += steps.length;
+      translatedToolNames = results.slice(idx).map((r) => r.text);
     } else {
       translatedTitle = enTitle;
       if (extraTexts.length > 0) {
         const results = (await translator.translateText(extraTexts, null, "en-US")) as TextResult[];
         let idx = 0;
         if (recipe.story) translatedStory = results[idx++]!.text;
-        translatedStepDescriptions = results.slice(idx).map((r) => r.text);
+        translatedStepDescriptions = results.slice(idx, idx + steps.length).map((r) => r.text);
+        idx += steps.length;
+        translatedToolNames = results.slice(idx).map((r) => r.text);
       }
     }
   } catch (err) {
@@ -191,6 +202,23 @@ export async function translateRecipe(recipeId: string): Promise<void> {
 
     if (ingTransError) {
       console.error(`[translation] Failed to store ingredient translations (${langCode}):`, ingTransError);
+    }
+  }
+
+  // 7. Upsert tool name translations
+  if (tools.length > 0 && translatedToolNames.length > 0) {
+    const toolRows = tools.map((tool, i) => ({
+      recipe_tool_id: tool.id,
+      language_code: langCode,
+      name: translatedToolNames[i] ?? tool.name,
+    }));
+
+    const { error: toolTransError } = await supabase
+      .from("recipe_tool_translations")
+      .upsert(toolRows, { onConflict: "recipe_tool_id,language_code" });
+
+    if (toolTransError) {
+      console.error(`[translation] Failed to store tool translations (${langCode}):`, toolTransError);
     }
   }
 
