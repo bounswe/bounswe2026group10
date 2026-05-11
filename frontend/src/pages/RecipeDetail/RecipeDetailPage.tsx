@@ -76,7 +76,7 @@ function IconRefresh() {
 export function RecipeDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
 
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -379,8 +379,23 @@ export function RecipeDetailPage() {
           )}
         </div>
 
-        {recipe.tags.length > 0 && (
+        {(recipe.tags.length > 0 || recipe.culturalTags.length > 0) && (
           <div className="recipe-detail__tags">
+            {recipe.culturalTags.map((tag) => {
+              const label =
+                (i18n.language.startsWith('tr') ? tag.labelTr : tag.labelEn) ??
+                tag.labelEn ??
+                tag.labelTr ??
+                tag.key
+              return (
+                <span
+                  key={`cultural-${tag.id}`}
+                  className="recipe-detail__tag recipe-detail__tag--cultural"
+                >
+                  {label}
+                </span>
+              )
+            })}
             {recipe.tags.map((tag) => (
               <span
                 key={tag.id}

@@ -4,6 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { isAxiosError } from 'axios'
 import { discoveryService, type DishVariety, type Genre, type DietaryTag } from '@/services/discovery-service'
 import { allergenService, type Allergen } from '@/services/allergen-service'
+import {
+  culturalTagService,
+  culturalTagLabel,
+  type CulturalTag,
+} from '@/services/cultural-tag-service'
 import { recipeService, type CreateRecipeIngredient } from '@/services/recipe-service'
 import { ingredientService, type IngredientOption } from '@/services/ingredient-service'
 import { parseService, type ParsedRecipeOutput } from '@/services/parse-service'
@@ -126,6 +131,8 @@ interface RecipeDraft {
   dietaryTagIds: number[]
   /** Allergen IDs from GET /allergens — auto-detected via POST /allergens/detect */
   allergenIds: number[]
+  /** Cultural tag IDs from GET /cultural-tags (only used when type='cultural'). */
+  culturalTagIds: number[]
 }
 
 const INITIAL_DRAFT: RecipeDraft = {
@@ -143,6 +150,7 @@ const INITIAL_DRAFT: RecipeDraft = {
   steps: [{ text: '' }],
   dietaryTagIds: [],
   allergenIds: [],
+  culturalTagIds: [],
 }
 
 // ── Inline SVG icons (no lucide-react in frontend) ─────────────────────────────
@@ -202,7 +210,7 @@ function ProgressBar({ step, total, label }: { step: number; total: number; labe
 // ── Page component ─────────────────────────────────────────────────────────────
 
 export function CreateRecipePage() {
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
   const navigate = useNavigate()
   const role = useUserRole()
 
@@ -227,6 +235,7 @@ export function CreateRecipePage() {
   const [unmatchedParsedIngredients, setUnmatchedParsedIngredients] = useState<string[]>([])
   const [recording, setRecording] = useState(false)
   const [voiceLanguage, setVoiceLanguage] = useState<'auto' | 'en' | 'tr'>('auto')
+  const [culturalTags, setCulturalTags] = useState<CulturalTag[]>([])
   // Cook can only create community; expert can create both
   const canCreateCultural = role === 'expert'
 
@@ -235,6 +244,29 @@ export function CreateRecipePage() {
     discoveryService.getDietaryTags().then(setAllTags).catch(() => setAllTags([]))
     allergenService.list().then(setAllAllergens).catch(() => setAllAllergens([]))
   }, [])
+
+  /** Fetch cultural tags scoped to the recipe's country (global tags always included).
+   * Available for both community and cultural recipes (mirrors mobile). Drops
+   * selections that fall out of scope when the country changes. */
+  useEffect(() => {
+    let cancelled = false
+    culturalTagService
+      .list(draft.country.trim() || undefined)
+      .then((tags) => {
+        if (cancelled) return
+        setCulturalTags(tags)
+        setDraft((d) => ({
+          ...d,
+          culturalTagIds: d.culturalTagIds.filter((id) => tags.some((tag) => tag.id === id)),
+        }))
+      })
+      .catch(() => {
+        if (!cancelled) setCulturalTags([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [draft.country])
 
   const [detectingAllergens, setDetectingAllergens] = useState(false)
 
@@ -297,7 +329,7 @@ export function CreateRecipePage() {
     setDraft((d) => ({ ...d, tools: d.tools.filter((_, i) => i !== idx) }))
 
   // tags
-  const toggleTag = (field: 'dietaryTagIds', id: number) =>
+  const toggleTag = (field: 'dietaryTagIds' | 'culturalTagIds', id: number) =>
     setDraft((d) => {
       const current = d[field]
       const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
@@ -373,6 +405,7 @@ export function CreateRecipePage() {
         isPublished: publish,
         tagIds: draft.dietaryTagIds,
         allergenIds: draft.allergenIds,
+        culturalTagIds: draft.culturalTagIds.length > 0 ? draft.culturalTagIds : undefined,
       })
       recipeCreated = true
 
@@ -806,6 +839,36 @@ export function CreateRecipePage() {
                 maxLength={5000}
                 rows={4}
               />
+            </div>
+
+            {/* Cultural tags — region-scoped picker, available for both recipe types */}
+            <div className="cr-field">
+              <label className="cr-label">{t('create.fields.culturalTags')}</label>
+              <p className="cr-hint">{t('create.fields.culturalTagsHint')}</p>
+              {culturalTags.length === 0 ? (
+                <p className="cr-hint">{t('create.fields.culturalTagsEmpty')}</p>
+              ) : (
+                <div className="cr-tag-grid">
+                  {culturalTags.map((tag) => {
+                    const lang = i18n.language.startsWith('tr') ? 'tr' : 'en'
+                    const checked = draft.culturalTagIds.includes(tag.id)
+                    return (
+                      <label
+                        key={tag.id}
+                        className={`cr-tag-chip${checked ? ' cr-tag-chip--active' : ''}`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="cr-tag-chip__input"
+                          checked={checked}
+                          onChange={() => toggleTag('culturalTagIds', tag.id)}
+                        />
+                        {culturalTagLabel(tag, lang)}
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Genre → Variety (two-step; varieties loaded per genre) */}
@@ -1244,8 +1307,20 @@ export function CreateRecipePage() {
                 )}
               </div>
 
-              {(draft.dietaryTagIds.length > 0 || draft.allergenIds.length > 0) && (
+              {(draft.dietaryTagIds.length > 0 ||
+                draft.allergenIds.length > 0 ||
+                draft.culturalTagIds.length > 0) && (
                 <div className="cr-review-card__tags">
+                  {draft.culturalTagIds.map((id) => {
+                    const tag = culturalTags.find((c) => c.id === id)
+                    if (!tag) return null
+                    const lang = i18n.language.startsWith('tr') ? 'tr' : 'en'
+                    return (
+                      <span key={`ct-${id}`} className="cr-review-tag cr-review-tag--cultural">
+                        {culturalTagLabel(tag, lang)}
+                      </span>
+                    )
+                  })}
                   {draft.dietaryTagIds.map((id) => {
                     const tag = allTags.find((t) => Number(t.id) === id)
                     return tag ? (

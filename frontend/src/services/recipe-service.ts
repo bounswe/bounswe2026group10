@@ -1,4 +1,5 @@
 import { httpClient } from '@/lib/http-client'
+import type { CulturalTag } from '@/services/cultural-tag-service'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -70,6 +71,7 @@ export interface RecipeDetail {
   tools: RecipeTool[]
   media: RecipeMedia[]
   tags: { id: string; name: string; category: 'dietary' | 'allergen' }[]
+  culturalTags: CulturalTag[]
   videoAnnotations: VideoAnnotation[]
   createdAt: string
   updatedAt: string
@@ -88,6 +90,8 @@ export interface UpdateRecipePayload {
   ingredients?: CreateRecipeIngredient[]
   steps?: { stepOrder: number; description: string }[]
   tools?: { name: string }[]
+  /** Cultural tag IDs from GET /cultural-tags (cultural recipes only). */
+  culturalTagIds?: number[]
 }
 
 export interface CreateRecipeIngredient {
@@ -122,6 +126,8 @@ export interface CreateRecipePayload {
   tagIds?: number[]
   /** Allergen IDs from GET /allergens — auto-detected from ingredients */
   allergenIds?: number[]
+  /** Cultural tag IDs from GET /cultural-tags (cultural recipes only). */
+  culturalTagIds?: number[]
 }
 
 export interface CreatedRecipe {
@@ -198,6 +204,13 @@ export const recipeService = {
         id: String(tag.id),
         name: tag.name ?? '',
         category: tag.category === 'allergen' ? 'allergen' : 'dietary',
+      })),
+      culturalTags: (d.culturalTags ?? []).map((t: any) => ({
+        id: Number(t.id),
+        key: String(t.key ?? ''),
+        labelEn: t.labelEn ?? null,
+        labelTr: t.labelTr ?? null,
+        country: t.country ?? null,
       })),
       videoAnnotations: (d.videoAnnotations ?? []).map((a: any) => ({
         id: String(a.id),

@@ -63,6 +63,8 @@ export interface DiscoveryParams {
   region?: string
   excludeAllergens?: string
   tagIds?: string
+  /** Comma-separated cultural tag IDs — recipes matching ANY of them are returned (OR). */
+  culturalTagIds?: string
   genreId?: string
   varietyId?: number
   /** Case-insensitive partial match on recipe title (GET /discovery/recipes) */

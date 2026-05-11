@@ -804,6 +804,12 @@
   border: 1px solid rgba(192, 57, 43, 0.25);
 }
 
+.recipe-detail__tag--cultural {
+  background: rgba(212, 134, 10, 0.1);
+  color: #a16207;
+  border: 1px solid rgba(212, 134, 10, 0.3);
+}
+
 /* ── Video player with annotations ─────────────────────────────────────────── */
 
 .rd-video-player {
