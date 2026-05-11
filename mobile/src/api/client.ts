@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import i18n from '../i18n';
 
 export const BASE_URL = 'https://urchin-app-w5w4g.ondigitalocean.app';
 
@@ -144,13 +145,17 @@ export async function fetchApi<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  headers['Accept-Language'] = i18n.language === 'tr' ? 'tr' : 'en';
+
   // Don't override Content-Type for multipart (let fetch set it with boundary)
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
 
   const method = options.method ?? 'GET';
-  const url = `${BASE_URL}${path}`;
+  const lang = i18n.language === 'tr' ? 'tr' : 'en';
+  const separator = path.includes('?') ? '&' : '?';
+  const url = `${BASE_URL}${path}${separator}lang=${lang}`;
   console.log(`[API] → ${method} ${url}`);
 
   let response: Response;

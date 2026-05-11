@@ -26,7 +26,7 @@ import { colors, fonts, fontSizes, spacing } from '../theme';
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const { authState } = useAuth();
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const [communityPicks, setCommunityPicks] = useState<RecipeListItem[]>([]);
   const [genres, setGenres] = useState<DishGenre[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +46,7 @@ export function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [i18n.language]);
 
   useEffect(() => {
     loadData();

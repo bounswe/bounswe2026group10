@@ -75,7 +75,7 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
         setCountries(countryData);
       })
       .finally(() => setLoading(false));
-  }, [visible]);
+  }, [visible, i18n.language]);
 
   // Load cultural tags whenever the selected country changes (region scoping).
   // Selected-but-now-out-of-region ids stay in `selected` until the user clears
@@ -91,7 +91,7 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
     return () => {
       cancelled = true;
     };
-  }, [visible, filters.country]);
+  }, [visible, filters.country, i18n.language]);
 
   // Load cities when selected country changes
   useEffect(() => {

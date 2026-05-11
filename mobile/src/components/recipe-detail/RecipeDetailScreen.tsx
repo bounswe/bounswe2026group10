@@ -32,7 +32,7 @@ interface RecipeDetailScreenProps {
 const EMPTY_ALTERNATIVES: RecipeCard[] = [];
 
 export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,7 @@ export function RecipeDetailScreen({ recipeId }: RecipeDetailScreenProps) {
       })
       .catch((err: Error) => setError(err.message ?? 'Failed to load recipe'))
       .finally(() => setLoading(false));
-  }, [recipeId]);
+  }, [recipeId, i18n.language]);
 
   useEffect(() => {
     fetchRecipe(true);

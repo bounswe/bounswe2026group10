@@ -26,7 +26,7 @@ import {
 } from "../../api/allergens";
 
 export function CreateAllergensScreen() {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const navigation =
     useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const { draft, updateDraft, resetDraft } = useRecipeForm();
@@ -92,7 +92,7 @@ export function CreateAllergensScreen() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [i18n.language]);
 
   const chipOptions = useMemo(
     () =>

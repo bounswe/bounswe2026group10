@@ -108,7 +108,7 @@ function CulturalSpotlight({
 export function DishVarietyDetailScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const varietyId: number = route.params?.id;
   const routeFilters: ActiveFilters | undefined = route.params?.filters;
 
@@ -129,7 +129,7 @@ export function DishVarietyDetailScreen() {
       .then(setVariety)
       .catch(() => setError('Failed to load dish variety'))
       .finally(() => setLoading(false));
-  }, [varietyId]);
+  }, [varietyId, i18n.language]);
 
   // When the caller passed active filters, fetch the matching recipe IDs from
   // the discovery endpoint so we can intersect them with the variety's recipe list.

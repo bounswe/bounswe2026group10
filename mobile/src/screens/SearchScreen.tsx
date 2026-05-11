@@ -40,7 +40,7 @@ type NavigationProp = NativeStackNavigationProp<any>;
 export function SearchScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<SearchStackParamList, 'Search'>>();
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
 
   // ── Search text ────────────────────────────────────────────────────────────
   const [query, setQuery] = useState(route.params?.initialQuery ?? '');
@@ -141,7 +141,7 @@ export function SearchScreen() {
         setAllVarieties(vars);
       })
       .finally(() => setInitialLoading(false));
-  }, []);
+  }, [i18n.language]);
 
   // ── Debounce search input ─────────────────────────────────────────────────
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -167,7 +167,7 @@ export function SearchScreen() {
     })
       .then(setRecipes)
       .finally(() => setRecipesLoading(false));
-  }, [debouncedSearch, selectedGenreId, filters]);
+  }, [debouncedSearch, selectedGenreId, filters, i18n.language]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleGenrePress = useCallback((genre: DishGenre) => {

@@ -217,6 +217,10 @@ export const en = {
     alternativeRecipes: 'Alternative Versions',
     servingsLabel: 'Serving',
     servingsLabelPlural: 'Servings',
+    substituteButton: 'Substitute',
+    substitutesTitle: 'Substitutes for {{name}}',
+    substitutesEmpty: 'No substitutes found.',
+    substitutesError: 'Could not load substitutes.',
     comments: {
       title: 'Comments',
       empty: 'No comments yet. Be the first to share your thoughts.',
