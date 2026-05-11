@@ -828,6 +828,11 @@
   color: #c8503c;
 }
 
+.cr-review-tag--cultural {
+  background: rgba(212, 134, 10, 0.1);
+  color: #a16207;
+}
+
 /* ── Wide screen adjustments ────────────────────────────────────────────── */
 
 @media (min-width: 768px) {

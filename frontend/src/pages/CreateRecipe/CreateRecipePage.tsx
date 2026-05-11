@@ -1307,8 +1307,20 @@ export function CreateRecipePage() {
                 )}
               </div>
 
-              {(draft.dietaryTagIds.length > 0 || draft.allergenIds.length > 0) && (
+              {(draft.dietaryTagIds.length > 0 ||
+                draft.allergenIds.length > 0 ||
+                draft.culturalTagIds.length > 0) && (
                 <div className="cr-review-card__tags">
+                  {draft.culturalTagIds.map((id) => {
+                    const tag = culturalTags.find((c) => c.id === id)
+                    if (!tag) return null
+                    const lang = i18n.language.startsWith('tr') ? 'tr' : 'en'
+                    return (
+                      <span key={`ct-${id}`} className="cr-review-tag cr-review-tag--cultural">
+                        {culturalTagLabel(tag, lang)}
+                      </span>
+                    )
+                  })}
                   {draft.dietaryTagIds.map((id) => {
                     const tag = allTags.find((t) => Number(t.id) === id)
                     return tag ? (
