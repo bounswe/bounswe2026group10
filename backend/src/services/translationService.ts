@@ -225,6 +225,46 @@ export async function translateRecipe(recipeId: string): Promise<void> {
   console.log(`[translation] Recipe ${recipeId} translated to ${langCode}.`);
 }
 
+// ─── Listing Title Translation Lookup ─────────────────────────────────────────
+
+/**
+ * Batch-fetches translated titles for a set of recipe IDs in the requested
+ * language. Used by listing endpoints (home, discovery, library, profile) so
+ * cards show the localized recipe title without an N+1 query per row.
+ *
+ * Returns a `Map<recipeId, translatedTitle>`. Recipes without a translation
+ * row are simply absent from the map — callers should fall back to the
+ * original `recipes.title`.
+ *
+ * Errors are swallowed and resolved as an empty map; the listing must keep
+ * working even if the translations table is unavailable.
+ */
+export async function fetchRecipeTitleTranslations(
+  recipeIds: string[],
+  langCode: "EN" | "TR"
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (recipeIds.length === 0) return out;
+
+  const { data, error } = await supabase
+    .from("recipe_translations")
+    .select("recipe_id, title")
+    .eq("language_code", langCode)
+    .in("recipe_id", recipeIds);
+
+  if (error) {
+    console.error("[translation] Failed to batch-fetch recipe titles:", error);
+    return out;
+  }
+
+  for (const row of data ?? []) {
+    const id = (row as any).recipe_id;
+    const title = (row as any).title;
+    if (id && typeof title === "string" && title.length > 0) out.set(id, title);
+  }
+  return out;
+}
+
 // ─── Ingredient Name Translation ──────────────────────────────────────────────
 
 /**

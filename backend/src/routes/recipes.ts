@@ -7,23 +7,10 @@ import type { AuthenticatedRequest, LanguageRequest } from "../types/index.js";
 import { errorResponse, successResponse } from "../utils/response.js";
 import { canonicalizeLocationForWrite } from "../utils/locations.js";
 import { normalizeText } from "../utils/text.js";
-import { translateRecipe } from "../services/translationService.js";
+import { translateRecipe, fetchRecipeTitleTranslations } from "../services/translationService.js";
+import { resolveLocalizedName } from "../utils/i18n.js";
 
 const router = Router();
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Resolves name_en / name_tr based on langParam, falls back to name. */
-function resolveLocalizedName(
-  obj: { name?: string | null; name_en?: string | null; name_tr?: string | null } | null | undefined,
-  langParam: string | null
-): string | null {
-  if (!obj) return null;
-  if (!langParam) return obj.name ?? null;
-  const preferred = langParam === "EN" ? obj.name_en : obj.name_tr;
-  const fallback  = langParam === "EN" ? obj.name_tr  : obj.name_en;
-  return preferred ?? fallback ?? obj.name ?? null;
-}
 
 // ─── Zod Schemas ──────────────────────────────────────────────────────────────
 
@@ -173,6 +160,8 @@ router.get("/:id/scale", async (req: Request, res: Response): Promise<void> => {
 router.get("/mine", requireAuth, async (req: Request, res: Response): Promise<void> => {
   const user = (req as AuthenticatedRequest).user;
   const userClient = createUserClient(user.accessToken);
+  const lang = (req as LanguageRequest).lang;
+  const langParam: "EN" | "TR" | null = lang === "en" ? "EN" : lang === "tr" ? "TR" : null;
 
   const statusParam = req.query["status"];
   const validStatus = statusParam === "published" || statusParam === "draft" ? statusParam : null;
@@ -211,6 +200,12 @@ router.get("/mine", requireAuth, async (req: Request, res: Response): Promise<vo
     }
   }
 
+  let titleMap = new Map<string, string>();
+  if (langParam) {
+    const ids = (data ?? []).map((r: any) => r.id);
+    titleMap = await fetchRecipeTitleTranslations(ids, langParam);
+  }
+
   const recipes = (data ?? []).map((r: any) => {
     const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
     const allergens = (r.allergen_ids ?? [])
@@ -218,7 +213,7 @@ router.get("/mine", requireAuth, async (req: Request, res: Response): Promise<vo
       .filter((a: any) => a.name !== null);
     return {
       id: r.id,
-      title: r.title,
+      title: titleMap.get(r.id) ?? r.title,
       type: r.type,
       isPublished: r.is_published,
       averageRating: r.average_rating ?? null,
@@ -246,7 +241,7 @@ router.get("/mine", requireAuth, async (req: Request, res: Response): Promise<vo
 router.get("/:id", async (req: Request, res: Response): Promise<void> => {
   const recipeId = (req.params["id"] ?? "") as string;
   const lang = (req as LanguageRequest).lang;
-  const langParam = lang ? lang.toUpperCase() : null;
+  const langParam: "EN" | "TR" | null = lang === "en" ? "EN" : lang === "tr" ? "TR" : null;
 
   const authHeader = req.headers["authorization"];
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
@@ -468,6 +463,8 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
   }
 
   const { creatorId, page, limit } = parsed.data;
+  const lang = (req as LanguageRequest).lang;
+  const langParam: "EN" | "TR" | null = lang === "en" ? "EN" : lang === "tr" ? "TR" : null;
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
@@ -476,7 +473,7 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
     .select(
       `id, title, type, average_rating, rating_count, created_at, updated_at,
        creator:profiles!recipes_creator_id_fkey(id, username),
-       dish_variety:dish_varieties(id, name, dish_genre:dish_genres(id, name)),
+       dish_variety:dish_varieties(id, name, name_en, name_tr, dish_genre:dish_genres(id, name, name_en, name_tr)),
        recipe_media(id, url, type)`,
       { count: "exact" }
     )
@@ -495,19 +492,28 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  // Batch-fetch translated titles when ?lang= is set (and the user is asking
+  // for a non-source language). Recipes without a translation row fall back
+  // to the raw title (i.e. the language the recipe was authored in).
+  let titleMap = new Map<string, string>();
+  if (langParam) {
+    const ids = (data ?? []).map((r: any) => r.id);
+    titleMap = await fetchRecipeTitleTranslations(ids, langParam);
+  }
+
   const recipes = (data ?? []).map((r: any) => {
     const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
     return {
       id: r.id,
-      title: r.title,
+      title: titleMap.get(r.id) ?? r.title,
       type: r.type,
       averageRating: r.average_rating ?? null,
       ratingCount: r.rating_count ?? 0,
       creatorId: r.creator?.id ?? null,
       creatorUsername: r.creator?.username ?? null,
       dishVarietyId: r.dish_variety?.id ?? null,
-      dishVarietyName: r.dish_variety?.name ?? null,
-      genreName: r.dish_variety?.dish_genre?.name ?? null,
+      dishVarietyName: resolveLocalizedName(r.dish_variety, langParam),
+      genreName: resolveLocalizedName(r.dish_variety?.dish_genre, langParam),
       createdAt: r.created_at,
       updatedAt: r.updated_at,
       coverImageUrl: firstImage?.url ?? null,

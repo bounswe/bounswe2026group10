@@ -2,8 +2,10 @@ import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { supabase, createUserClient } from "../config/supabase.js";
 import { requireAuth } from "../middleware/auth.js";
-import type { AuthenticatedRequest } from "../types/index.js";
+import type { AuthenticatedRequest, LanguageRequest } from "../types/index.js";
 import { errorResponse, successResponse } from "../utils/response.js";
+import { resolveLocalizedName } from "../utils/i18n.js";
+import { fetchRecipeTitleTranslations } from "../services/translationService.js";
 
 const router = Router();
 
@@ -79,6 +81,8 @@ router.delete("/me/favorites/:recipeId", requireAuth, async (req: Request, res: 
 
 router.get("/me/favorites", requireAuth, async (req: Request, res: Response): Promise<void> => {
   const user = (req as AuthenticatedRequest).user;
+  const lang = (req as LanguageRequest).lang;
+  const langParam: "EN" | "TR" | null = lang === "en" ? "EN" : lang === "tr" ? "TR" : null;
 
   const parsed = listFavoritesQuerySchema.safeParse(req.query);
   if (!parsed.success) {
@@ -97,7 +101,7 @@ router.get("/me/favorites", requireAuth, async (req: Request, res: Response): Pr
       `recipe:recipes(
         id, title, type, average_rating, rating_count, allergen_ids, created_at, updated_at,
         creator:profiles!recipes_creator_id_fkey(id, username),
-        dish_variety:dish_varieties(id, name, dish_genre:dish_genres(id, name)),
+        dish_variety:dish_varieties(id, name, name_en, name_tr, dish_genre:dish_genres(id, name, name_en, name_tr)),
         recipe_media(id, url, type)
       )`,
       { count: "exact" }
@@ -126,6 +130,14 @@ router.get("/me/favorites", requireAuth, async (req: Request, res: Response): Pr
     }
   }
 
+  let titleMap = new Map<string, string>();
+  if (langParam) {
+    const ids = (data ?? [])
+      .map((fav: any) => fav.recipe?.id)
+      .filter((id: any): id is string => typeof id === "string");
+    titleMap = await fetchRecipeTitleTranslations(ids, langParam);
+  }
+
   const recipes = (data ?? []).map((fav: any) => {
     const r = fav.recipe;
     const firstImage = (r?.recipe_media ?? []).find((m: any) => m.type === "image");
@@ -134,15 +146,15 @@ router.get("/me/favorites", requireAuth, async (req: Request, res: Response): Pr
       .filter((a: any) => a.name !== null);
     return {
       id: r?.id ?? null,
-      title: r?.title ?? null,
+      title: (r?.id && titleMap.get(r.id)) ?? r?.title ?? null,
       type: r?.type ?? null,
       averageRating: r?.average_rating ?? null,
       ratingCount: r?.rating_count ?? 0,
       creatorId: r?.creator?.id ?? null,
       creatorUsername: r?.creator?.username ?? null,
       dishVarietyId: r?.dish_variety?.id ?? null,
-      dishVarietyName: r?.dish_variety?.name ?? null,
-      genreName: r?.dish_variety?.dish_genre?.name ?? null,
+      dishVarietyName: resolveLocalizedName(r?.dish_variety, langParam),
+      genreName: resolveLocalizedName(r?.dish_variety?.dish_genre, langParam),
       createdAt: r?.created_at ?? null,
       updatedAt: r?.updated_at ?? null,
       coverImageUrl: firstImage?.url ?? null,
@@ -163,6 +175,8 @@ router.get("/me/favorites", requireAuth, async (req: Request, res: Response): Pr
 router.get("/me/drafts", requireAuth, async (req: Request, res: Response): Promise<void> => {
   const user = (req as AuthenticatedRequest).user;
   const userClient = createUserClient(user.accessToken);
+  const lang = (req as LanguageRequest).lang;
+  const langParam: "EN" | "TR" | null = lang === "en" ? "EN" : lang === "tr" ? "TR" : null;
 
   const { data, error } = await userClient
     .from("recipes")
@@ -195,6 +209,12 @@ router.get("/me/drafts", requireAuth, async (req: Request, res: Response): Promi
     }
   }
 
+  let titleMap = new Map<string, string>();
+  if (langParam) {
+    const ids = (data ?? []).map((r: any) => r.id);
+    titleMap = await fetchRecipeTitleTranslations(ids, langParam);
+  }
+
   const recipes = (data ?? []).map((r: any) => {
     const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
     const allergens = (r.allergen_ids ?? [])
@@ -202,7 +222,7 @@ router.get("/me/drafts", requireAuth, async (req: Request, res: Response): Promi
       .filter((a: any) => a.name !== null);
     return {
       id: r.id,
-      title: r.title,
+      title: titleMap.get(r.id) ?? r.title,
       type: r.type,
       isPublished: r.is_published,
       averageRating: r.average_rating ?? null,

@@ -424,6 +424,8 @@ Use `successResponse(data)` and `errorResponse(code, message)` from `src/utils/r
 
 `GET /recipes/:id` reads `req.lang` instead of parsing `?lang=` directly, converts to uppercase (`'en'` → `'EN'`) for the DB column, and fetches translations from `recipe_translations`, `recipe_step_translations`, and `recipe_ingredient_translations` when `req.lang` is non-null, falling back to original content when no translation row exists.
 
+**Listing endpoints** also honor `req.lang` so cards on home, discovery, library, and profile pages render in the active UI language: `GET /recipes`, `GET /recipes/mine`, `GET /discovery/recipes`, `GET /discovery/recipes/by-ingredients`, `GET /users/me/favorites`, and `GET /users/me/drafts`. They use `fetchRecipeTitleTranslations(recipeIds, langCode)` from `translationService.ts` — a single batch query against `recipe_translations` for the current page — and resolve `dish_variety` / `dish_genre` names via `resolveLocalizedName()` (`src/utils/i18n.ts`) off the `name_en` / `name_tr` columns. Rows without a translation row fall back to the authored title.
+
 Translation is triggered fire-and-forget (`.catch()` swallows errors) after:
 - `POST /recipes` — recipe create
 - `PATCH /recipes/:id` — recipe update
