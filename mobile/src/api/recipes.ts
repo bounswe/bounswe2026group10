@@ -28,6 +28,7 @@ export interface CreateRecipeParams {
   steps: CreateRecipeStep[];
   tools: CreateRecipeTool[];
   tagIds?: number[];
+  allergenIds?: number[];
 }
 
 export interface RecipeResponse {
@@ -165,6 +166,7 @@ export interface BackendRecipeDetail {
   tools: BackendTool[];
   media: BackendMedia[];
   tags: BackendTag[];
+  allergens?: { id: number; name: string | null }[];
   culturalTags?: CulturalTagItem[];
   country: string | null;
   city: string | null;

@@ -121,11 +121,12 @@ describe('buildRecipePayload', () => {
     expect(payload.steps[0].description).toBe('Preheat oven');
   });
 
-  it('combines dietaryTagIds and allergenTagIds into tagIds', () => {
+  it('sends dietaryTagIds via tagIds and allergenTagIds via allergenIds', () => {
     const payload = buildRecipePayload(
       makeDraft({ dietaryTagIds: [1, 2], allergenTagIds: [10, 11] })
     );
-    expect(payload.tagIds).toEqual([1, 2, 10, 11]);
+    expect(payload.tagIds).toEqual([1, 2]);
+    expect(payload.allergenIds).toEqual([10, 11]);
   });
 
   it('maps tools to { name } only', () => {
@@ -147,7 +148,7 @@ describe('buildRecipePayload', () => {
     expect(payload.culturalTagIds).toEqual([]);
   });
 
-  it('keeps culturalTagIds disjoint from dietary/allergen tagIds', () => {
+  it('keeps culturalTagIds, tagIds, and allergenIds disjoint', () => {
     const payload = buildRecipePayload(
       makeDraft({
         dietaryTagIds: [1],
@@ -155,7 +156,8 @@ describe('buildRecipePayload', () => {
         culturalTagIds: [3],
       })
     );
-    expect(payload.tagIds).toEqual([1, 2]);
+    expect(payload.tagIds).toEqual([1]);
+    expect(payload.allergenIds).toEqual([2]);
     expect(payload.culturalTagIds).toEqual([3]);
   });
 });
