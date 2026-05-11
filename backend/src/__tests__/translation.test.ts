@@ -75,12 +75,18 @@ describe("translateRecipe()", () => {
     delete process.env["DEEPL_API_KEY"];
   });
 
+  const DEFAULT_TOOLS = [
+    { id: "tool-1", name: "Oven" },
+    { id: "tool-2", name: "Bowl" },
+  ];
+
   /** Sets up supabase.from with default table responses, accepting per-table overrides. */
   const setupDb = (overrides: {
     recipe?: any;
     recipeError?: any;
     steps?: any[];
     ingredients?: any[];
+    tools?: any[];
   } = {}) => {
     (supabase.from as jest.Mock).mockImplementation((table: string) => {
       switch (table) {
@@ -93,6 +99,8 @@ describe("translateRecipe()", () => {
           return chain({ data: overrides.steps ?? DEFAULT_STEPS, error: null });
         case "recipe_ingredients":
           return chain({ data: overrides.ingredients ?? DEFAULT_INGREDIENTS, error: null });
+        case "recipe_tools":
+          return chain({ data: overrides.tools ?? DEFAULT_TOOLS, error: null });
         default:
           return chain({ data: null, error: null });
       }
@@ -377,11 +385,11 @@ describe("translateRecipe()", () => {
   // ─── Edge cases ───────────────────────────────────────────────────────────────
 
   it("handles recipe with no story — story is excluded from DeepL batch", async () => {
-    setupDb({ recipe: { title: "Pasta", story: null } });
+    setupDb({ recipe: { title: "Pasta", story: null }, tools: [] });
     mockTranslateText
       .mockResolvedValueOnce({ text: "Makarna", detectedSourceLang: "en" })
       .mockResolvedValueOnce([
-        { text: "Makarna" },       // title
+        { text: "Makarna" },         // title
         { text: "Unu karıştırın." }, // step 1
         { text: "180°C'de pişirin." }, // step 2
       ]);
@@ -389,7 +397,7 @@ describe("translateRecipe()", () => {
     const spy = jest.spyOn(console, "log").mockImplementation(() => {});
     await translationService.translateRecipe(RECIPE_ID);
 
-    // Second call: [title, step1, step2] — no story → 3 items
+    // Second call: [title, step1, step2] — no story, no tools → 3 items
     const textsArg: string[] = mockTranslateText.mock.calls[1]?.[0];
     expect(textsArg).toHaveLength(3);
     spy.mockRestore();
@@ -429,6 +437,86 @@ describe("translateRecipe()", () => {
       ([t]: [string]) => t === "recipe_ingredient_translations"
     );
     expect(ingTransCalls).toHaveLength(0);
+    spy.mockRestore();
+  });
+
+  // ─── Tool translation ─────────────────────────────────────────────────────────
+
+  it("includes tool names in the DeepL batch after steps", async () => {
+    setupDb({ tools: [{ id: "tool-1", name: "Oven" }] });
+    mockTranslateText
+      .mockResolvedValueOnce({ text: "Çikolatalı Kek", detectedSourceLang: "en" })
+      .mockResolvedValueOnce([
+        { text: "Çikolatalı Kek" },
+        { text: "Lezzetli bir pasta." },
+        { text: "Unu karıştırın." },
+        { text: "180°C'de pişirin." },
+        { text: "Fırın" },
+      ]);
+
+    const spy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await translationService.translateRecipe(RECIPE_ID);
+
+    const textsArg: string[] = mockTranslateText.mock.calls[1]?.[0];
+    expect(textsArg).toContain("Oven");
+    // Tool comes after steps
+    expect(textsArg.indexOf("Oven")).toBeGreaterThan(textsArg.indexOf("Bake at 180°C."));
+    spy.mockRestore();
+  });
+
+  it("upserts translated tool names to recipe_tool_translations", async () => {
+    const upsertMock = jest.fn().mockResolvedValue({ error: null });
+
+    (supabase.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === "recipes") return chain({ data: DEFAULT_RECIPE, error: null });
+      if (table === "recipe_steps") return chain({ data: DEFAULT_STEPS, error: null });
+      if (table === "recipe_ingredients") return chain({ data: DEFAULT_INGREDIENTS, error: null });
+      if (table === "recipe_tools")
+        return chain({ data: [{ id: "tool-1", name: "Oven" }], error: null });
+      if (table === "recipe_tool_translations") return { upsert: upsertMock };
+      return chain({ data: null, error: null });
+    });
+
+    mockTranslateText
+      .mockResolvedValueOnce({ text: "Çikolatalı Kek", detectedSourceLang: "en" })
+      .mockResolvedValueOnce([
+        { text: "Çikolatalı Kek" },
+        { text: "Lezzetli bir pasta." },
+        { text: "Unu karıştırın." },
+        { text: "180°C'de pişirin." },
+        { text: "Fırın" },
+      ]);
+
+    const spy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await translationService.translateRecipe(RECIPE_ID);
+
+    expect(upsertMock).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ recipe_tool_id: "tool-1", language_code: "TR", name: "Fırın" }),
+      ]),
+      expect.anything()
+    );
+    spy.mockRestore();
+  });
+
+  it("skips recipe_tool_translations upsert when recipe has no tools", async () => {
+    setupDb({ tools: [] });
+    mockTranslateText
+      .mockResolvedValueOnce({ text: "Çikolatalı Kek", detectedSourceLang: "en" })
+      .mockResolvedValueOnce([
+        { text: "Çikolatalı Kek" },
+        { text: "Lezzetli bir pasta." },
+        { text: "Unu karıştırın." },
+        { text: "180°C'de pişirin." },
+      ]);
+
+    const spy = jest.spyOn(console, "log").mockImplementation(() => {});
+    await translationService.translateRecipe(RECIPE_ID);
+
+    const toolTransCalls = (supabase.from as jest.Mock).mock.calls.filter(
+      ([t]: [string]) => t === "recipe_tool_translations"
+    );
+    expect(toolTransCalls).toHaveLength(0);
     spy.mockRestore();
   });
 });
@@ -569,6 +657,120 @@ describe("GET /recipes/:id?lang=", () => {
     const res = await request(app).get("/recipes/recipe-1?lang=tr");
     expect(res.status).toBe(200);
     expect(res.body.data.ingredients[0].unit).toBe("cup");
+  });
+
+  // ─── dishVarietyName / genreName / ingredientName lang resolution ─────────────
+
+  const mockRecipeWithNames = {
+    ...mockRecipeData,
+    dish_variety: {
+      id: 2,
+      name: "Adana Kebap",
+      name_en: "Adana Kebap",
+      name_tr: "Adana Kebabı",
+      dish_genre: { id: 1, name: "Kebap", name_en: "Kebab", name_tr: "Kebap" },
+    },
+    recipe_ingredients: [
+      {
+        id: "ri-1",
+        quantity: 2,
+        unit: "cup",
+        ingredient: { id: 1, name: "Flour", name_en: "Flour", name_tr: "Un", ingredient_allergens: [] },
+      },
+    ],
+    recipe_tools: [{ id: "tool-1", name: "Oven" }],
+  };
+
+  it("dishVarietyName returns name_en when ?lang=en", async () => {
+    setupMock({
+      recipes: { data: mockRecipeWithNames, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=en");
+    expect(res.status).toBe(200);
+    expect(res.body.data.dishVarietyName).toBe("Adana Kebap");
+    expect(res.body.data.genreName).toBe("Kebab");
+  });
+
+  it("dishVarietyName returns name_tr when ?lang=tr", async () => {
+    setupMock({
+      recipes: { data: mockRecipeWithNames, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    expect(res.body.data.dishVarietyName).toBe("Adana Kebabı");
+    expect(res.body.data.genreName).toBe("Kebap");
+  });
+
+  it("dishVarietyName falls back to name_en when name_tr is null and ?lang=tr", async () => {
+    setupMock({
+      recipes: {
+        data: {
+          ...mockRecipeWithNames,
+          dish_variety: {
+            id: 2, name: "Urfa Kebap", name_en: "Urfa Kebap", name_tr: null,
+            dish_genre: { id: 1, name: "Kebap", name_en: "Kebab", name_tr: null },
+          },
+        },
+        error: null,
+      },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    expect(res.body.data.dishVarietyName).toBe("Urfa Kebap");
+  });
+
+  it("ingredientName returns lang-appropriate value when ?lang=tr", async () => {
+    setupMock({
+      recipes: { data: mockRecipeWithNames, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    expect(res.body.data.ingredients[0].ingredientName).toBe("Un");
+  });
+
+  it("tools[].name returns translated name when ?lang=tr and translation exists", async () => {
+    setupMock({
+      recipes: { data: mockRecipeWithNames, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: {
+        data: [{ recipe_tool_id: "tool-1", name: "Fırın" }],
+        error: null,
+      },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    expect(res.body.data.tools[0].name).toBe("Fırın");
+  });
+
+  it("tools[].name falls back to original when no tool translation exists", async () => {
+    setupMock({
+      recipes: { data: mockRecipeWithNames, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    expect(res.body.data.tools[0].name).toBe("Oven");
   });
 });
 
