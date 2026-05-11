@@ -11,6 +11,20 @@ import { translateRecipe } from "../services/translationService.js";
 
 const router = Router();
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Resolves name_en / name_tr based on langParam, falls back to name. */
+function resolveLocalizedName(
+  obj: { name?: string | null; name_en?: string | null; name_tr?: string | null } | null | undefined,
+  langParam: string | null
+): string | null {
+  if (!obj) return null;
+  if (!langParam) return obj.name ?? null;
+  const preferred = langParam === "EN" ? obj.name_en : obj.name_tr;
+  const fallback  = langParam === "EN" ? obj.name_tr  : obj.name_en;
+  return preferred ?? fallback ?? obj.name ?? null;
+}
+
 // ─── Zod Schemas ──────────────────────────────────────────────────────────────
 
 const recipeSchema = z.object({
@@ -243,8 +257,8 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     .select(
       `id, title, story, video_url, serving_size, type, is_published, average_rating, rating_count, allergen_ids, country, city, district, created_at, updated_at,
        creator:profiles!recipes_creator_id_fkey(id, username),
-       dish_variety:dish_varieties(id, name, dish_genre:dish_genres(id, name)),
-       recipe_ingredients(id, quantity, unit, ingredient:ingredients(id, name, ingredient_allergens(allergen:allergens(name)))),
+       dish_variety:dish_varieties(id, name, name_en, name_tr, dish_genre:dish_genres(id, name, name_en, name_tr)),
+       recipe_ingredients(id, quantity, unit, ingredient:ingredients(id, name, name_en, name_tr, ingredient_allergens(allergen:allergens(name)))),
        recipe_steps(id, step_order, description, video_timestamp),
        recipe_tools(id, name),
        recipe_media(id, url, type),
@@ -273,11 +287,13 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
   let resolvedStory: string | null = (data as any).story ?? null;
   let stepTranslationMap: Record<number, string> = {};
   let ingredientUnitMap: Record<number, string> = {};
+  let toolNameMap: Record<number, string> = {};
 
   if (langParam) {
     const ingredientIds = (data.recipe_ingredients ?? []).map((ri: any) => ri.id);
+    const toolIds = (data.recipe_tools ?? []).map((t: any) => t.id);
 
-    const [recipeTransResult, stepTransResult, ingTransResult] = await Promise.all([
+    const [recipeTransResult, stepTransResult, ingTransResult, toolTransResult] = await Promise.all([
       supabase
         .from("recipe_translations")
         .select("title, story")
@@ -296,6 +312,13 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
             .in("recipe_ingredient_id", ingredientIds)
             .eq("language_code", langParam)
         : Promise.resolve({ data: [], error: null }),
+      toolIds.length > 0
+        ? supabase
+            .from("recipe_tool_translations")
+            .select("recipe_tool_id, name")
+            .in("recipe_tool_id", toolIds)
+            .eq("language_code", langParam)
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
     if (recipeTransResult.data) {
@@ -309,6 +332,10 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
 
     for (const row of ingTransResult.data ?? []) {
       ingredientUnitMap[(row as any).recipe_ingredient_id] = (row as any).unit;
+    }
+
+    for (const row of toolTransResult.data ?? []) {
+      toolNameMap[(row as any).recipe_tool_id] = (row as any).name;
     }
   }
 
@@ -351,8 +378,8 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       creatorId: (data.creator as any)?.id ?? null,
       creatorUsername: (data.creator as any)?.username ?? null,
       dishVarietyId: (data.dish_variety as any)?.id ?? null,
-      dishVarietyName: (data.dish_variety as any)?.name ?? null,
-      genreName: (data.dish_variety as any)?.dish_genre?.name ?? null,
+      dishVarietyName: resolveLocalizedName((data.dish_variety as any), langParam),
+      genreName: resolveLocalizedName((data.dish_variety as any)?.dish_genre, langParam),
       title: resolvedTitle,
       story: resolvedStory,
       videoUrl: (data as any).video_url ?? null,
@@ -369,7 +396,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       ingredients: (data.recipe_ingredients ?? []).map((ri: any) => ({
         id: ri.id,
         ingredientId: ri.ingredient?.id ?? null,
-        ingredientName: ri.ingredient?.name ?? null,
+        ingredientName: resolveLocalizedName(ri.ingredient, langParam),
         quantity: ri.quantity,
         unit: ingredientUnitMap[ri.id] ?? ri.unit,
         allergens: (ri.ingredient?.ingredient_allergens ?? [])
@@ -384,7 +411,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       })),
       tools: (data.recipe_tools ?? []).map((t: any) => ({
         id: t.id,
-        name: t.name,
+        name: toolNameMap[t.id] ?? t.name,
       })),
       media: (data.recipe_media ?? []).map((m: any) => ({
         id: m.id,
