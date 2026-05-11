@@ -13,13 +13,18 @@ import {
   type RecipeSummary,
 } from '@/services/discovery-service'
 import { allergenService, type Allergen } from '@/services/allergen-service'
+import {
+  culturalTagService,
+  culturalTagLabel,
+  type CulturalTag,
+} from '@/services/cultural-tag-service'
 import './DiscoveryPage.css'
 
 const SEARCH_DEBOUNCE_MS = 300
 const RECIPES_PER_PAGE = 12
 
 export function DiscoveryPage() {
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
@@ -53,6 +58,8 @@ export function DiscoveryPage() {
   const [selectedCountry, setSelectedCountry] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
   const [locationOptions, setLocationOptions] = useState<LocationOptions>({ countries: [], citiesByCountry: {} })
+  const [culturalTags, setCulturalTags] = useState<CulturalTag[]>([])
+  const [selectedCulturalTagIds, setSelectedCulturalTagIds] = useState<number[]>([])
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -96,10 +103,29 @@ export function DiscoveryPage() {
     }
   }, [t])
 
+  /** Fetch cultural tags scoped to the selected country (global tags always included). */
+  useEffect(() => {
+    let cancelled = false
+    culturalTagService
+      .list(selectedCountry || undefined)
+      .then((tags) => {
+        if (cancelled) return
+        setCulturalTags(tags)
+        // Drop selections that no longer appear in the scoped list.
+        setSelectedCulturalTagIds((prev) => prev.filter((id) => tags.some((tag) => tag.id === id)))
+      })
+      .catch(() => {
+        if (!cancelled) setCulturalTags([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [selectedCountry])
+
   /** Arama metni veya filtreler değişince sayfa 1'e dönsün. */
   useLayoutEffect(() => {
     setRecipePage(1)
-  }, [debouncedSearch, selectedTagIds, excludedAllergenIds, selectedCountry, selectedCity])
+  }, [debouncedSearch, selectedTagIds, excludedAllergenIds, selectedCountry, selectedCity, selectedCulturalTagIds])
 
   const recipeSearchQuery = debouncedSearch.trim() || undefined
 
@@ -112,6 +138,7 @@ export function DiscoveryPage() {
         genreId: selectedGenreId ?? undefined,
         search: recipeSearchQuery,
         tagIds: selectedTagIds.length > 0 ? selectedTagIds.join(',') : undefined,
+        culturalTagIds: selectedCulturalTagIds.length > 0 ? selectedCulturalTagIds.join(',') : undefined,
         excludeAllergens: excludedAllergenIds.length > 0 ? excludedAllergenIds.join(',') : undefined,
         country: selectedCountry || undefined,
         city: selectedCity || undefined,
@@ -141,7 +168,7 @@ export function DiscoveryPage() {
     return () => {
       cancelled = true
     }
-  }, [selectedGenreId, recipePage, recipeSearchQuery, selectedTagIds, excludedAllergenIds, selectedCountry, selectedCity])
+  }, [selectedGenreId, recipePage, recipeSearchQuery, selectedTagIds, selectedCulturalTagIds, excludedAllergenIds, selectedCountry, selectedCity])
 
   const normalizedSearch = debouncedSearch.trim().toLowerCase()
 
@@ -151,6 +178,7 @@ export function DiscoveryPage() {
     Boolean(selectedCountry) ||
     Boolean(selectedCity) ||
     selectedTagIds.length > 0 ||
+    selectedCulturalTagIds.length > 0 ||
     excludedAllergenIds.length > 0 ||
     Boolean(recipeSearchQuery)
 
@@ -207,6 +235,7 @@ export function DiscoveryPage() {
   const dietaryTags = useMemo(() => allTags.filter((t) => t.category === 'dietary'), [allTags])
   const activeFilterCount =
     selectedTagIds.length +
+    selectedCulturalTagIds.length +
     excludedAllergenIds.length +
     (selectedCountry ? 1 : 0) +
     (selectedCity ? 1 : 0)
@@ -224,11 +253,18 @@ export function DiscoveryPage() {
     setExcludedAllergenIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id])
   }
 
+  function toggleCulturalTag(id: number) {
+    setSelectedCulturalTagIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+    )
+  }
+
   function handleClearFilters() {
     setSelectedGenreId(null)
     setSearchInput('')
     setDebouncedSearch('')
     setSelectedTagIds([])
+    setSelectedCulturalTagIds([])
     setExcludedAllergenIds([])
     setSelectedCountry('')
     setSelectedCity('')
@@ -346,6 +382,26 @@ export function DiscoveryPage() {
               </div>
             </div>
           )}
+          {culturalTags.length > 0 && (
+            <div className="discovery-page__filter-group">
+              <p className="discovery-page__filter-group-label">{t('discovery.culturalTags')}</p>
+              <div className="discovery-page__filter-chips">
+                {culturalTags.map((tag) => {
+                  const lang = i18n.language.startsWith('tr') ? 'tr' : 'en'
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      className={`discovery-page__filter-chip${selectedCulturalTagIds.includes(tag.id) ? ' discovery-page__filter-chip--active' : ''}`}
+                      onClick={() => toggleCulturalTag(tag.id)}
+                    >
+                      {culturalTagLabel(tag, lang)}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           {allergens.length > 0 && (
             <div className="discovery-page__filter-group">
               <p className="discovery-page__filter-group-label">{t('discovery.allergens')}</p>
@@ -375,6 +431,7 @@ export function DiscoveryPage() {
               data-testid="clear-filters"
               onClick={() => {
                 setSelectedTagIds([])
+                setSelectedCulturalTagIds([])
                 setExcludedAllergenIds([])
                 setSelectedCountry('')
                 setSelectedCity('')

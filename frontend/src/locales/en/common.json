@@ -220,6 +220,7 @@
     "avoidAllergen": "Avoid {{name}}",
     "dietaryTags": "Dietary Preferences",
     "selectDietaryTags": "Select dietary preferences",
+    "culturalTags": "Cultural Tags",
     "clearFilters": "Clear all filters",
     "noRegionSelected": "All regions",
     "noAllergenSelected": "None",
