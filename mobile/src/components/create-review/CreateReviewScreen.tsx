@@ -27,8 +27,9 @@ import { validateForPublish } from "../../utils/recipeValidation";
 export function CreateReviewScreen() {
   const { t } = useTranslation("common");
   const navigation = useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
-  const { draft, resetDraft } = useRecipeForm();
+  const { draft, resetDraft, saveDraft } = useRecipeForm();
   const [publishing, setPublishing] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
 
   const hasDietaryTags = draft.dietaryTagNames.length > 0;
   const hasAllergenTags = draft.allergenTagNames.length > 0;
@@ -38,7 +39,7 @@ export function CreateReviewScreen() {
 
   const goHome = () => {
     resetDraft();
-    navigation.popToTop();
+    navigation.navigate("CreateBasicInfo" as never);
     navigation.getParent()?.navigate("HomeTab" as never);
   };
 
@@ -79,13 +80,22 @@ export function CreateReviewScreen() {
     }
     try {
       setPublishing(true);
-      const created = await createRecipe({
-        ...buildRecipePayload(draft),
-        isPublished: false,
-      });
-      console.log("[publish] recipe created:", created.id);
-      await attachMedia(created.id);
-      const published = await publishRecipe(created.id);
+      let targetId = draft.recipeId;
+      
+      if (!targetId) {
+        const created = await createRecipe({
+          ...buildRecipePayload(draft),
+          isPublished: false,
+        });
+        targetId = created.id;
+        console.log("[publish] recipe created:", targetId);
+      } else {
+        await saveDraft({});
+        console.log("[publish] draft updated:", targetId);
+      }
+
+      await attachMedia(targetId);
+      const published = await publishRecipe(targetId);
       console.log("[publish] recipe published:", published);
       Alert.alert(t("create.published"), t("create.publishedMsg"), [
         { text: "OK", onPress: goHome },
@@ -96,15 +106,18 @@ export function CreateReviewScreen() {
   };
 
   const handleSaveDraft = async () => {
-    const result = await createRecipe({
-      ...buildRecipePayload(draft),
-      isPublished: false,
-    });
-    console.log("[draft] recipe saved:", result.id);
-    await attachMedia(result.id);
-    Alert.alert(t("create.draftSaved"), t("create.draftSavedMsg2"), [
-      { text: "OK", onPress: goHome },
-    ]);
+    try {
+      setSavingDraft(true);
+      await saveDraft({});
+      Alert.alert(t("create.draftSaved"), t("create.draftSavedMsg2"), [
+        { text: "OK", onPress: goHome },
+      ]);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Could not save draft. Please try again.");
+    } finally {
+      setSavingDraft(false);
+    }
   };
 
   const handleClose = () => {
@@ -314,8 +327,13 @@ export function CreateReviewScreen() {
           style={styles.saveDraftButton}
           onPress={handleSaveDraft}
           activeOpacity={0.7}
+          disabled={savingDraft || publishing}
         >
-          <Text style={styles.saveDraftText}>{t("create.review.saveDraft")}</Text>
+          {savingDraft ? (
+            <ActivityIndicator color={colors.onSurfaceVariant} size="small" />
+          ) : (
+            <Text style={styles.saveDraftText}>{t("create.review.saveDraft")}</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

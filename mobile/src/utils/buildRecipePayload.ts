@@ -2,7 +2,7 @@ import type { RecipeFormState } from '../context/RecipeFormContext';
 
 export function buildRecipePayload(draft: RecipeFormState) {
   return {
-    title: draft.title,
+    title: draft.title.trim() || 'Untitled Recipe',
     type: draft.type.toLowerCase() as 'community' | 'cultural',
     story: draft.story || undefined,
     dishVarietyId: draft.varietyId ?? undefined,
@@ -13,28 +13,33 @@ export function buildRecipePayload(draft: RecipeFormState) {
     videoUrl: draft.videoUrl ?? undefined,
     tagIds: draft.dietaryTagIds,
     allergenIds: draft.allergenTagIds,
-    // Forwarded for the (not-yet-shipped) cultural-tagging endpoint; the current
-    // backend ignores this field.
     culturalTagIds: draft.culturalTagIds,
     ingredients: draft.ingredients
-      .filter((ing) => ing.name.trim() && ing.ingredientId !== null)
+      .filter(
+        (ing) =>
+          ing.name.trim() &&
+          ing.ingredientId !== null &&
+          !isNaN(parseFloat(ing.quantity))
+      )
       .map((ing) => ({
         ingredientId: ing.ingredientId as number,
         quantity: parseFloat(ing.quantity),
         unit: ing.unit,
       })),
-    steps: draft.steps.map((s, i) => {
-      let videoTimestamp: number | null = null;
-      if (s.timestamp.trim()) {
-        const [mm, ss] = s.timestamp.split(':').map(Number);
-        videoTimestamp = mm * 60 + ss;
-      }
-      return {
-        stepOrder: i + 1,
-        description: s.description,
-        videoTimestamp,
-      };
-    }),
-    tools: draft.tools.map((t) => ({ name: t.name })),
+    steps: draft.steps
+      .filter((s) => s.description.trim() !== '')
+      .map((s, i) => {
+        let videoTimestamp: number | null = null;
+        if (s.timestamp.trim()) {
+          const [mm, ss] = s.timestamp.split(':').map(Number);
+          videoTimestamp = mm * 60 + ss;
+        }
+        return {
+          stepOrder: i + 1,
+          description: s.description,
+          videoTimestamp,
+        };
+      }),
+    tools: draft.tools.filter((t) => t.name.trim() !== '').map((t) => ({ name: t.name })),
   };
 }

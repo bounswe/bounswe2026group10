@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
@@ -50,7 +51,8 @@ export function CreateIngredientsToolsScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const isFocused = useIsFocused();
-  const { draft, updateDraft, resetDraft } = useRecipeForm();
+  const { draft, updateDraft, resetDraft, saveDraft } = useRecipeForm();
+  const [savingDraft, setSavingDraft] = useState(false);
   const [ingredients, setIngredients] = useState<IngredientFormItem[]>(
     draft.ingredients.length > 0
       ? draft.ingredients
@@ -159,8 +161,26 @@ export function CreateIngredientsToolsScreen() {
     }
   };
 
-  const handleSaveDraft = () => {
-    Alert.alert(t("create.draftSaved"), t("create.draftSavedMsg"));
+  const handleSaveDraft = async () => {
+    try {
+      setSavingDraft(true);
+      await saveDraft({ ingredients, tools });
+      Alert.alert(t("create.draftSaved"), t("create.draftSavedMsg2"), [
+        {
+          text: "OK",
+          onPress: () => {
+            resetDraft();
+            navigation.navigate("CreateBasicInfo" as never);
+            navigation.getParent()?.navigate("HomeTab" as never);
+          },
+        },
+      ]);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Could not save draft. Please try again.");
+    } finally {
+      setSavingDraft(false);
+    }
   };
 
   const handleClose = () => {
@@ -171,7 +191,7 @@ export function CreateIngredientsToolsScreen() {
         style: "destructive",
         onPress: () => {
           resetDraft();
-          navigation.popToTop();
+          navigation.navigate("CreateBasicInfo" as never);
           navigation.getParent()?.navigate("HomeTab" as never);
         },
       },
@@ -270,8 +290,13 @@ export function CreateIngredientsToolsScreen() {
           style={styles.saveDraftButton}
           onPress={handleSaveDraft}
           activeOpacity={0.7}
+          disabled={savingDraft}
         >
-          <Text style={styles.saveDraftText}>{t("create.saveDraft")}</Text>
+          {savingDraft ? (
+            <ActivityIndicator color={colors.onSurfaceVariant} size="small" />
+          ) : (
+            <Text style={styles.saveDraftText}>{t("create.saveDraft")}</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

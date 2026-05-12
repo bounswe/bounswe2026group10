@@ -1,6 +1,12 @@
 import React from 'react';
 import { renderHook, act } from '@testing-library/react-native';
 import { RecipeFormProvider, useRecipeForm } from '../context/RecipeFormContext';
+import * as recipesApi from '../api/recipes';
+
+jest.mock('../api/recipes', () => ({
+  createRecipe: jest.fn(),
+  updateRecipe: jest.fn(),
+}));
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <RecipeFormProvider>{children}</RecipeFormProvider>
@@ -120,5 +126,47 @@ describe('RecipeFormContext', () => {
       'useRecipeForm must be used inside RecipeFormProvider'
     );
     consoleError.mockRestore();
+  });
+
+  describe('saveDraft', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('creates a new recipe when draft.recipeId is null', async () => {
+      (recipesApi.createRecipe as jest.Mock).mockResolvedValueOnce({ id: 'new-id-123' });
+      const { result } = renderHook(() => useRecipeForm(), { wrapper });
+      
+      await act(async () => {
+        await result.current.saveDraft({ title: 'New Draft' });
+      });
+
+      expect(recipesApi.createRecipe).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'New Draft', isPublished: false })
+      );
+      expect(result.current.draft.recipeId).toBe('new-id-123');
+    });
+
+    it('updates existing recipe when draft.recipeId is present', async () => {
+      (recipesApi.updateRecipe as jest.Mock).mockResolvedValueOnce({ message: 'Success' });
+      const { result } = renderHook(() => useRecipeForm(), { wrapper });
+      
+      // Setup initial state with an ID
+      act(() => {
+        result.current.updateDraft({ recipeId: 'existing-id', title: 'Existing' });
+      });
+
+      await act(async () => {
+        await result.current.saveDraft({ title: 'Updated Title' });
+      });
+
+      expect(recipesApi.createRecipe).not.toHaveBeenCalled();
+      expect(recipesApi.updateRecipe).toHaveBeenCalledWith(
+        'existing-id',
+        expect.objectContaining({ title: 'Updated Title', isPublished: false })
+      );
+      expect(result.current.draft.title).toBe('Updated Title');
+      expect(result.current.draft.recipeId).toBe('existing-id');
+    });
   });
 });

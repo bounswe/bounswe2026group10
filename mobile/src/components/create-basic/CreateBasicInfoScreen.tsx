@@ -58,7 +58,8 @@ export function CreateBasicInfoScreen() {
       ? (authState.user.role ?? "").toUpperCase()
       : "";
   const canCreateCultural = role === "EXPERT";
-  const { draft, updateDraft, resetDraft } = useRecipeForm();
+  const { draft, updateDraft, resetDraft, saveDraft } = useRecipeForm();
+  const [savingDraft, setSavingDraft] = useState(false);
   const [recipeType, setRecipeType] = useState<RecipeType>(draft.type);
   const [title, setTitle] = useState(draft.title);
   const [country, setCountry] = useState(draft.originCountry);
@@ -170,6 +171,18 @@ export function CreateBasicInfoScreen() {
       })
       .catch((err) => console.error("[BasicInfo] dietary-tags error:", err));
   }, [i18n.language]);
+
+  // Infer genreId from varietyId when resuming a draft where backend only provides dishVarietyId
+  useEffect(() => {
+    if (varietyId !== null && genreId === null && genres.length > 0) {
+      for (const g of genres) {
+        if (g.varieties.some((v) => v.id === varietyId)) {
+          setGenreId(g.id);
+          break;
+        }
+      }
+    }
+  }, [genres, varietyId, genreId]);
 
   // Refetch cultural tags whenever the selected country changes (region scoping).
   useEffect(() => {
@@ -288,8 +301,50 @@ export function CreateBasicInfoScreen() {
     }
   };
 
-  const handleSaveDraft = () => {
-    Alert.alert(t("create.draftSaved"), t("create.draftSavedMsg"));
+  const handleSaveDraft = async () => {
+    try {
+      setSavingDraft(true);
+      const dietaryNames = dietaryChipOptions
+        .filter((o) => selectedDietaryIds.includes(o.value))
+        .map((o) => o.label);
+      const culturalTagIdsNum = selectedCulturalIds.map(Number);
+      const selectedCulturalObjects = culturalTags.filter((tag) =>
+        selectedCulturalIds.includes(String(tag.id)),
+      );
+      await saveDraft({
+        title,
+        type: recipeType,
+        originCountry: country,
+        originCity: city,
+        originDistrict: district,
+        genreId,
+        varietyId,
+        dietaryTagIds: selectedDietaryIds.map(Number),
+        dietaryTagNames: dietaryNames,
+        allergenTagIds: draft.allergenTagIds,
+        allergenTagNames: draft.allergenTagNames,
+        culturalTagIds: culturalTagIdsNum,
+        culturalTags: selectedCulturalObjects,
+        story,
+        servingSize: servingSize ? parseInt(servingSize, 10) : undefined,
+        imageUrls: images.filter((img) => img.cdnUrl).map((img) => img.cdnUrl!),
+      });
+      Alert.alert(t("create.draftSaved"), t("create.draftSavedMsg2"), [
+        {
+          text: "OK",
+          onPress: () => {
+            resetDraft();
+            navigation.navigate("CreateBasicInfo" as never);
+            navigation.getParent()?.navigate("HomeTab" as never);
+          },
+        },
+      ]);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Could not save draft. Please try again.");
+    } finally {
+      setSavingDraft(false);
+    }
   };
 
   const handleClose = () => {
@@ -313,6 +368,8 @@ export function CreateBasicInfoScreen() {
           setStory("");
           setImages([]);
           setErrors({});
+          resetDraft();
+          navigation.navigate("CreateBasicInfo" as never);
           navigation.getParent()?.navigate("HomeTab" as never);
         },
       },
@@ -605,8 +662,13 @@ export function CreateBasicInfoScreen() {
           style={styles.saveDraftButton}
           onPress={handleSaveDraft}
           activeOpacity={0.7}
+          disabled={savingDraft}
         >
-          <Text style={styles.saveDraftText}>{t("create.saveDraft")}</Text>
+          {savingDraft ? (
+            <ActivityIndicator color={colors.onSurfaceVariant} size="small" />
+          ) : (
+            <Text style={styles.saveDraftText}>{t("create.saveDraft")}</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

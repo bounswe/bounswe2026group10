@@ -10,6 +10,7 @@ export interface ReviewStep {
 }
 
 export interface RecipeFormState {
+  recipeId?: string;
   // Screen 12 — Basic Info
   title: string;
   type: RecipeType;
@@ -38,6 +39,7 @@ export interface RecipeFormState {
 }
 
 const EMPTY_DRAFT: RecipeFormState = {
+  recipeId: undefined,
   title: '',
   type: 'COMMUNITY',
   originCountry: '',
@@ -65,9 +67,13 @@ interface RecipeFormContextValue {
   draft: RecipeFormState;
   updateDraft: (partial: Partial<RecipeFormState>) => void;
   resetDraft: () => void;
+  saveDraft: (partial: Partial<RecipeFormState>) => Promise<void>;
 }
 
 const RecipeFormContext = createContext<RecipeFormContextValue | null>(null);
+
+import { createRecipe, updateRecipe, attachRecipeMedia } from '../api/recipes';
+import { buildRecipePayload } from '../utils/buildRecipePayload';
 
 export function RecipeFormProvider({ children }: { children: React.ReactNode }) {
   const [draft, setDraft] = useState<RecipeFormState>(EMPTY_DRAFT);
@@ -80,8 +86,30 @@ export function RecipeFormProvider({ children }: { children: React.ReactNode }) 
     setDraft(EMPTY_DRAFT);
   };
 
+  const saveDraft = async (partial: Partial<RecipeFormState>) => {
+    const newDraft = { ...draft, ...partial };
+    setDraft(newDraft);
+    const payload = { ...buildRecipePayload(newDraft), isPublished: false };
+    let rId = newDraft.recipeId;
+    if (rId) {
+      await updateRecipe(rId, payload);
+    } else {
+      const created = await createRecipe(payload);
+      rId = created.id;
+      setDraft((prev) => ({ ...prev, recipeId: rId }));
+    }
+    
+    const imageAttachments = newDraft.imageUrls.map((url) =>
+      attachRecipeMedia(rId!, url, 'image').catch((err) => console.log('Media error', err))
+    );
+    const videoAttachment = newDraft.videoUrl
+      ? [attachRecipeMedia(rId!, newDraft.videoUrl, 'video').catch((err) => console.log('Media error', err))]
+      : [];
+    await Promise.all([...imageAttachments, ...videoAttachment]);
+  };
+
   return (
-    <RecipeFormContext.Provider value={{ draft, updateDraft, resetDraft }}>
+    <RecipeFormContext.Provider value={{ draft, updateDraft, resetDraft, saveDraft }}>
       {children}
     </RecipeFormContext.Provider>
   );

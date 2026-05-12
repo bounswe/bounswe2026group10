@@ -16,6 +16,9 @@ import { useTranslation } from 'react-i18next';
 import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../context/AuthContext';
 import { fetchApi } from '../api/client';
+import { getRecipeById } from '../api/recipes';
+import { mapBackendToDraft } from '../utils/draftHelpers';
+import { useRecipeForm } from '../context/RecipeFormContext';
 import { colors, fonts, fontSizes, spacing } from '../theme';
 import type { ProfileStackParamList } from '../navigation/types';
 
@@ -57,6 +60,9 @@ export function ProfileScreen() {
 
   const user = authState.status === 'authenticated' ? authState.user : null;
 
+  const { updateDraft } = useRecipeForm();
+  const [resumingId, setResumingId] = useState<string | null>(null);
+
   const [recipes, setRecipes] = useState<RecipeSummary[]>([]);
   const [recipesLoading, setRecipesLoading] = useState(true);
 
@@ -92,8 +98,24 @@ export function ProfileScreen() {
   const roleColor = ROLE_COLORS[role] ?? colors.primary;
 
   const publishedRecipes = recipes.filter((r) => r.isPublished);
-  const draftCount = recipes.filter((r) => !r.isPublished).length;
+  const drafts = recipes.filter((r) => !r.isPublished);
+  const draftCount = drafts.length;
   const recentPublished = publishedRecipes.slice(0, 5);
+  const recentDrafts = drafts.slice(0, 5);
+
+  const handleResumeDraft = async (recipeId: string) => {
+    try {
+      setResumingId(recipeId);
+      const detail = await getRecipeById(recipeId);
+      const draftState = mapBackendToDraft(detail);
+      updateDraft(draftState);
+      navigation.getParent()?.navigate('CreateTab' as never);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setResumingId(null);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -219,6 +241,48 @@ export function ProfileScreen() {
                 </Text>
               </TouchableOpacity>
             )}
+          </View>
+        )}
+
+        {/* ── Recent drafts ── */}
+        {!recipesLoading && recentDrafts.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('profileScreen.recentDrafts', 'My Drafts')}</Text>
+            {recentDrafts.map((recipe) => (
+              <TouchableOpacity
+                key={recipe.id}
+                style={styles.recipeCard}
+                activeOpacity={0.75}
+                disabled={resumingId === recipe.id}
+                onPress={() => handleResumeDraft(recipe.id)}
+              >
+                <View style={styles.recipeThumb}>
+                  {resumingId === recipe.id ? (
+                     <ActivityIndicator style={{ flex: 1 }} color={colors.primary} />
+                  ) : recipe.coverImageUrl ? (
+                    <Image
+                      source={{ uri: recipe.coverImageUrl }}
+                      style={StyleSheet.absoluteFillObject}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.recipePlaceholder} />
+                  )}
+                </View>
+                <View style={styles.recipeBody}>
+                  <Text style={styles.recipeTitle} numberOfLines={2}>
+                    {recipe.title || 'Untitled Recipe'}
+                  </Text>
+                  <View style={styles.recipeMeta}>
+                    <View style={[styles.typeBadge, styles.typeCommunity, { backgroundColor: colors.surfaceContainer }]}>
+                       <Text style={[styles.typeBadgeText, { color: colors.onSurfaceVariant }]}>
+                         {t('library.statusDraft', 'Draft')}
+                       </Text>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
 
