@@ -474,7 +474,9 @@
       "title": "Talimatlar",
       "stepPlaceholder": "Bu adımı açıklayın...",
       "addStep": "Adım Ekle",
-      "removeAria": "Adımı kaldır"
+      "removeAria": "Adımı kaldır",
+      "timestampPlaceholder": "DD:SS",
+      "timestampAria": "Adım {{n}} için video zaman damgası (opsiyonel, DD:SS)"
     },
     "review": {
       "title": "İncele ve Yayınla",

@@ -474,7 +474,9 @@
       "title": "Instructions",
       "stepPlaceholder": "Describe this step...",
       "addStep": "Add Step",
-      "removeAria": "Remove step"
+      "removeAria": "Remove step",
+      "timestampPlaceholder": "MM:SS",
+      "timestampAria": "Video timestamp for step {{n}} (optional, MM:SS)"
     },
     "review": {
       "title": "Review & Publish",
