@@ -724,7 +724,7 @@ export const openApiSpec = {
         tags: ["Recipes"],
         parameters: [
           { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
-          { name: "lang", in: "query", schema: { type: "string", enum: ["en", "tr"] }, description: "Return translated fields if available" },
+          { name: "lang", in: "query", schema: { type: "string", enum: ["en", "tr"] }, description: "Resolve translated fields when available. Title/story/steps/units use the per-recipe `recipe_*_translations` rows (DeepL). Allergens (top-level + per-ingredient), dietary tags, dish variety / genre, and ingredient names resolve via the `name_en` / `name_tr` reference-table columns; units fall back to the global `units` reference table when no per-recipe translation row exists. The raw `type` enum and `country` value are preserved; the response also carries `typeName` (static EN/TR labels for community/cultural) and `countryName` (static EN/TR labels for known countries). Each `culturalTags[]` entry includes a single resolved `label` alongside the existing `labelEn`/`labelTr` pair." },
         ],
         responses: {
           "200": { description: "Recipe detail with ingredients, steps, tools, media, and tags" },

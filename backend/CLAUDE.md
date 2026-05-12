@@ -123,8 +123,9 @@ Database is managed via Supabase (no migration files in repo). Key tables:
 ### Reference Tables
 
 - **ingredients** — `id`, `name`, `name_en`, `name_tr` (`name` mirrors `name_en` for backward compat; see migration 002)
-- **allergens** — `id`, `name`
+- **allergens** — `id`, `name`, `name_en`, `name_tr` (added in migration `009_localize_allergens_and_units.sql`; `name_en` seeded from `name` for existing rows)
 - **ingredient_allergens** — `ingredient_id` (FK), `allergen_id` (FK)
+- **units** — `id`, `name` (unique, lowercase canonical), `name_en`, `name_tr`. Reference table introduced in `009_localize_allergens_and_units.sql`. `recipe_ingredients.unit` is free text and joins case-insensitively on `LOWER(units.name)`; the row is used to resolve the unit string into the caller's preferred language on `GET /recipes/:id` when `?lang=` is set and no `recipe_ingredient_translations` row exists for the recipe.
 - **ingredient_substitutions** — `id`, `ingredient_id` (FK ingredients), `substitute_id` (FK ingredients), `source_amount` NUMERIC(10,3), `source_unit` TEXT, `sub_amount` NUMERIC(10,3), `sub_unit` TEXT, `confidence` NUMERIC(3,2), `description` TEXT — unique on (ingredient_id, substitute_id), no self-substitution
 - **dietary_tags** — `id`, `name`, `name_en`, `name_tr`, `category` (dietary|allergen)
 - **cultural_tags** — `id`, `key` (unique slug e.g. `"social-gathering"`), `label_en`, `label_tr`, `country` (nullable — NULL = global, otherwise country-scoped e.g. `"Turkey"`). Seeded with 10 curated tags: 7 global (`social-gathering`, `religious-feast`, `wedding`, `funeral`, `birth`, `new-year`, `harvest`) + 3 region-specific (`sira-gecesi`/Turkey, `iftar`/Turkey, `mochitsuki`/Japan). Migration: `migrations/004_cultural_tags.sql`.
@@ -423,6 +424,21 @@ Use `successResponse(data)` and `errorResponse(code, message)` from `src/utils/r
 - **No source:** `req.lang = null` — downstream handlers skip translation lookups
 
 `GET /recipes/:id` reads `req.lang` instead of parsing `?lang=` directly, converts to uppercase (`'en'` → `'EN'`) for the DB column, and fetches translations from `recipe_translations`, `recipe_step_translations`, and `recipe_ingredient_translations` when `req.lang` is non-null, falling back to original content when no translation row exists.
+
+When `?lang=` is set, the recipe-detail handler also resolves these reference-table fields via `resolveLocalizedName()` (`src/utils/i18n.ts`) so the response matches the caller's UI language without depending on the per-recipe DeepL pipeline:
+
+- **dietary tags** (`tags[].name`) — from `dietary_tags.name_en` / `name_tr`
+- **top-level allergens** (`allergens[].name`) — from `allergens.name_en` / `name_tr` (rows fetched by `allergen_ids` on the recipe)
+- **per-ingredient allergens** (`ingredients[].allergens`) — from the joined `allergens.name_en` / `name_tr` on `ingredient_allergens`
+- **ingredient unit** (`ingredients[].unit`) — resolved through the `units` reference table when no `recipe_ingredient_translations` row matches. The handler collects the recipe's distinct unit strings, queries `units` by lower-cased `name`, and resolves to `name_en`/`name_tr` based on lang. `recipe_ingredient_translations` always takes precedence so per-recipe DeepL output isn't overridden.
+
+All four fall back through the standard chain (preferred lang → other lang → `name`) and silently degrade to the raw stored value when no reference row exists, so legacy recipes never lose data.
+
+In addition, three response-shape fields don't map to a DB column at all and are localized via static in-code tables (additive — the raw values stay on the response so frontend filters / CSS hooks never break):
+
+- **`typeName`** — display label for the recipe `type` enum (`community` → `"Community"` / `"Topluluk"`, `cultural` → `"Cultural"` / `"Kültürel"`). Resolved by `resolveRecipeTypeLabel()` in `utils/i18n.ts`. Without `?lang=` the field carries the raw enum so the response is self-consistent.
+- **`countryName`** — display label for the stored canonical English `country` value. Resolved by `resolveCountryName()` in `utils/locations.ts` against `COUNTRY_LOCALIZATIONS` (Turkey, Japan, Germany, France, etc.). Countries not in the table fall back to the raw value, so unknown countries never disappear.
+- **`culturalTags[].label`** — single localized label that mirrors `tags[].name`. The existing `labelEn` / `labelTr` are kept on each entry for callers that need both forms (admin moderation, frontend language toggles).
 
 **Listing endpoints** also honor `req.lang` so cards on home, discovery, library, and profile pages render in the active UI language: `GET /recipes`, `GET /recipes/mine`, `GET /discovery/recipes`, `GET /discovery/recipes/by-ingredients`, `GET /users/me/favorites`, and `GET /users/me/drafts`. They use `fetchRecipeTitleTranslations(recipeIds, langCode)` from `translationService.ts` — a single batch query against `recipe_translations` for the current page — and resolve `dish_variety` / `dish_genre` names via `resolveLocalizedName()` (`src/utils/i18n.ts`) off the `name_en` / `name_tr` columns. Rows without a translation row fall back to the authored title.
 

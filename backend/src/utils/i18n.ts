@@ -41,3 +41,30 @@ export function resolveLocalizedName(
   const fallback = langParam === "EN" ? obj.name_tr : obj.name_en;
   return preferred ?? fallback ?? obj.name ?? null;
 }
+
+/**
+ * Recipe `type` enum values don't live in a reference table — they're a
+ * fixed two-element column (community | cultural). When `?lang=` is set the
+ * detail endpoint surfaces `typeName` with these static labels so the
+ * response is self-contained and the frontend can render without a
+ * per-language i18n lookup. The raw `type` enum is preserved separately for
+ * filtering / CSS class hooks.
+ */
+const TYPE_LABELS: Record<"community" | "cultural", { en: string; tr: string }> = {
+  community: { en: "Community", tr: "Topluluk" },
+  cultural:  { en: "Cultural",  tr: "Kültürel" },
+};
+
+export function resolveRecipeTypeLabel(
+  type: string | null | undefined,
+  langParam: "EN" | "TR" | null
+): string | null {
+  if (!type) return null;
+  const entry = TYPE_LABELS[type as "community" | "cultural"];
+  if (!entry) return type; // unknown enum — return raw value
+  if (langParam === "TR") return entry.tr;
+  if (langParam === "EN") return entry.en;
+  // No language preference: keep the raw enum value so callers without
+  // ?lang= still get the historical shape.
+  return type;
+}
