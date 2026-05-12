@@ -346,6 +346,7 @@ export function RecipeDetailPage() {
               onClick={() => void handleFavoriteToggle()}
               aria-pressed={favorited}
               aria-label={t('recipeDetail.favoriteAria')}
+              data-testid="favorite-btn"
             >
               <IconHeart filled={favorited} />
             </button>
@@ -362,7 +363,7 @@ export function RecipeDetailPage() {
 
       <div className="recipe-detail__body">
         <div className="recipe-detail__intro">
-          <h1 className="recipe-detail__title">{recipe.title}</h1>
+          <h1 className="recipe-detail__title" data-testid="recipe-title">{recipe.title}</h1>
 
           {recipe.creatorUsername && (
             <div className="recipe-detail__author-block">
@@ -569,7 +570,7 @@ export function RecipeDetailPage() {
             <h2 className="recipe-detail__h2">{t('recipeDetail.instructions')}</h2>
             <ol className="recipe-detail__step-list">
               {recipe.steps.map((step) => (
-                <li key={step.id} className="recipe-detail__step-card">
+                <li key={step.id} className="recipe-detail__step-card" data-testid="recipe-step-item">
                   <span className="recipe-detail__step-num">{step.stepOrder}</span>
                   <p className="recipe-detail__step-text">{step.description}</p>
                 </li>
