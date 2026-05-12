@@ -37,6 +37,39 @@ function renderHeader(overrides: Partial<React.ComponentProps<typeof RecipeHeade
   return { ...render(<RecipeHeader {...props} />), props };
 }
 
+describe('RecipeHeader badge row', () => {
+  it('renders dish variety badge with a long name', () => {
+    const { getByText } = renderHeader({
+      dishVarietyName: 'Geleneksel Mercimek Çorbası',
+    });
+    expect(getByText('Geleneksel Mercimek Çorbası')).toBeTruthy();
+  });
+
+  it('renders type, region, and dishVarietyName badges together', () => {
+    const { getByText } = renderHeader({
+      type: 'CULTURAL',
+      region: 'Adana, Turkey',
+      dishVarietyName: 'Mercimek Çorbası',
+    });
+    expect(getByText('CULTURAL')).toBeTruthy();
+    expect(getByText('Adana, Turkey')).toBeTruthy();
+    expect(getByText('Mercimek Çorbası')).toBeTruthy();
+  });
+
+  it('does not render region badge when region is empty', () => {
+    const { queryByText } = renderHeader({ region: '' });
+    expect(queryByText('Adana, Turkey')).toBeNull();
+  });
+
+  it('does not render dishVarietyName badge when absent', () => {
+    const { queryByText } = renderHeader({
+      title: 'Some Recipe',
+      dishVarietyName: undefined,
+    });
+    expect(queryByText('Mercimek Çorbası')).toBeNull();
+  });
+});
+
 describe('RecipeHeader favorite button', () => {
   it('renders the heart-outline icon when not favorited', () => {
     const { UNSAFE_getAllByType } = renderHeader({ isFavorited: false });
