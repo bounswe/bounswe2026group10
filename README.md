@@ -118,23 +118,7 @@ For the frontend, environment is already configured:
 
 ### Data Seeding
 
-The hosted Supabase instance is pre-populated with all reference data (dish genres, dish varieties, dietary tags, allergens, cultural event tags, ingredient substitutions). The test user accounts listed above are also pre-created.
-
-For a **fresh Supabase project** (local development against your own instance), apply migrations in order from the Supabase SQL Editor:
-
-```
-backend/migrations/001_recipe_translations.sql
-backend/migrations/002_en_tr_language_fields.sql
-backend/migrations/003_admin_role_and_expert_requests.sql
-backend/migrations/004_cultural_tags.sql
-backend/migrations/005_cultural_tag_requests.sql
-backend/migrations/006_dish_genre_requests.sql
-backend/migrations/007_dish_variety_requests.sql
-backend/migrations/008_recipe_tool_translations.sql
-backend/sql/dietary_tags_migration.sql
-```
-
-Then seed the admin user manually via the Supabase Auth dashboard (email/password) and set `profiles.role = 'admin'` for that user via the Table Editor.
+Since the project uses a hosted Supabase instance, the database is already populated with the required reference data and test accounts. Therefore, no separate data seeding step is needed for the deployed version.
 
 ---
 
