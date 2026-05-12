@@ -45,6 +45,7 @@ export function VideoGuideScreen({ recipe, onClose }: VideoGuideScreenProps) {
           videoUrl={currentStep.videoUrl}
           stepNumber={currentStep.stepNumber}
           stepDescription={currentStep.description}
+          videoTimestamp={currentStep.videoTimestamp}
         />
 
         <StepNavigation
