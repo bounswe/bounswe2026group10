@@ -347,7 +347,7 @@ export function SearchScreen() {
                   )
                 ) : (
                   <GenreBentoGrid
-                    genres={allGenres}
+                    genres={allGenres.slice(0, PREVIEW_COUNT)}
                     onGenrePress={handleGenrePress}
                     activeGenreId={selectedGenreId}
                   />
@@ -424,7 +424,7 @@ function SectionBox({ title, count, query, onSeeAll, children }: SectionBoxProps
           <MaterialCommunityIcons
             name="chevron-right"
             size={18}
-            color={colors.primary}
+            color={colors.white}
           />
         </View>
       </TouchableOpacity>
@@ -485,14 +485,9 @@ const styles = StyleSheet.create({
   },
   // ── Section Box ──────────────────────────────────────────────────────────
   sectionBox: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.primary,
     borderRadius: 20,
     padding: spacing.lg,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.07,
-    shadowRadius: 4,
   },
   sectionBoxHeader: {
     flexDirection: 'row',
@@ -503,7 +498,7 @@ const styles = StyleSheet.create({
   sectionBoxTitle: {
     fontFamily: fonts.serifBold,
     fontSize: fontSizes.xl,
-    color: colors.onSurface,
+    color: colors.white,
     flex: 1,
     flexWrap: 'wrap',
   },
@@ -515,7 +510,7 @@ const styles = StyleSheet.create({
   seeAllText: {
     fontFamily: fonts.sansMedium,
     fontSize: fontSizes.sm,
-    color: colors.primary,
+    color: colors.white,
   },
   // ── Genre chips (search mode preview) ────────────────────────────────────
   genreChips: {
