@@ -9,6 +9,12 @@ import * as RecipeFormContext from '../context/RecipeFormContext';
 
 // --- Mocks ---
 
+jest.mock('@expo/vector-icons', () => ({
+  MaterialCommunityIcons: 'MaterialCommunityIcons',
+  Ionicons: 'Ionicons',
+  FontAwesome: 'FontAwesome',
+}));
+
 // Mock navigation
 jest.mock('@react-navigation/native', () => {
   return {

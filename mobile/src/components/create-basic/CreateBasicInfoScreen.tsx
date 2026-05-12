@@ -307,9 +307,6 @@ export function CreateBasicInfoScreen() {
       const dietaryNames = dietaryChipOptions
         .filter((o) => selectedDietaryIds.includes(o.value))
         .map((o) => o.label);
-      const allergenNames = allergenChipOptions
-        .filter((o) => selectedAllergenIds.includes(o.value))
-        .map((o) => o.label);
       const culturalTagIdsNum = selectedCulturalIds.map(Number);
       const selectedCulturalObjects = culturalTags.filter((tag) =>
         selectedCulturalIds.includes(String(tag.id)),
@@ -324,8 +321,8 @@ export function CreateBasicInfoScreen() {
         varietyId,
         dietaryTagIds: selectedDietaryIds.map(Number),
         dietaryTagNames: dietaryNames,
-        allergenTagIds: selectedAllergenIds.map(Number),
-        allergenTagNames: allergenNames,
+        allergenTagIds: draft.allergenTagIds,
+        allergenTagNames: draft.allergenTagNames,
         culturalTagIds: culturalTagIdsNum,
         culturalTags: selectedCulturalObjects,
         story,

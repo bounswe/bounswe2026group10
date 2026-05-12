@@ -29,7 +29,8 @@ export function CreateAllergensScreen() {
   const { t, i18n } = useTranslation("common");
   const navigation =
     useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
-  const { draft, updateDraft, resetDraft } = useRecipeForm();
+  const { draft, updateDraft, resetDraft, saveDraft } = useRecipeForm();
+  const [savingDraft, setSavingDraft] = useState(false);
 
   const ingredientIds = useMemo(
     () =>
@@ -136,8 +137,35 @@ export function CreateAllergensScreen() {
     navigation.navigate("CreateSteps");
   };
 
-  const handleSaveDraft = () => {
-    Alert.alert(t("create.draftSaved"), t("create.draftSavedMsg"));
+  const handleSaveDraft = async () => {
+    const selectedSet = new Set(selectedIds);
+    const idsNum: number[] = [];
+    const names: string[] = [];
+    allAllergens.forEach((a) => {
+      if (selectedSet.has(String(a.id))) {
+        idsNum.push(a.id);
+        names.push(a.name);
+      }
+    });
+    try {
+      setSavingDraft(true);
+      await saveDraft({ allergenTagIds: idsNum, allergenTagNames: names });
+      Alert.alert(t("create.draftSaved"), t("create.draftSavedMsg2"), [
+        {
+          text: "OK",
+          onPress: () => {
+            resetDraft();
+            navigation.navigate("CreateBasicInfo" as never);
+            navigation.getParent()?.navigate("HomeTab" as never);
+          },
+        },
+      ]);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Could not save draft. Please try again.");
+    } finally {
+      setSavingDraft(false);
+    }
   };
 
   const handleClose = () => {
@@ -290,8 +318,13 @@ export function CreateAllergensScreen() {
           style={styles.saveDraftButton}
           onPress={handleSaveDraft}
           activeOpacity={0.7}
+          disabled={savingDraft}
         >
-          <Text style={styles.saveDraftText}>{t("create.saveDraft")}</Text>
+          {savingDraft ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.saveDraftText}>{t("create.saveDraft")}</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

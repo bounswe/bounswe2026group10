@@ -3,9 +3,8 @@ import type { RecipeFormState } from '../context/RecipeFormContext';
 
 export function mapBackendToDraft(recipe: BackendRecipeDetail): RecipeFormState {
   const dietaryTags = recipe.tags.filter(t => t.category === 'dietary');
-  const allergenTags = recipe.tags.filter(t => t.category === 'allergen');
+  const topLevelAllergens = recipe.allergens ?? [];
 
-  // Currently we only have ingredient names and tools in the frontend form
   return {
     recipeId: recipe.id,
     title: recipe.title,
@@ -13,12 +12,12 @@ export function mapBackendToDraft(recipe: BackendRecipeDetail): RecipeFormState 
     originCountry: recipe.country || '',
     originCity: recipe.city || '',
     originDistrict: recipe.district || '',
-    genreId: null, // We don't have genreId from backend directly, we have genreName. But we can ignore it or try to find it.
+    genreId: null,
     varietyId: recipe.dishVarietyId,
     dietaryTagIds: dietaryTags.map(t => t.id).filter(Boolean) as number[],
     dietaryTagNames: dietaryTags.map(t => t.name).filter(Boolean) as string[],
-    allergenTagIds: allergenTags.map(t => t.id).filter(Boolean) as number[],
-    allergenTagNames: allergenTags.map(t => t.name).filter(Boolean) as string[],
+    allergenTagIds: topLevelAllergens.map(a => a.id).filter(Boolean) as number[],
+    allergenTagNames: topLevelAllergens.map(a => a.name).filter(Boolean) as string[],
     culturalTagIds: [], // Not supported fully in backend yet
     culturalTags: [],
     story: recipe.story || '',
