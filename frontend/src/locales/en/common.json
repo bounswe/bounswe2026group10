@@ -349,6 +349,15 @@
     "substituteConfidence": "Confidence: {{pct}}%",
     "videoAnnotations": {
       "seekAria": "Jump to {{start}}: {{note}}"
+    },
+    "videoGuide": {
+      "title": "Step-by-step video guide",
+      "openAria": "Open step-by-step video guide",
+      "closeAria": "Close video guide",
+      "previous": "Previous",
+      "next": "Next",
+      "finish": "Finish",
+      "noVideo": "No video available"
     }
   },
   "dishVariety": {

@@ -349,6 +349,15 @@
     "substituteConfidence": "Güven: %{{pct}}",
     "videoAnnotations": {
       "seekAria": "{{start}} zamanına git: {{note}}"
+    },
+    "videoGuide": {
+      "title": "Adım adım video rehberi",
+      "openAria": "Adım adım video rehberini aç",
+      "closeAria": "Video rehberini kapat",
+      "previous": "Önceki",
+      "next": "Sonraki",
+      "finish": "Bitir",
+      "noVideo": "Video bulunmuyor"
     }
   },
   "dishVariety": {
