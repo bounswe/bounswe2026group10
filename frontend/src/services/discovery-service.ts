@@ -54,11 +54,6 @@ export interface RecipeSummary {
   allergens?: { id: number; name: string }[]
 }
 
-export interface LocationOptions {
-  countries: string[]
-  citiesByCountry: Record<string, string[]>
-}
-
 export interface DiscoveryParams {
   region?: string
   excludeAllergens?: string
@@ -300,37 +295,32 @@ export const discoveryService = {
   },
 
   /**
-   * Fetch unique country/city values across all recipes for use in filter dropdowns.
-   * Calls /discovery/recipes with a high limit and no filters.
+   * GET /discovery/locations — distinct countries that have at least one
+   * published recipe. Backend returns alias-aware deduped values (e.g.
+   * "Turkey" / "Türkiye" / "TR" collapse into a single canonical entry).
    */
-  getLocations: async (): Promise<LocationOptions> => {
+  getCountries: async (): Promise<string[]> => {
     try {
-      const res = await httpClient.get('/discovery/recipes', { params: { limit: 100, page: 1 } })
-      const payload = res.data?.data
-      const raw: any[] = Array.isArray(payload)
-        ? payload
-        : Array.isArray(payload?.recipes)
-          ? payload.recipes
-          : []
-
-      const citiesByCountry: Record<string, Set<string>> = {}
-      for (const r of raw) {
-        const country: string | undefined = r.country ?? undefined
-        const city: string | undefined = r.city ?? undefined
-        if (country) {
-          if (!citiesByCountry[country]) citiesByCountry[country] = new Set()
-          if (city) citiesByCountry[country].add(city)
-        }
-      }
-
-      const countries = Object.keys(citiesByCountry).sort()
-      const result: Record<string, string[]> = {}
-      for (const c of countries) {
-        result[c] = [...citiesByCountry[c]].sort()
-      }
-      return { countries, citiesByCountry: result }
+      const res = await httpClient.get('/discovery/locations')
+      const raw = res.data?.data?.results
+      return Array.isArray(raw) ? raw.filter((v): v is string => typeof v === 'string') : []
     } catch {
-      return { countries: [], citiesByCountry: {} }
+      return []
+    }
+  },
+
+  /**
+   * GET /discovery/locations?country=X — distinct cities within a given
+   * country that have at least one published recipe.
+   */
+  getCities: async (country: string): Promise<string[]> => {
+    if (!country) return []
+    try {
+      const res = await httpClient.get('/discovery/locations', { params: { country } })
+      const raw = res.data?.data?.results
+      return Array.isArray(raw) ? raw.filter((v): v is string => typeof v === 'string') : []
+    } catch {
+      return []
     }
   },
 

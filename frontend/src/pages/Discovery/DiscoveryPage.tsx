@@ -9,7 +9,6 @@ import {
   type DietaryTag,
   type DishVariety,
   type Genre,
-  type LocationOptions,
   type RecipeSummary,
 } from '@/services/discovery-service'
 import { allergenService, type Allergen } from '@/services/allergen-service'
@@ -59,7 +58,9 @@ export function DiscoveryPage() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [selectedCountry, setSelectedCountry] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
-  const [locationOptions, setLocationOptions] = useState<LocationOptions>({ countries: [], citiesByCountry: {} })
+  const [countries, setCountries] = useState<string[]>([])
+  /** Cached city lists keyed by country — populated lazily on country change. */
+  const [citiesByCountry, setCitiesByCountry] = useState<Record<string, string[]>>({})
   const [culturalTags, setCulturalTags] = useState<CulturalTag[]>([])
   const [selectedCulturalTagIds, setSelectedCulturalTagIds] = useState<number[]>([])
   /** "Available ingredients" filter — when non-empty, recipes are fetched via
@@ -83,15 +84,15 @@ export function DiscoveryPage() {
       discoveryService.getGenres(),
       discoveryService.getVarieties(),
       discoveryService.getDietaryTags(),
-      discoveryService.getLocations(),
+      discoveryService.getCountries(),
       allergenService.list(),
     ])
-      .then(([genreData, varietyData, tagData, locationData, allergenData]) => {
+      .then(([genreData, varietyData, tagData, countryData, allergenData]) => {
         if (!cancelled) {
           setGenres(genreData)
           setAllVarieties(varietyData)
           setAllTags(tagData)
-          setLocationOptions(locationData)
+          setCountries(countryData)
           setAllergens(allergenData)
         }
       })
@@ -128,6 +129,25 @@ export function DiscoveryPage() {
       cancelled = true
     }
   }, [selectedCountry])
+
+  /** Lazy-fetch cities when a country is selected; cache per country. */
+  useEffect(() => {
+    if (!selectedCountry) return
+    if (citiesByCountry[selectedCountry] !== undefined) return
+    let cancelled = false
+    discoveryService.getCities(selectedCountry)
+      .then((cities) => {
+        if (cancelled) return
+        setCitiesByCountry((prev) => ({ ...prev, [selectedCountry]: cities }))
+      })
+      .catch(() => {
+        if (cancelled) return
+        setCitiesByCountry((prev) => ({ ...prev, [selectedCountry]: [] }))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [selectedCountry, citiesByCountry])
 
   /** Arama metni veya filtreler değişince sayfa 1'e dönsün. */
   useLayoutEffect(() => {
@@ -381,7 +401,7 @@ export function DiscoveryPage() {
                 aria-label={t('discovery.countryPlaceholder')}
               >
                 <option value="">{t('discovery.countryPlaceholder')}</option>
-                {locationOptions.countries.map((c) => (
+                {countries.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
@@ -391,9 +411,10 @@ export function DiscoveryPage() {
                 value={selectedCity}
                 onChange={(e) => setSelectedCity(e.target.value)}
                 aria-label={t('discovery.cityPlaceholder')}
+                disabled={!selectedCountry}
               >
                 <option value="">{t('discovery.cityPlaceholder')}</option>
-                {(locationOptions.citiesByCountry[selectedCountry] ?? []).map((c) => (
+                {(citiesByCountry[selectedCountry] ?? []).map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
