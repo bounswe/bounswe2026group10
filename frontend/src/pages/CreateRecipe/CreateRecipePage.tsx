@@ -626,6 +626,17 @@ export function CreateRecipePage() {
       return
     }
     await sendAudioForParsing(file)
+
+    // Video files uploaded for parsing also become recipe media so they appear
+    // on the detail page. Silently skipped if the file isn't an accepted media
+    // type (e.g. mov/mkv) or the media slot cap is full.
+    if (file.type.startsWith('video/') && validateMediaFile(file) === null) {
+      setPendingMediaFiles((list) => {
+        if (list.some((f) => f.name === file.name && f.size === file.size)) return list
+        if (list.length >= MAX_MEDIA_FILES) return list
+        return [...list, file]
+      })
+    }
   }
 
   // Cleanup on unmount: stop any running recorder + tracks
