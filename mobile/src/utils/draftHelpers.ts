@@ -7,6 +7,7 @@ export function mapBackendToDraft(recipe: BackendRecipeDetail): RecipeFormState 
 
   return {
     recipeId: recipe.id,
+    isAlreadyPublished: recipe.isPublished,
     title: recipe.title,
     type: recipe.type === 'cultural' ? 'CULTURAL' : 'COMMUNITY',
     originCountry: recipe.country || '',

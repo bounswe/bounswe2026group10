@@ -169,6 +169,8 @@ export const tr: Translations = {
     publish: 'Yayınla',
     publishing: 'Yayınlanıyor…',
     publishError: 'Tarif yayınlanamadı. Lütfen tekrar deneyin.',
+    edit: 'Düzenle',
+    editError: 'Tarif düzenleme için yüklenemedi. Lütfen tekrar deneyin.',
     delete: 'Sil',
     deleteError: 'Tarif silinemedi. Lütfen tekrar deneyin.',
     deleteConfirmTitle: 'Tarifi sil?',

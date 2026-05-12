@@ -167,6 +167,8 @@ export const en = {
     publish: 'Publish',
     publishing: 'Publishing…',
     publishError: 'Could not publish recipe. Please try again.',
+    edit: 'Edit',
+    editError: 'Could not load recipe for editing. Please try again.',
     delete: 'Delete',
     deleteError: 'Could not delete recipe. Please try again.',
     deleteConfirmTitle: 'Delete recipe?',

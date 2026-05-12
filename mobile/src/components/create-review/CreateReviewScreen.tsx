@@ -95,8 +95,12 @@ export function CreateReviewScreen() {
       }
 
       await attachMedia(targetId);
-      const published = await publishRecipe(targetId);
-      console.log("[publish] recipe published:", published);
+      if (!draft.isAlreadyPublished) {
+        const published = await publishRecipe(targetId);
+        console.log("[publish] recipe published:", published);
+      } else {
+        console.log("[publish] recipe already published, skipping publish call:", targetId);
+      }
       Alert.alert(t("create.published"), t("create.publishedMsg"), [
         { text: "OK", onPress: goHome },
       ]);
