@@ -590,6 +590,105 @@
   background: var(--surface-overlay);
 }
 
+.cr-review-standardize {
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-sm);
+  background: var(--surface-overlay);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.cr-review-standardize__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.cr-review-standardize__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.cr-review-standardize__none {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.cr-review-standardize__list,
+.cr-review-standardize__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.cr-review-standardize__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  gap: var(--space-xs);
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.cr-review-standardize__name {
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cr-review-standardize__from {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}
+
+.cr-review-standardize__arrow {
+  color: var(--text-secondary);
+}
+
+.cr-review-standardize__to {
+  color: var(--color-main);
+  font-weight: 600;
+}
+
+.cr-review-standardize__steprow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.875rem;
+  padding: var(--space-xs) 0;
+  border-top: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.06));
+}
+
+.cr-review-standardize__steprow:first-child {
+  border-top: none;
+}
+
+.cr-review-standardize__steplabel {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cr-review-standardize__stepfrom {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}
+
+.cr-review-standardize__stepto {
+  color: var(--text-primary);
+}
+
 .cr-review-note p {
   font-size: 0.875rem;
   color: var(--text-primary);
