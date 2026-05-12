@@ -25,6 +25,7 @@ export interface RecipeStep {
   id: string
   stepOrder: number
   description: string
+  videoTimestamp: number | null
 }
 
 export interface RecipeTool {
@@ -88,7 +89,7 @@ export interface UpdateRecipePayload {
   city?: string
   district?: string
   ingredients?: CreateRecipeIngredient[]
-  steps?: { stepOrder: number; description: string }[]
+  steps?: { stepOrder: number; description: string; videoTimestamp?: number | null }[]
   tools?: { name: string }[]
   /** Cultural tag IDs from GET /cultural-tags (cultural recipes only). */
   culturalTagIds?: number[]
@@ -108,8 +109,8 @@ export interface CreateRecipePayload {
   servingSize?: number
   /** Backend: recipe_ingredients rows with FK to ingredients.id */
   ingredients?: CreateRecipeIngredient[]
-  /** Backend requires {stepOrder, description}[]; sent directly. */
-  steps: { stepOrder: number; description: string }[]
+  /** Backend requires {stepOrder, description}[]; sent directly. videoTimestamp is optional seconds-into-video. */
+  steps: { stepOrder: number; description: string; videoTimestamp?: number | null }[]
   /** Backend requires {name}[]. */
   tools: { name: string }[]
   /**
@@ -190,6 +191,7 @@ export const recipeService = {
         id: String(s.id),
         stepOrder: s.stepOrder,
         description: s.description,
+        videoTimestamp: typeof s.videoTimestamp === 'number' ? s.videoTimestamp : null,
       })),
       tools: (d.tools ?? []).map((t: any) => ({
         id: String(t.id),

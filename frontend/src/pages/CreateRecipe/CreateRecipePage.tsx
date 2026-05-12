@@ -56,7 +56,25 @@ interface IngredientRow {
   unit: string
 }
 
-interface StepItem { text: string }
+interface StepItem { text: string; videoTimestamp: string }
+
+/** Parse a "MM:SS" / "M:SS" / "SS" string into seconds. Empty/invalid → null. */
+function parseStepTimestamp(raw: string): number | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  const parts = trimmed.split(':')
+  if (parts.length === 1) {
+    const s = Number(parts[0])
+    return Number.isFinite(s) && s >= 0 ? Math.floor(s) : null
+  }
+  if (parts.length === 2) {
+    const m = Number(parts[0])
+    const s = Number(parts[1])
+    if (!Number.isFinite(m) || !Number.isFinite(s) || m < 0 || s < 0 || s >= 60) return null
+    return Math.floor(m * 60 + s)
+  }
+  return null
+}
 
 function parseQuantityValue(quantity: string): number | null {
   const q = parseFloat(String(quantity).replace(',', '.'))
@@ -148,7 +166,7 @@ const INITIAL_DRAFT: RecipeDraft = {
   district: '',
   ingredients: [{ ingredientId: null, name: '', searchQuery: '', quantity: '', unit: '' }],
   tools: [''],
-  steps: [{ text: '' }],
+  steps: [{ text: '', videoTimestamp: '' }],
   dietaryTagIds: [],
   allergenIds: [],
   culturalTagIds: [],
@@ -372,10 +390,17 @@ export function CreateRecipePage() {
   const updateStep = (idx: number, value: string) =>
     setDraft((d) => {
       const list = [...d.steps]
-      list[idx] = { text: value }
+      list[idx] = { ...list[idx], text: value }
       return { ...d, steps: list }
     })
-  const addStep = () => setDraft((d) => ({ ...d, steps: [...d.steps, { text: '' }] }))
+  const updateStepTimestamp = (idx: number, value: string) =>
+    setDraft((d) => {
+      const list = [...d.steps]
+      list[idx] = { ...list[idx], videoTimestamp: value }
+      return { ...d, steps: list }
+    })
+  const addStep = () =>
+    setDraft((d) => ({ ...d, steps: [...d.steps, { text: '', videoTimestamp: '' }] }))
   const removeStep = (idx: number) =>
     setDraft((d) => ({ ...d, steps: d.steps.filter((_, i) => i !== idx) }))
 
@@ -430,7 +455,11 @@ export function CreateRecipePage() {
         ingredients: ingredientsPayload,
         steps: draft.steps
           .filter((s) => s.text.trim())
-          .map((s, i) => ({ stepOrder: i + 1, description: s.text.trim() })),
+          .map((s, i) => ({
+            stepOrder: i + 1,
+            description: s.text.trim(),
+            videoTimestamp: parseStepTimestamp(s.videoTimestamp),
+          })),
         tools: draft.tools
           .filter((t) => t.trim())
           .map((t) => ({ name: t.trim() })),
@@ -520,7 +549,7 @@ export function CreateRecipePage() {
       tools: parsed.tools.length > 0 ? parsed.tools : current.tools,
       steps:
         parsed.steps.length > 0
-          ? parsed.steps.map((step) => ({ text: step.description }))
+          ? parsed.steps.map((step) => ({ text: step.description, videoTimestamp: '' }))
           : current.steps,
       ingredients: matchedRows.length > 0 ? matchedRows : current.ingredients,
     }))
@@ -626,6 +655,17 @@ export function CreateRecipePage() {
       return
     }
     await sendAudioForParsing(file)
+
+    // Video files uploaded for parsing also become recipe media so they appear
+    // on the detail page. Silently skipped if the file isn't an accepted media
+    // type (e.g. mov/mkv) or the media slot cap is full.
+    if (file.type.startsWith('video/') && validateMediaFile(file) === null) {
+      setPendingMediaFiles((list) => {
+        if (list.some((f) => f.name === file.name && f.size === file.size)) return list
+        if (list.length >= MAX_MEDIA_FILES) return list
+        return [...list, file]
+      })
+    }
   }
 
   // Cleanup on unmount: stop any running recorder + tracks
@@ -1310,13 +1350,29 @@ export function CreateRecipePage() {
                   <div key={idx} className="cr-step-row">
                     <div className="cr-step-card">
                       <div className="cr-step-card__num">{idx + 1}</div>
-                      <textarea
-                        className="cr-textarea cr-textarea--inline"
-                        value={s.text}
-                        onChange={(e) => updateStep(idx, e.target.value)}
-                        placeholder={t('create.instructions.stepPlaceholder')}
-                        rows={3}
-                      />
+                      <div className="cr-step-card__body">
+                        <textarea
+                          className="cr-textarea cr-textarea--inline"
+                          value={s.text}
+                          onChange={(e) => updateStep(idx, e.target.value)}
+                          placeholder={t('create.instructions.stepPlaceholder')}
+                          rows={3}
+                        />
+                        <label className="cr-step-ts">
+                          <span className="cr-step-ts__icon" aria-hidden>⏱</span>
+                          <input
+                            type="text"
+                            className="cr-step-ts__input"
+                            value={s.videoTimestamp}
+                            onChange={(e) => updateStepTimestamp(idx, e.target.value)}
+                            placeholder={t('create.instructions.timestampPlaceholder')}
+                            inputMode="numeric"
+                            pattern="[0-9:]*"
+                            maxLength={6}
+                            aria-label={t('create.instructions.timestampAria', { n: idx + 1 })}
+                          />
+                        </label>
+                      </div>
                     </div>
                     {draft.steps.length > 1 && (
                       <button

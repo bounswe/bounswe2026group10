@@ -17,11 +17,37 @@ interface IngredientRow {
   unit: string
 }
 
-interface StepItem { text: string }
+interface StepItem { text: string; videoTimestamp: string }
 
 function parseQty(v: string): number | null {
   const n = parseFloat(String(v).replace(',', '.'))
   return Number.isFinite(n) && n > 0 ? n : null
+}
+
+/** Parse a "MM:SS" / "M:SS" / "SS" string into seconds. Empty/invalid → null. */
+function parseStepTimestamp(raw: string): number | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  const parts = trimmed.split(':')
+  if (parts.length === 1) {
+    const s = Number(parts[0])
+    return Number.isFinite(s) && s >= 0 ? Math.floor(s) : null
+  }
+  if (parts.length === 2) {
+    const m = Number(parts[0])
+    const s = Number(parts[1])
+    if (!Number.isFinite(m) || !Number.isFinite(s) || m < 0 || s < 0 || s >= 60) return null
+    return Math.floor(m * 60 + s)
+  }
+  return null
+}
+
+/** Format seconds → "MM:SS" string for display in the input. Null/invalid → "". */
+function formatStepTimestamp(seconds: number | null | undefined): string {
+  if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 0) return ''
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
 function rowComplete(r: IngredientRow) {
@@ -76,7 +102,7 @@ export function EditRecipePage() {
   const [ingredients, setIngredients] = useState<IngredientRow[]>([
     { ingredientId: null, name: '', searchQuery: '', quantity: '', unit: '' },
   ])
-  const [steps, setSteps] = useState<StepItem[]>([{ text: '' }])
+  const [steps, setSteps] = useState<StepItem[]>([{ text: '', videoTimestamp: '' }])
   const [tools, setTools] = useState<string[]>([''])
 
   // Dropdown data
@@ -130,7 +156,12 @@ export function EditRecipePage() {
 
         // Pre-fill steps
         if (recipe.steps.length > 0) {
-          setSteps(recipe.steps.map((s) => ({ text: s.description })))
+          setSteps(
+            recipe.steps.map((s) => ({
+              text: s.description,
+              videoTimestamp: formatStepTimestamp(s.videoTimestamp),
+            }))
+          )
         }
 
         // Pre-fill tools
@@ -163,7 +194,11 @@ export function EditRecipePage() {
 
     const stepsPayload = steps
       .filter((s) => s.text.trim())
-      .map((s, i) => ({ stepOrder: i + 1, description: s.text.trim() }))
+      .map((s, i) => ({
+        stepOrder: i + 1,
+        description: s.text.trim(),
+        videoTimestamp: parseStepTimestamp(s.videoTimestamp),
+      }))
 
     const toolsPayload = tools
       .filter((t) => t.trim())
@@ -434,17 +469,39 @@ export function EditRecipePage() {
           {steps.map((step, idx) => (
             <div key={idx} className="edit-recipe__step-row">
               <span className="edit-recipe__step-num">{idx + 1}</span>
-              <textarea
-                className="edit-recipe__textarea"
-                value={step.text}
-                onChange={(e) =>
-                  setSteps((prev) =>
-                    prev.map((s, i) => (i === idx ? { text: e.target.value } : s))
-                  )
-                }
-                rows={2}
-                placeholder={t('create.instructions.stepPlaceholder')}
-              />
+              <div className="edit-recipe__step-body">
+                <textarea
+                  className="edit-recipe__textarea"
+                  value={step.text}
+                  onChange={(e) =>
+                    setSteps((prev) =>
+                      prev.map((s, i) => (i === idx ? { ...s, text: e.target.value } : s))
+                    )
+                  }
+                  rows={2}
+                  placeholder={t('create.instructions.stepPlaceholder')}
+                />
+                <label className="edit-recipe__step-ts">
+                  <span className="edit-recipe__step-ts-icon" aria-hidden>⏱</span>
+                  <input
+                    type="text"
+                    className="edit-recipe__step-ts-input"
+                    value={step.videoTimestamp}
+                    onChange={(e) =>
+                      setSteps((prev) =>
+                        prev.map((s, i) =>
+                          i === idx ? { ...s, videoTimestamp: e.target.value } : s
+                        )
+                      )
+                    }
+                    placeholder={t('create.instructions.timestampPlaceholder')}
+                    inputMode="numeric"
+                    pattern="[0-9:]*"
+                    maxLength={6}
+                    aria-label={t('create.instructions.timestampAria', { n: idx + 1 })}
+                  />
+                </label>
+              </div>
               <button
                 type="button"
                 className="edit-recipe__remove-btn"
@@ -460,7 +517,7 @@ export function EditRecipePage() {
         <button
           type="button"
           className="edit-recipe__add-btn"
-          onClick={() => setSteps((prev) => [...prev, { text: '' }])}
+          onClick={() => setSteps((prev) => [...prev, { text: '', videoTimestamp: '' }])}
         >
           <PlusIcon /> {t('create.instructions.addStep')}
         </button>

@@ -863,6 +863,42 @@
   box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
 }
 
+/* Step jump markers — sit just above the annotation marker row */
+.rd-video-player__step-markers {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 52px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.rd-video-player__step-marker {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: 2px solid #fff;
+  border-radius: 9px;
+  background: #1f3a5f;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.rd-video-player__step-marker:hover {
+  transform: translateX(-50%) scale(1.15);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
+}
+
 .rd-video-player__annotation-list {
   list-style: none;
   margin: 0;
@@ -922,4 +958,192 @@
 
 .rd-video-player__annotation-note {
   color: var(--text-primary);
+}
+
+/* ── Cooking-mode (video guide) button ─────────────────────────────────────── */
+
+.recipe-detail__cooking-mode-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  margin-top: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-main);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.recipe-detail__cooking-mode-btn:hover {
+  background: var(--color-main-dark, var(--color-main));
+  transform: translateY(-1px);
+}
+
+.recipe-detail__cooking-mode-btn:active {
+  transform: translateY(0);
+}
+
+/* ── Video guide modal (mobile-style fullscreen step-by-step) ──────────────── */
+
+.vg-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #000;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.vg-modal__progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.vg-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-pill);
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s;
+}
+
+.vg-modal__close:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.vg-modal__bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.vg-modal__bar-fill {
+  height: 100%;
+  background: var(--color-main);
+  border-radius: 2px;
+  transition: width 0.25s ease;
+}
+
+.vg-modal__counter {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.85);
+  min-width: 3rem;
+  text-align: right;
+}
+
+.vg-modal__stage {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  overflow: hidden;
+}
+
+.vg-modal__video {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.vg-modal__placeholder {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 1rem;
+}
+
+.vg-modal__step-info {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--space-lg);
+  padding-bottom: calc(var(--space-lg) + 56px); /* leave room above native controls */
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+  pointer-events: none;
+}
+
+.vg-modal__step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: var(--space-sm);
+  background: var(--color-main);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 50%;
+}
+
+.vg-modal__step-desc {
+  margin: 0;
+  color: #fff;
+  font-size: 1.05rem;
+  line-height: 1.4;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  max-width: 60ch;
+}
+
+.vg-modal__nav {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.vg-modal__nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.vg-modal__nav-btn--prev {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.vg-modal__nav-btn--prev:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.vg-modal__nav-btn--next {
+  background: var(--color-main);
+}
+
+.vg-modal__nav-btn--next:hover {
+  background: var(--color-main-dark, var(--color-main));
+}
+
+.vg-modal__nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }

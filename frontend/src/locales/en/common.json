@@ -349,6 +349,18 @@
     "substituteConfidence": "Confidence: {{pct}}%",
     "videoAnnotations": {
       "seekAria": "Jump to {{start}}: {{note}}"
+    },
+    "videoStepMarkers": {
+      "seekAria": "Jump to step {{n}} ({{start}})"
+    },
+    "videoGuide": {
+      "title": "Step-by-step video guide",
+      "openAria": "Open step-by-step video guide",
+      "closeAria": "Close video guide",
+      "previous": "Previous",
+      "next": "Next",
+      "finish": "Finish",
+      "noVideo": "No video available"
     }
   },
   "dishVariety": {
@@ -465,7 +477,9 @@
       "title": "Instructions",
       "stepPlaceholder": "Describe this step...",
       "addStep": "Add Step",
-      "removeAria": "Remove step"
+      "removeAria": "Remove step",
+      "timestampPlaceholder": "MM:SS",
+      "timestampAria": "Video timestamp for step {{n}} (optional, MM:SS)"
     },
     "review": {
       "title": "Review & Publish",

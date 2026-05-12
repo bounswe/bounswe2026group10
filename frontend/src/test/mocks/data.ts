@@ -65,8 +65,8 @@ export const mockRecipeDetail = {
     { id: '3', ingredientId: '12', ingredientName: 'Butter', quantity: 30, unit: 'g', allergens: ['Dairy'] },
   ],
   steps: [
-    { id: '1', stepOrder: 1, description: 'Wash and drain the lentils.' },
-    { id: '2', stepOrder: 2, description: 'Saute onion in butter until translucent.' },
+    { id: '1', stepOrder: 1, description: 'Wash and drain the lentils.', videoTimestamp: null },
+    { id: '2', stepOrder: 2, description: 'Saute onion in butter until translucent.', videoTimestamp: null },
   ],
   tools: [{ id: '1', name: 'Large pot' }],
   media: [{ id: '1', url: '/img/soup.jpg', type: 'image' }],

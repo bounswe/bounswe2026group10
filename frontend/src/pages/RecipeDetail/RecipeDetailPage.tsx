@@ -10,6 +10,7 @@ import { RecipeRating } from '@/components/RecipeRating/RecipeRating'
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal'
 import { CommentsSection } from '@/components/Comments/CommentsSection'
 import { VideoPlayerWithAnnotations } from '@/pages/RecipeDetail/VideoPlayerWithAnnotations'
+import { VideoGuideModal } from '@/pages/RecipeDetail/VideoGuideModal'
 import { useAppSelector } from '@/store/hooks'
 import './RecipeDetailPage.css'
 
@@ -87,6 +88,7 @@ export function RecipeDetailPage() {
   const [ratingBusy, setRatingBusy] = useState(false)
   const [ratingError, setRatingError] = useState<string | null>(null)
   const [showRemoveRatingModal, setShowRemoveRatingModal] = useState(false)
+  const [showVideoGuide, setShowVideoGuide] = useState(false)
 
   // Serving scaling
   const [scaledIngredients, setScaledIngredients] = useState<ScaledRecipeIngredient[] | null>(null)
@@ -584,12 +586,27 @@ export function RecipeDetailPage() {
                 <VideoPlayerWithAnnotations
                   key={m.id}
                   src={m.url}
-                  // attach annotations only to the first video — backend ties annotations to recipe, not media item
+                  // attach annotations and step markers only to the first video —
+                  // backend ties both to the recipe, not to a particular media item
                   annotations={idx === 0 ? recipe.videoAnnotations : []}
+                  steps={idx === 0 ? recipe.steps : []}
                   ariaLabel={t('recipeDetail.videoPlayerAria')}
                 />
               ))}
             </div>
+            {recipe.steps.length > 0 && (
+              <button
+                type="button"
+                className="recipe-detail__cooking-mode-btn"
+                onClick={() => setShowVideoGuide(true)}
+                aria-label={t('recipeDetail.videoGuide.openAria')}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                <span>{t('recipeDetail.watchVideo')}</span>
+              </button>
+            )}
           </section>
         )}
 
@@ -606,6 +623,14 @@ export function RecipeDetailPage() {
           />
         </section>
       </div>
+
+      {showVideoGuide && uploadedVideos[0] && (
+        <VideoGuideModal
+          videoUrl={uploadedVideos[0].url}
+          steps={recipe.steps}
+          onClose={() => setShowVideoGuide(false)}
+        />
+      )}
 
       <ConfirmModal
         isOpen={showRemoveRatingModal}

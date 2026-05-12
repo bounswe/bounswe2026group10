@@ -249,6 +249,46 @@
 
 .edit-recipe__step-row .edit-recipe__textarea { flex: 1; }
 
+.edit-recipe__step-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  flex: 1;
+  min-width: 0;
+}
+
+.edit-recipe__step-ts {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: flex-start;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.edit-recipe__step-ts-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.edit-recipe__step-ts-input {
+  width: 5rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid rgba(134, 69, 42, 0.25);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.edit-recipe__step-ts-input:focus {
+  outline: none;
+  border-color: var(--color-main);
+}
+
 /* ── Tools ───────────────────────────────────────────────────────────────────── */
 
 .edit-recipe__tool-list {
