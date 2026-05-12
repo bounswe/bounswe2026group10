@@ -284,7 +284,7 @@
     "filters": "Filters",
     "region": "Region",
     "selectRegion": "Select a region",
-    "allergens": "Avoid Allergens",
+    "allergens": "Allergens",
     "selectAllergens": "Choose allergens to avoid",
     "avoidAllergen": "Avoid {{name}}",
     "dietaryTags": "Dietary Preferences",
@@ -413,7 +413,7 @@
     "title": "Create Recipe",
     "saveDraft": "Save Draft",
     "continue": "Continue",
-    "stepLabel": "Step {{step}} of 4: {{label}}",
+    "stepLabel": "Step {{step}} of {{total}}: {{label}}",
     "steps": {
       "1": "Basic Information",
       "2": "Ingredients & Tools",

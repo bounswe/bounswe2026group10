@@ -284,7 +284,7 @@
     "filters": "Filtreler",
     "region": "Bölge",
     "selectRegion": "Bir bölge seçin",
-    "allergens": "Alerja Kaçın",
+    "allergens": "Alerjenler",
     "selectAllergens": "Kaçınılacak alerjenler seçin",
     "avoidAllergen": "{{name}} alerjeninden kaçın",
     "dietaryTags": "Beslenme Tercihleri",
@@ -413,7 +413,7 @@
     "title": "Tarif Oluştur",
     "saveDraft": "Taslak Kaydet",
     "continue": "Devam Et",
-    "stepLabel": "Adım {{step}} / 4: {{label}}",
+    "stepLabel": "Adım {{step}} / {{total}}: {{label}}",
     "steps": {
       "1": "Temel Bilgiler",
       "2": "Malzemeler ve Araçlar",

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { RecipeSummary } from '@/services/discovery-service'
 import './RecipeCard.css'
 
@@ -16,8 +17,11 @@ function StarIcon() {
 }
 
 export function RecipeCard({ recipe, variant = 'horizontal', onClick }: RecipeCardProps) {
+  const { t } = useTranslation('common')
   const rating = recipe.averageRating ?? 0
-  const typeBadge = recipe.recipeType === 'cultural' ? 'Cultural' : 'Community'
+  const typeBadge = t(
+    recipe.recipeType === 'cultural' ? 'recipeDetail.cultural' : 'recipeDetail.community',
+  )
 
   if (variant === 'hero') {
     return (

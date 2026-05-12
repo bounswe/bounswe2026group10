@@ -314,7 +314,8 @@ export function RecipeDetailPage() {
   const extraGalleryImages = imageMedia.slice(1)
   const uploadedVideos = recipe.media.filter((m) => m.type === 'video')
   const rating = recipe.averageRating
-  const regionLine = recipe.dishVarietyName ?? recipe.genreName ?? ''
+  const locationLine = [recipe.city, recipe.country].filter(Boolean).join(', ')
+  const taxonomyLine = [recipe.genreName, recipe.dishVarietyName].filter(Boolean).join(' · ')
   const displayIngredients = scaledIngredients ?? recipe.ingredients
   const authorInitial = (recipe.creatorUsername ?? '?').slice(0, 1).toUpperCase()
   const badgeLabel = recipe.type === 'cultural' ? t('recipeDetail.cultural') : t('recipeDetail.community')
@@ -372,7 +373,8 @@ export function RecipeDetailPage() {
               </div>
               <div>
                 <p className="recipe-detail__author-name">{recipe.creatorUsername}</p>
-                {regionLine && <p className="recipe-detail__author-meta">{regionLine}</p>}
+                {taxonomyLine && <p className="recipe-detail__author-meta">{taxonomyLine}</p>}
+                {locationLine && <p className="recipe-detail__author-meta">{locationLine}</p>}
               </div>
             </div>
           )}
