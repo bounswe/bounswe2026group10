@@ -8,6 +8,15 @@ jest.mock('@expo/vector-icons', () => ({
   MaterialCommunityIcons: 'MaterialCommunityIcons',
 }));
 
+jest.mock('../context/RecipeFormContext', () => ({
+  useRecipeForm: () => ({
+    draft: {},
+    updateDraft: jest.fn(),
+    resetDraft: jest.fn(),
+    saveDraft: jest.fn(),
+  }),
+}));
+
 jest.mock('expo-secure-store', () => ({
   setItemAsync: jest.fn().mockResolvedValue(undefined),
   getItemAsync: jest.fn().mockResolvedValue(null),

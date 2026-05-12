@@ -15,6 +15,19 @@ jest.mock('@expo/vector-icons', () => ({
   FontAwesome: 'FontAwesome',
 }));
 
+jest.mock('expo-av', () => ({
+  Audio: {
+    requestPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+    setAudioModeAsync: jest.fn().mockResolvedValue(undefined),
+    Recording: jest.fn().mockImplementation(() => ({
+      prepareToRecordAsync: jest.fn().mockResolvedValue(undefined),
+      startAsync: jest.fn().mockResolvedValue(undefined),
+      stopAndUnloadAsync: jest.fn().mockResolvedValue(undefined),
+      getURI: jest.fn().mockReturnValue(null),
+    })),
+  },
+}));
+
 // Mock navigation
 jest.mock('@react-navigation/native', () => {
   return {
