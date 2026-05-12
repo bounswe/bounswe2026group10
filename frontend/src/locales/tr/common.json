@@ -263,6 +263,12 @@
     "dietaryTags": "Beslenme Tercihleri",
     "selectDietaryTags": "Beslenme tercihlerini seçin",
     "culturalTags": "Kültürel Etiketler",
+    "availableIngredients": {
+      "label": "Elimdeki Malzemeler",
+      "hint": "Sadece bu malzemelerle yapabileceğiniz tarifleri gösterir.",
+      "placeholder": "Malzeme ekle…",
+      "remove": "{{name}} kaldır"
+    },
     "clearFilters": "Tüm filtreleri temizle",
     "noRegionSelected": "Tüm bölgeler",
     "noAllergenSelected": "Hiçbiri",

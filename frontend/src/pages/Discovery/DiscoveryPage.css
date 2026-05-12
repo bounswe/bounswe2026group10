@@ -468,6 +468,118 @@
   color: #fff;
 }
 
+.discovery-page__filter-group-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.discovery-page__ing-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.discovery-page__ing-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.discovery-page__ing-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem 0.3rem 0.8rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-main);
+  color: #fff;
+  font-size: 0.8125rem;
+}
+
+.discovery-page__ing-chip-remove {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  border-radius: 50%;
+}
+
+.discovery-page__ing-chip-remove:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.discovery-page__ing-search {
+  position: relative;
+}
+
+.discovery-page__ing-search-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-neutral-darker);
+  background: var(--surface-bg);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.discovery-page__ing-search-input:focus {
+  outline: none;
+  border-color: var(--color-main);
+}
+
+.discovery-page__ing-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  background: var(--surface-bg);
+  border: 1px solid var(--color-neutral-darker);
+  border-radius: var(--radius-sm);
+  max-height: 240px;
+  overflow-y: auto;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.discovery-page__ing-option {
+  padding: 0;
+}
+
+.discovery-page__ing-option--muted {
+  padding: 0.5rem 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+.discovery-page__ing-option-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 0;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.discovery-page__ing-option-btn:hover,
+.discovery-page__ing-option-btn:focus {
+  background: var(--surface-overlay);
+  outline: none;
+}
+
 .discovery-page__filter-location {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -263,6 +263,12 @@
     "dietaryTags": "Dietary Preferences",
     "selectDietaryTags": "Select dietary preferences",
     "culturalTags": "Cultural Tags",
+    "availableIngredients": {
+      "label": "Available Ingredients",
+      "hint": "Only show recipes you can make with these ingredients.",
+      "placeholder": "Add an ingredient…",
+      "remove": "Remove {{name}}"
+    },
     "clearFilters": "Clear all filters",
     "noRegionSelected": "All regions",
     "noAllergenSelected": "None",

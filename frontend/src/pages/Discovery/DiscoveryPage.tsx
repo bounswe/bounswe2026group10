@@ -18,6 +18,8 @@ import {
   culturalTagLabel,
   type CulturalTag,
 } from '@/services/cultural-tag-service'
+import { type IngredientOption } from '@/services/ingredient-service'
+import { AvailableIngredientsInput } from './Parts/AvailableIngredientsInput'
 import './DiscoveryPage.css'
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -60,6 +62,11 @@ export function DiscoveryPage() {
   const [locationOptions, setLocationOptions] = useState<LocationOptions>({ countries: [], citiesByCountry: {} })
   const [culturalTags, setCulturalTags] = useState<CulturalTag[]>([])
   const [selectedCulturalTagIds, setSelectedCulturalTagIds] = useState<number[]>([])
+  /** "Available ingredients" filter — when non-empty, recipes are fetched via
+   * `/discovery/recipes/by-ingredients` instead of `/discovery/recipes`. Other
+   * filters (origin/tags/allergens/search) are not honored by that endpoint,
+   * so the UI hides those groups while this filter is active. */
+  const [availableIngredients, setAvailableIngredients] = useState<IngredientOption[]>([])
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -125,32 +132,44 @@ export function DiscoveryPage() {
   /** Arama metni veya filtreler değişince sayfa 1'e dönsün. */
   useLayoutEffect(() => {
     setRecipePage(1)
-  }, [debouncedSearch, selectedTagIds, excludedAllergenIds, selectedCountry, selectedCity, selectedCulturalTagIds])
+  }, [debouncedSearch, selectedTagIds, excludedAllergenIds, selectedCountry, selectedCity, selectedCulturalTagIds, availableIngredients])
 
   const recipeSearchQuery = debouncedSearch.trim() || undefined
+  const availableIngredientIds = availableIngredients.map((ing) => ing.id)
+  const useByIngredientsEndpoint = availableIngredientIds.length > 0
 
   useEffect(() => {
     let cancelled = false
     setRecipeLoading(true)
 
-    discoveryService
-      .getRecipeResults({
-        genreId: selectedGenreId ?? undefined,
-        search: recipeSearchQuery,
-        tagIds: selectedTagIds.length > 0 ? selectedTagIds.join(',') : undefined,
-        culturalTagIds: selectedCulturalTagIds.length > 0 ? selectedCulturalTagIds.join(',') : undefined,
-        excludeAllergens: excludedAllergenIds.length > 0 ? excludedAllergenIds.join(',') : undefined,
-        country: selectedCountry || undefined,
-        city: selectedCity || undefined,
-        page: recipePage,
-        limit: RECIPES_PER_PAGE,
-      })
+    const fetcher = useByIngredientsEndpoint
+      ? discoveryService.getByIngredients(availableIngredientIds, recipePage, RECIPES_PER_PAGE)
+      : discoveryService.getRecipeResults({
+          genreId: selectedGenreId ?? undefined,
+          search: recipeSearchQuery,
+          tagIds: selectedTagIds.length > 0 ? selectedTagIds.join(',') : undefined,
+          culturalTagIds: selectedCulturalTagIds.length > 0 ? selectedCulturalTagIds.join(',') : undefined,
+          excludeAllergens: excludedAllergenIds.length > 0 ? excludedAllergenIds.join(',') : undefined,
+          country: selectedCountry || undefined,
+          city: selectedCity || undefined,
+          page: recipePage,
+          limit: RECIPES_PER_PAGE,
+        })
+
+    fetcher
       .then(({ recipes: recipeData, pagination, cascadeGenres, cascadeVarieties }) => {
         if (!cancelled) {
           setRecipes(recipeData)
           setRecipeTotal(pagination.total)
-          setCascadeGenreIds(new Set(cascadeGenres.map((g) => g.id)))
-          setCascadeVarietyIds(new Set(cascadeVarieties.map((v) => v.id)))
+          // The by-ingredients endpoint does not return cascade arrays, so
+          // disable cascade narrowing while it's the active source.
+          if (useByIngredientsEndpoint) {
+            setCascadeGenreIds(null)
+            setCascadeVarietyIds(null)
+          } else {
+            setCascadeGenreIds(new Set(cascadeGenres.map((g) => g.id)))
+            setCascadeVarietyIds(new Set(cascadeVarieties.map((v) => v.id)))
+          }
         }
       })
       .catch(() => {
@@ -168,7 +187,8 @@ export function DiscoveryPage() {
     return () => {
       cancelled = true
     }
-  }, [selectedGenreId, recipePage, recipeSearchQuery, selectedTagIds, selectedCulturalTagIds, excludedAllergenIds, selectedCountry, selectedCity])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedGenreId, recipePage, recipeSearchQuery, selectedTagIds, selectedCulturalTagIds, excludedAllergenIds, selectedCountry, selectedCity, useByIngredientsEndpoint, availableIngredientIds.join(',')])
 
   const normalizedSearch = debouncedSearch.trim().toLowerCase()
 
@@ -238,7 +258,8 @@ export function DiscoveryPage() {
     selectedCulturalTagIds.length +
     excludedAllergenIds.length +
     (selectedCountry ? 1 : 0) +
-    (selectedCity ? 1 : 0)
+    (selectedCity ? 1 : 0) +
+    availableIngredients.length
 
   const hasAnyFilters =
     selectedGenreId !== null ||
@@ -268,6 +289,7 @@ export function DiscoveryPage() {
     setExcludedAllergenIds([])
     setSelectedCountry('')
     setSelectedCity('')
+    setAvailableIngredients([])
     setRecipePage(1)
   }
 
@@ -334,6 +356,18 @@ export function DiscoveryPage() {
 
       {filtersOpen && (
         <div className="discovery-page__filter-panel" data-testid="filter-panel">
+          <div className="discovery-page__filter-group">
+            <p className="discovery-page__filter-group-label">
+              {t('discovery.availableIngredients.label')}
+            </p>
+            <p className="discovery-page__filter-group-hint">
+              {t('discovery.availableIngredients.hint')}
+            </p>
+            <AvailableIngredientsInput
+              selected={availableIngredients}
+              onChange={setAvailableIngredients}
+            />
+          </div>
           <div className="discovery-page__filter-group">
             <p className="discovery-page__filter-group-label">{t('discovery.location')}</p>
             <div className="discovery-page__filter-location">
@@ -435,6 +469,7 @@ export function DiscoveryPage() {
                 setExcludedAllergenIds([])
                 setSelectedCountry('')
                 setSelectedCity('')
+                setAvailableIngredients([])
               }}
             >
               {t('discovery.clearFilters')}
