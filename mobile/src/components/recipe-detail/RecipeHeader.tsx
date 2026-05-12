@@ -58,7 +58,26 @@ export function RecipeHeader({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title} numberOfLines={3}>{title}</Text>
+        <View style={styles.actions}>
+          <IconButton
+            name={isFavorited ? 'heart' : 'heart-outline'}
+            color={isFavorited ? colors.negative : colors.onSurface}
+            onPress={onToggleFavorite}
+            disabled={favoriteBusy}
+            accessibilityLabel={
+              isFavorited
+                ? t('recipeDetail.unfavoriteA11y')
+                : t('recipeDetail.favoriteA11y')
+            }
+          />
+          <IconButton
+            name="share-variant-outline"
+            onPress={() => Alert.alert(t('recipeDetail.share'), t('recipeDetail.shareSoon'))}
+          />
+        </View>
+      </View>
 
       <View style={styles.metaRow}>
         <TouchableOpacity onPress={onAuthorPress} activeOpacity={0.6}>
@@ -109,23 +128,6 @@ export function RecipeHeader({
         </View>
       )}
 
-      <View style={styles.actions}>
-        <IconButton
-          name={isFavorited ? 'heart' : 'heart-outline'}
-          color={isFavorited ? colors.negative : colors.onSurface}
-          onPress={onToggleFavorite}
-          disabled={favoriteBusy}
-          accessibilityLabel={
-            isFavorited
-              ? t('recipeDetail.unfavoriteA11y')
-              : t('recipeDetail.favoriteA11y')
-          }
-        />
-        <IconButton
-          name="share-variant-outline"
-          onPress={() => Alert.alert(t('recipeDetail.share'), t('recipeDetail.shareSoon'))}
-        />
-      </View>
     </View>
   );
 }
@@ -134,7 +136,13 @@ const styles = StyleSheet.create({
   container: {
     marginTop: spacing.lg,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
   title: {
+    flex: 1,
     fontFamily: fonts.serifBold,
     fontSize: fontSizes['3xl'],
     color: colors.onSurface,
@@ -164,8 +172,5 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    position: 'absolute',
-    top: 0,
-    right: 0,
   },
 });

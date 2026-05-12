@@ -54,7 +54,7 @@ function sortRecipes(recipes: MyRecipeSummary[], sort: SortKey): MyRecipeSummary
 }
 
 export function MyLibraryScreen() {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const navigation =
     useNavigation<NativeStackNavigationProp<LibraryStackParamList>>();
 
@@ -103,7 +103,7 @@ export function MyLibraryScreen() {
         setLoading(false);
       }
     },
-    [t],
+    [filter, t, i18n.language],
   );
 
   useEffect(() => {

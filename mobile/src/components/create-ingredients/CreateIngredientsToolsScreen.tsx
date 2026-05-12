@@ -47,7 +47,7 @@ function createEmptyIngredient(): IngredientFormItem {
 }
 
 export function CreateIngredientsToolsScreen() {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const navigation =
     useNavigation<NativeStackNavigationProp<CreateStackParamList>>();
   const isFocused = useIsFocused();
@@ -116,7 +116,7 @@ export function CreateIngredientsToolsScreen() {
         setUnitOptions(data.map((u) => ({ label: u, value: u })));
       })
       .catch((err) => console.error("[Units] failed to load:", err));
-  }, []);
+  }, [i18n.language]);
 
   const handleAddIngredient = () => {
     setIngredients((prev) => [...prev, createEmptyIngredient()]);
@@ -157,7 +157,7 @@ export function CreateIngredientsToolsScreen() {
   const handleNext = () => {
     if (validate()) {
       updateDraft({ ingredients, tools });
-      navigation.navigate("CreateSteps");
+      navigation.navigate("CreateAllergens");
     }
   };
 
@@ -213,7 +213,7 @@ export function CreateIngredientsToolsScreen() {
       >
         <StepHeader
           currentStep={2}
-          totalSteps={4}
+          totalSteps={5}
           title={t("create.steps.2")}
           subtitle={t("create.steps.2subtitle")}
         />
@@ -278,7 +278,7 @@ export function CreateIngredientsToolsScreen() {
           onPress={handleNext}
           activeOpacity={0.8}
         >
-          <Text style={styles.nextButtonText}>{t("create.continueSteps")}</Text>
+          <Text style={styles.nextButtonText}>{t("create.continueAllergens")}</Text>
           <MaterialCommunityIcons
             name="arrow-right"
             size={20}

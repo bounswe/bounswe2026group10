@@ -803,3 +803,123 @@
   color: #c0392b;
   border: 1px solid rgba(192, 57, 43, 0.25);
 }
+
+.recipe-detail__tag--cultural {
+  background: rgba(212, 134, 10, 0.1);
+  color: #a16207;
+  border: 1px solid rgba(212, 134, 10, 0.3);
+}
+
+/* ── Video player with annotations ─────────────────────────────────────────── */
+
+.rd-video-player {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.rd-video-player__container {
+  position: relative;
+  width: 100%;
+}
+
+.rd-video-player__video {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-md);
+  background: #000;
+}
+
+.rd-video-player__markers {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 36px;
+  height: 6px;
+  pointer-events: none;
+}
+
+.rd-video-player__marker {
+  position: absolute;
+  top: -3px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  background: var(--color-main);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.rd-video-player__marker:hover {
+  transform: scale(1.2);
+}
+
+.rd-video-player__marker--active {
+  transform: scale(1.3);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
+}
+
+.rd-video-player__annotation-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.rd-video-player__annotation {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.rd-video-player__annotation--active {
+  border-color: var(--color-main);
+  background: var(--color-main-soft, rgba(0, 120, 255, 0.06));
+}
+
+.rd-video-player__annotation-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.rd-video-player__annotation-time {
+  flex-shrink: 0;
+  min-width: 80px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--color-main);
+}
+
+.rd-video-player__annotation-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rd-video-player__annotation-technique {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rd-video-player__annotation-note {
+  color: var(--text-primary);
+}

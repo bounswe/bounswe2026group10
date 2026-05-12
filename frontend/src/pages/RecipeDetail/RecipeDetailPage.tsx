@@ -9,6 +9,7 @@ import { favoriteService } from '@/services/favorite-service'
 import { RecipeRating } from '@/components/RecipeRating/RecipeRating'
 import { ConfirmModal } from '@/components/ConfirmModal/ConfirmModal'
 import { CommentsSection } from '@/components/Comments/CommentsSection'
+import { VideoPlayerWithAnnotations } from '@/pages/RecipeDetail/VideoPlayerWithAnnotations'
 import { useAppSelector } from '@/store/hooks'
 import './RecipeDetailPage.css'
 
@@ -75,7 +76,7 @@ function IconRefresh() {
 export function RecipeDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
 
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -378,8 +379,23 @@ export function RecipeDetailPage() {
           )}
         </div>
 
-        {recipe.tags.length > 0 && (
+        {(recipe.tags.length > 0 || recipe.culturalTags.length > 0) && (
           <div className="recipe-detail__tags">
+            {recipe.culturalTags.map((tag) => {
+              const label =
+                (i18n.language.startsWith('tr') ? tag.labelTr : tag.labelEn) ??
+                tag.labelEn ??
+                tag.labelTr ??
+                tag.key
+              return (
+                <span
+                  key={`cultural-${tag.id}`}
+                  className="recipe-detail__tag recipe-detail__tag--cultural"
+                >
+                  {label}
+                </span>
+              )
+            })}
             {recipe.tags.map((tag) => (
               <span
                 key={tag.id}
@@ -564,18 +580,14 @@ export function RecipeDetailPage() {
           <section className="recipe-detail__block">
             <h2 className="recipe-detail__h2">{t('recipeDetail.video')}</h2>
             <div className="recipe-detail__uploaded-videos">
-              {uploadedVideos.map((m) => (
-                <video
+              {uploadedVideos.map((m, idx) => (
+                <VideoPlayerWithAnnotations
                   key={m.id}
-                  className="recipe-detail__uploaded-video"
-                  controls
-                  playsInline
-                  preload="metadata"
                   src={m.url}
-                  aria-label={t('recipeDetail.videoPlayerAria')}
-                >
-                  {t('recipeDetail.video')}
-                </video>
+                  // attach annotations only to the first video — backend ties annotations to recipe, not media item
+                  annotations={idx === 0 ? recipe.videoAnnotations : []}
+                  ariaLabel={t('recipeDetail.videoPlayerAria')}
+                />
               ))}
             </div>
           </section>

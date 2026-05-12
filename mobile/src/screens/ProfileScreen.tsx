@@ -87,7 +87,7 @@ export function ProfileScreen() {
       .catch(() => { if (!cancelled) setRecipes([]); })
       .finally(() => { if (!cancelled) setRecipesLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [currentLang]);
 
   const initials = user?.username
     ? user.username.slice(0, 2).toUpperCase()

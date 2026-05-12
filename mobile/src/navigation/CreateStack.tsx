@@ -8,6 +8,7 @@ import type { CreateStackParamList, RootTabParamList } from './types';
 import { useAuth } from '../context/AuthContext';
 import { CreateBasicInfoScreen } from '../components/create-basic/CreateBasicInfoScreen';
 import { CreateIngredientsToolsScreen } from '../components/create-ingredients/CreateIngredientsToolsScreen';
+import { CreateAllergensScreen } from '../components/create-allergens/CreateAllergensScreen';
 import { CreateStepsScreen } from '../components/create-steps/CreateStepsScreen';
 import { CreateReviewScreen } from '../components/create-review/CreateReviewScreen';
 
@@ -34,6 +35,7 @@ export function CreateStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="CreateBasicInfo" component={CreateBasicInfoScreen} />
       <Stack.Screen name="CreateIngredientsTools" component={CreateIngredientsToolsScreen} />
+      <Stack.Screen name="CreateAllergens" component={CreateAllergensScreen} />
       <Stack.Screen name="CreateSteps" component={CreateStepsScreen} />
       <Stack.Screen name="CreateReview" component={CreateReviewScreen} />
     </Stack.Navigator>

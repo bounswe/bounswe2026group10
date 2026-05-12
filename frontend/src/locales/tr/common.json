@@ -220,6 +220,7 @@
     "avoidAllergen": "{{name}} alerjeninden kaçın",
     "dietaryTags": "Beslenme Tercihleri",
     "selectDietaryTags": "Beslenme tercihlerini seçin",
+    "culturalTags": "Kültürel Etiketler",
     "clearFilters": "Tüm filtreleri temizle",
     "noRegionSelected": "Tüm bölgeler",
     "noAllergenSelected": "Hiçbiri",
@@ -303,7 +304,10 @@
     "substituteNoResults": "Bu malzeme için alternatif bulunamadı.",
     "substituteLoadError": "Alternatifler yüklenemedi.",
     "substituteClose": "Kapat",
-    "substituteConfidence": "Güven: %{{pct}}"
+    "substituteConfidence": "Güven: %{{pct}}",
+    "videoAnnotations": {
+      "seekAria": "{{start}} zamanına git: {{note}}"
+    }
   },
   "dishVariety": {
     "notFound": "Yemek çeşidi bulunamadı.",
@@ -354,6 +358,9 @@
       "cityPlaceholder": "Şehir",
       "districtPlaceholder": "İlçe",
       "dietaryTags": "Diyet tercihleri (isteğe bağlı)",
+      "culturalTags": "Kültürel etiketler",
+      "culturalTagsHint": "Bu tarifin ait olduğu vesileleri etiketleyin. Yukarıdan bir ülke seçerseniz o bölgeye özel etiketler ile küresel etiketler birlikte görünür.",
+      "culturalTagsEmpty": "Seçili ülke için henüz kültürel etiket bulunmuyor.",
       "allergenTags": "Bu tarifte bulunan alerjenler",
       "allergenTagsHint": "Malzemelerde bulunan tüm alerjenleri seçin.",
       "detectedAllergens": "Tespit Edilen Alerjenler",
@@ -454,6 +461,19 @@
       "removeAria": "{{name}} kaldır",
       "addAria": "{{name}} ekle",
       "detecting": "Alerjenler tespit ediliyor..."
+    },
+    "voice": {
+      "label": "Ya da sesinle anlat",
+      "hint": "Ses kaydı yapın veya bir ses/video dosyası yükleyin. Transkripsiyonunu yapıp tarife dönüştüreceğiz.",
+      "start": "Kaydı başlat",
+      "stop": "Durdur ve işle",
+      "upload": "Dosya yükle",
+      "recording": "Kaydediliyor...",
+      "languageAria": "Kayıt dili",
+      "langAuto": "Otomatik",
+      "notSupported": "Bu tarayıcı ses kaydını desteklemiyor. Lütfen dosya yükleme seçeneğini kullanın.",
+      "permissionDenied": "Mikrofon izni reddedildi. Lütfen izin verin ya da dosya yükleyin.",
+      "fileTooLarge": "Dosya 100 MBdan küçük olmalı."
     }
   },
   "comments": {
@@ -567,7 +587,10 @@
     "contentRequests": {
       "statusAria": "Duruma göre filtrele",
       "subfilterAria": "İçerik türü",
-      "subfilter": { "genre": "Türler", "variety": "Çeşitler" },
+      "subfilter": {
+        "genre": "Türler",
+        "variety": "Çeşitler"
+      },
       "empty": "Bu durumda başvuru yok.",
       "unknownRequester": "(bilinmeyen başvuran)",
       "nameEn": "İngilizce ad",

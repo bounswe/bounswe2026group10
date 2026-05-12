@@ -1,7 +1,6 @@
 import type { Recipe } from '../types/recipe';
 import type { AllergenTag, DietaryTag, MeasurementUnit, UserRole } from '../types/common';
 import type { BackendRecipeDetail } from './recipes';
-import { getMockCulturalTagsForRecipe } from './cultural-tags';
 
 const ALLERGEN_MAP: Record<string, AllergenTag> = {
   peanuts: 'PEANUTS',
@@ -89,6 +88,18 @@ export function mapBackendRecipeToMobile(data: BackendRecipeDetail): Recipe {
       }
     }
   }
+  // Top-level allergens come from `recipes.allergen_ids` (resolved by the
+  // backend through the `allergens` table) and are the source of truth for
+  // creator-tagged allergens. The dietary-tag-driven path above is kept for
+  // backward compatibility with older recipes that stored allergens via the
+  // `dietary_tags(category='allergen')` route.
+  if (data.allergens) {
+    for (const a of data.allergens) {
+      if (a.name && !allergens.includes(a.name)) {
+        allergens.push(a.name);
+      }
+    }
+  }
 
   const username = data.creatorUsername ?? '';
   const parts = username.split(/[_\s]+/);
@@ -132,13 +143,7 @@ export function mapBackendRecipeToMobile(data: BackendRecipeDetail): Recipe {
     dishVarietyName: data.dishVarietyName ?? '',
     tags,
     allergens,
-    // Cultural tags ride along once the backend ships /cultural-tags. Until
-    // then, fall back to a deterministic mock so Recipe Detail has visible
-    // chips. Drop `getMockCulturalTagsForRecipe` once the backend returns
-    // `culturalTags` on the payload.
-    culturalTags:
-      (data as { culturalTags?: Recipe['culturalTags'] }).culturalTags ??
-      getMockCulturalTagsForRecipe(data.id, data.country ?? null),
+    culturalTags: data.culturalTags ?? [],
     status: data.isPublished ? 'PUBLISHED' : 'DRAFT',
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,

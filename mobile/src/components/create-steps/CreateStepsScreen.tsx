@@ -213,10 +213,10 @@ export function CreateStepsScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <StepHeader
-          currentStep={3}
-          totalSteps={4}
-          title={t('create.steps.3')}
-          subtitle={t('create.steps.3subtitle')}
+          currentStep={4}
+          totalSteps={5}
+          title={t('create.steps.4')}
+          subtitle={t('create.steps.4subtitle')}
         />
 
         {/* Single recipe video upload */}

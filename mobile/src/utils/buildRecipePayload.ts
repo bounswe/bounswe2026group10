@@ -11,7 +11,8 @@ export function buildRecipePayload(draft: RecipeFormState) {
     district: draft.originDistrict || undefined,
     servingSize: draft.servingSize,
     videoUrl: draft.videoUrl ?? undefined,
-    tagIds: [...draft.dietaryTagIds, ...draft.allergenTagIds],
+    tagIds: draft.dietaryTagIds,
+    allergenIds: draft.allergenTagIds,
     culturalTagIds: draft.culturalTagIds,
     ingredients: draft.ingredients
       .filter(

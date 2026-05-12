@@ -73,9 +73,6 @@ export function CreateBasicInfoScreen() {
   const [selectedDietaryIds, setSelectedDietaryIds] = useState<string[]>(
     draft.dietaryTagIds.map(String),
   );
-  const [selectedAllergenIds, setSelectedAllergenIds] = useState<string[]>(
-    draft.allergenTagIds.map(String),
-  );
   const [selectedCulturalIds, setSelectedCulturalIds] = useState<string[]>(
     draft.culturalTagIds.map(String),
   );
@@ -110,7 +107,6 @@ export function CreateBasicInfoScreen() {
     setVarietyId(draft.varietyId);
     setServingSize(draft.servingSize ? String(draft.servingSize) : "");
     setSelectedDietaryIds(draft.dietaryTagIds.map(String));
-    setSelectedAllergenIds(draft.allergenTagIds.map(String));
     setSelectedCulturalIds(draft.culturalTagIds.map(String));
     setStory(draft.story);
     setImages(
@@ -143,9 +139,6 @@ export function CreateBasicInfoScreen() {
   const dietaryChipOptions = allTags
     .filter((t) => t.category === "dietary")
     .map((t) => ({ label: t.name, value: String(t.id) }));
-  const allergenChipOptions = allTags
-    .filter((t) => t.category === "allergen")
-    .map((t) => ({ label: t.name, value: String(t.id) }));
   const culturalChipOptions = culturalTags.map((tag) => ({
     label: pickCulturalTagLabel(tag, i18n.language),
     value: String(tag.id),
@@ -177,7 +170,7 @@ export function CreateBasicInfoScreen() {
         setAllTags(data);
       })
       .catch((err) => console.error("[BasicInfo] dietary-tags error:", err));
-  }, []);
+  }, [i18n.language]);
 
   // Infer genreId from varietyId when resuming a draft where backend only provides dishVarietyId
   useEffect(() => {
@@ -206,7 +199,7 @@ export function CreateBasicInfoScreen() {
     return () => {
       cancelled = true;
     };
-  }, [country]);
+  }, [country, i18n.language]);
 
   const handleGenreChange = (id: string) => {
     setGenreId(Number(id));
@@ -284,9 +277,6 @@ export function CreateBasicInfoScreen() {
       const dietaryNames = dietaryChipOptions
         .filter((o) => selectedDietaryIds.includes(o.value))
         .map((o) => o.label);
-      const allergenNames = allergenChipOptions
-        .filter((o) => selectedAllergenIds.includes(o.value))
-        .map((o) => o.label);
       const culturalTagIdsNum = selectedCulturalIds.map(Number);
       const selectedCulturalObjects = culturalTags.filter((tag) =>
         selectedCulturalIds.includes(String(tag.id)),
@@ -301,8 +291,6 @@ export function CreateBasicInfoScreen() {
         varietyId,
         dietaryTagIds: selectedDietaryIds.map(Number),
         dietaryTagNames: dietaryNames,
-        allergenTagIds: selectedAllergenIds.map(Number),
-        allergenTagNames: allergenNames,
         culturalTagIds: culturalTagIdsNum,
         culturalTags: selectedCulturalObjects,
         story,
@@ -379,7 +367,6 @@ export function CreateBasicInfoScreen() {
           setVarietyId(null);
           setServingSize("");
           setSelectedDietaryIds([]);
-          setSelectedAllergenIds([]);
           setSelectedCulturalIds([]);
           setStory("");
           setImages([]);
@@ -407,7 +394,7 @@ export function CreateBasicInfoScreen() {
       >
         <StepHeader
           currentStep={1}
-          totalSteps={4}
+          totalSteps={5}
           title={t("create.steps.1")}
           subtitle={t("create.steps.1subtitle")}
         />
@@ -509,15 +496,6 @@ export function CreateBasicInfoScreen() {
           selected={selectedDietaryIds}
           onToggle={(id) =>
             setSelectedDietaryIds(toggleString(selectedDietaryIds, id))
-          }
-        />
-
-        <ChipSelector
-          label={t("create.fields.allergenTags")}
-          options={allergenChipOptions}
-          selected={selectedAllergenIds}
-          onToggle={(id) =>
-            setSelectedAllergenIds(toggleString(selectedAllergenIds, id))
           }
         />
 
@@ -835,7 +813,7 @@ const styles = StyleSheet.create({
   },
   // ── Cultural Tags ──
   culturalTagsBlock: {
-    marginTop: spacing.lg,
+    marginTop: -spacing["2xl"],
   },
   culturalTagsHelp: {
     fontFamily: fonts.sans,

@@ -828,6 +828,11 @@
   color: #c8503c;
 }
 
+.cr-review-tag--cultural {
+  background: rgba(212, 134, 10, 0.1);
+  color: #a16207;
+}
+
 /* ── Wide screen adjustments ────────────────────────────────────────────── */
 
 @media (min-width: 768px) {
@@ -844,4 +849,76 @@
     border-left: 1px solid rgba(134, 69, 42, 0.2);
     border-right: 1px solid rgba(134, 69, 42, 0.2);
   }
+}
+
+/* ── Voice input (Faz 13) ───────────────────────────────────────────────── */
+
+.cr-voice {
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  background: var(--surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.cr-voice__label {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cr-voice__hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.cr-voice__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-items: center;
+  margin-top: var(--space-xs);
+}
+
+.cr-voice__btn {
+  cursor: pointer;
+}
+
+.cr-voice__btn--stop {
+  background: var(--color-error, #e53e3e);
+  color: #fff;
+  border-color: transparent;
+}
+
+.cr-voice__upload {
+  position: relative;
+  cursor: pointer;
+}
+
+.cr-voice__upload input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.cr-voice__lang {
+  max-width: 100px;
+}
+
+.cr-voice__recording {
+  margin: 0;
+  color: var(--color-error, #e53e3e);
+  font-weight: 600;
+  font-size: 0.875rem;
+  animation: cr-voice-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes cr-voice-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }

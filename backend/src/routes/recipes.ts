@@ -7,7 +7,8 @@ import type { AuthenticatedRequest, LanguageRequest } from "../types/index.js";
 import { errorResponse, successResponse } from "../utils/response.js";
 import { canonicalizeLocationForWrite } from "../utils/locations.js";
 import { normalizeText } from "../utils/text.js";
-import { translateRecipe } from "../services/translationService.js";
+import { translateRecipe, fetchRecipeTitleTranslations } from "../services/translationService.js";
+import { resolveLocalizedName } from "../utils/i18n.js";
 
 const router = Router();
 
@@ -159,6 +160,8 @@ router.get("/:id/scale", async (req: Request, res: Response): Promise<void> => {
 router.get("/mine", requireAuth, async (req: Request, res: Response): Promise<void> => {
   const user = (req as AuthenticatedRequest).user;
   const userClient = createUserClient(user.accessToken);
+  const lang = (req as LanguageRequest).lang;
+  const langParam: "EN" | "TR" | null = lang === "en" ? "EN" : lang === "tr" ? "TR" : null;
 
   const statusParam = req.query["status"];
   const validStatus = statusParam === "published" || statusParam === "draft" ? statusParam : null;
@@ -197,6 +200,12 @@ router.get("/mine", requireAuth, async (req: Request, res: Response): Promise<vo
     }
   }
 
+  let titleMap = new Map<string, string>();
+  if (langParam) {
+    const ids = (data ?? []).map((r: any) => r.id);
+    titleMap = await fetchRecipeTitleTranslations(ids, langParam);
+  }
+
   const recipes = (data ?? []).map((r: any) => {
     const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
     const allergens = (r.allergen_ids ?? [])
@@ -204,7 +213,7 @@ router.get("/mine", requireAuth, async (req: Request, res: Response): Promise<vo
       .filter((a: any) => a.name !== null);
     return {
       id: r.id,
-      title: r.title,
+      title: titleMap.get(r.id) ?? r.title,
       type: r.type,
       isPublished: r.is_published,
       averageRating: r.average_rating ?? null,
@@ -232,7 +241,7 @@ router.get("/mine", requireAuth, async (req: Request, res: Response): Promise<vo
 router.get("/:id", async (req: Request, res: Response): Promise<void> => {
   const recipeId = (req.params["id"] ?? "") as string;
   const lang = (req as LanguageRequest).lang;
-  const langParam = lang ? lang.toUpperCase() : null;
+  const langParam: "EN" | "TR" | null = lang === "en" ? "EN" : lang === "tr" ? "TR" : null;
 
   const authHeader = req.headers["authorization"];
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
@@ -243,8 +252,8 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     .select(
       `id, title, story, video_url, serving_size, type, is_published, average_rating, rating_count, allergen_ids, country, city, district, created_at, updated_at,
        creator:profiles!recipes_creator_id_fkey(id, username),
-       dish_variety:dish_varieties(id, name, dish_genre:dish_genres(id, name)),
-       recipe_ingredients(id, quantity, unit, ingredient:ingredients(id, name, ingredient_allergens(allergen:allergens(name)))),
+       dish_variety:dish_varieties(id, name, name_en, name_tr, dish_genre:dish_genres(id, name, name_en, name_tr)),
+       recipe_ingredients(id, quantity, unit, ingredient:ingredients(id, name, name_en, name_tr, ingredient_allergens(allergen:allergens(name)))),
        recipe_steps(id, step_order, description, video_timestamp),
        recipe_tools(id, name),
        recipe_media(id, url, type),
@@ -273,11 +282,13 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
   let resolvedStory: string | null = (data as any).story ?? null;
   let stepTranslationMap: Record<number, string> = {};
   let ingredientUnitMap: Record<number, string> = {};
+  let toolNameMap: Record<number, string> = {};
 
   if (langParam) {
     const ingredientIds = (data.recipe_ingredients ?? []).map((ri: any) => ri.id);
+    const toolIds = (data.recipe_tools ?? []).map((t: any) => t.id);
 
-    const [recipeTransResult, stepTransResult, ingTransResult] = await Promise.all([
+    const [recipeTransResult, stepTransResult, ingTransResult, toolTransResult] = await Promise.all([
       supabase
         .from("recipe_translations")
         .select("title, story")
@@ -296,6 +307,13 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
             .in("recipe_ingredient_id", ingredientIds)
             .eq("language_code", langParam)
         : Promise.resolve({ data: [], error: null }),
+      toolIds.length > 0
+        ? supabase
+            .from("recipe_tool_translations")
+            .select("recipe_tool_id, name")
+            .in("recipe_tool_id", toolIds)
+            .eq("language_code", langParam)
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
     if (recipeTransResult.data) {
@@ -309,6 +327,10 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
 
     for (const row of ingTransResult.data ?? []) {
       ingredientUnitMap[(row as any).recipe_ingredient_id] = (row as any).unit;
+    }
+
+    for (const row of toolTransResult.data ?? []) {
+      toolNameMap[(row as any).recipe_tool_id] = (row as any).name;
     }
   }
 
@@ -351,8 +373,8 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       creatorId: (data.creator as any)?.id ?? null,
       creatorUsername: (data.creator as any)?.username ?? null,
       dishVarietyId: (data.dish_variety as any)?.id ?? null,
-      dishVarietyName: (data.dish_variety as any)?.name ?? null,
-      genreName: (data.dish_variety as any)?.dish_genre?.name ?? null,
+      dishVarietyName: resolveLocalizedName((data.dish_variety as any), langParam),
+      genreName: resolveLocalizedName((data.dish_variety as any)?.dish_genre, langParam),
       title: resolvedTitle,
       story: resolvedStory,
       videoUrl: (data as any).video_url ?? null,
@@ -369,7 +391,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       ingredients: (data.recipe_ingredients ?? []).map((ri: any) => ({
         id: ri.id,
         ingredientId: ri.ingredient?.id ?? null,
-        ingredientName: ri.ingredient?.name ?? null,
+        ingredientName: resolveLocalizedName(ri.ingredient, langParam),
         quantity: ri.quantity,
         unit: ingredientUnitMap[ri.id] ?? ri.unit,
         allergens: (ri.ingredient?.ingredient_allergens ?? [])
@@ -384,7 +406,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       })),
       tools: (data.recipe_tools ?? []).map((t: any) => ({
         id: t.id,
-        name: t.name,
+        name: toolNameMap[t.id] ?? t.name,
       })),
       media: (data.recipe_media ?? []).map((m: any) => ({
         id: m.id,
@@ -441,6 +463,8 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
   }
 
   const { creatorId, page, limit } = parsed.data;
+  const lang = (req as LanguageRequest).lang;
+  const langParam: "EN" | "TR" | null = lang === "en" ? "EN" : lang === "tr" ? "TR" : null;
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
@@ -449,7 +473,7 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
     .select(
       `id, title, type, average_rating, rating_count, created_at, updated_at,
        creator:profiles!recipes_creator_id_fkey(id, username),
-       dish_variety:dish_varieties(id, name, dish_genre:dish_genres(id, name)),
+       dish_variety:dish_varieties(id, name, name_en, name_tr, dish_genre:dish_genres(id, name, name_en, name_tr)),
        recipe_media(id, url, type)`,
       { count: "exact" }
     )
@@ -468,19 +492,28 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  // Batch-fetch translated titles when ?lang= is set (and the user is asking
+  // for a non-source language). Recipes without a translation row fall back
+  // to the raw title (i.e. the language the recipe was authored in).
+  let titleMap = new Map<string, string>();
+  if (langParam) {
+    const ids = (data ?? []).map((r: any) => r.id);
+    titleMap = await fetchRecipeTitleTranslations(ids, langParam);
+  }
+
   const recipes = (data ?? []).map((r: any) => {
     const firstImage = (r.recipe_media ?? []).find((m: any) => m.type === "image");
     return {
       id: r.id,
-      title: r.title,
+      title: titleMap.get(r.id) ?? r.title,
       type: r.type,
       averageRating: r.average_rating ?? null,
       ratingCount: r.rating_count ?? 0,
       creatorId: r.creator?.id ?? null,
       creatorUsername: r.creator?.username ?? null,
       dishVarietyId: r.dish_variety?.id ?? null,
-      dishVarietyName: r.dish_variety?.name ?? null,
-      genreName: r.dish_variety?.dish_genre?.name ?? null,
+      dishVarietyName: resolveLocalizedName(r.dish_variety, langParam),
+      genreName: resolveLocalizedName(r.dish_variety?.dish_genre, langParam),
       createdAt: r.created_at,
       updatedAt: r.updated_at,
       coverImageUrl: firstImage?.url ?? null,

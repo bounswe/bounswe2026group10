@@ -1,6 +1,7 @@
 import React from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import type { Ingredient } from '../../types/ingredient';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 import { formatQuantity } from '../../utils/formatQuantity';
@@ -12,6 +13,8 @@ interface IngredientRowProps {
 }
 
 export function IngredientRow({ ingredient, scaledQuantity }: IngredientRowProps) {
+  const { t } = useTranslation('common');
+
   const handleSubstitute = async () => {
     if (!ingredient.ingredientId) return;
     try {
@@ -21,15 +24,15 @@ export function IngredientRow({ ingredient, scaledQuantity }: IngredientRowProps
         ingredient.unit,
       );
       if (substitutes.length === 0) {
-        Alert.alert(`Substitutes for ${ingredient.name}`, 'No substitutes found.');
+        Alert.alert(t('recipeDetail.substitutesTitle', { name: ingredient.name }), t('recipeDetail.substitutesEmpty'));
         return;
       }
       const lines = substitutes.map(
         (s) => `• ${formatQuantity(s.amount)} ${s.unit} ${s.ingredient.name}${s.description ? `\n  ${s.description}` : ''}`,
       );
-      Alert.alert(`Substitutes for ${ingredient.name}`, lines.join('\n\n'));
+      Alert.alert(t('recipeDetail.substitutesTitle', { name: ingredient.name }), lines.join('\n\n'));
     } catch {
-      Alert.alert('Error', 'Could not load substitutes.');
+      Alert.alert(t('recipeDetail.substitutesError'), '');
     }
   };
 
@@ -47,7 +50,7 @@ export function IngredientRow({ ingredient, scaledQuantity }: IngredientRowProps
             size={16}
             color={colors.primary}
           />
-          <Text style={styles.substituteText}>Substitute</Text>
+          <Text style={styles.substituteText}>{t('recipeDetail.substituteButton')}</Text>
         </TouchableOpacity>
       )}
     </View>
