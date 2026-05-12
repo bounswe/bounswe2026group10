@@ -380,6 +380,8 @@
     "substituteLoadError": "Could not load substitutes.",
     "substituteClose": "Close",
     "substituteConfidence": "Confidence: {{pct}}%",
+    "allergenTagLabel": "⚠ {{name}}",
+    "allergenTagAria": "Contains allergen: {{name}}",
     "videoAnnotations": {
       "seekAria": "Jump to {{start}}: {{note}}"
     },
