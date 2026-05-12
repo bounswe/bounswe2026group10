@@ -6,7 +6,12 @@ export interface AllergenItem {
 }
 
 export async function getAllergens(): Promise<AllergenItem[]> {
-  return fetchApi<AllergenItem[]>('/allergens');
+  try {
+    return await fetchApi<AllergenItem[]>('/allergens');
+  } catch (error) {
+    console.error('getAllergens error:', error);
+    return [];
+  }
 }
 
 export async function detectAllergens(ingredientIds: number[]): Promise<AllergenItem[]> {

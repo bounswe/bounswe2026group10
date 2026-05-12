@@ -14,6 +14,10 @@ jest.mock('../api/search', () => ({
   fetchLocations: jest.fn(),
 }));
 
+jest.mock('../api/allergens', () => ({
+  getAllergens: jest.fn(),
+}));
+
 jest.mock('../api/cultural-tags', () => {
   const actual = jest.requireActual('../api/cultural-tags');
   return {
@@ -24,6 +28,9 @@ jest.mock('../api/cultural-tags', () => {
 
 const { getCulturalTags } = jest.requireMock('../api/cultural-tags') as {
   getCulturalTags: jest.Mock;
+};
+const { getAllergens } = jest.requireMock('../api/allergens') as {
+  getAllergens: jest.Mock;
 };
 
 const mockFetchTags = fetchDietaryTags as jest.MockedFunction<typeof fetchDietaryTags>;
@@ -51,9 +58,9 @@ describe('FilterModal', () => {
     jest.clearAllMocks();
     mockFetchTags.mockResolvedValue([
       { id: 1, name: 'Vegetarian', category: 'dietary' },
-      { id: 2, name: 'Peanuts', category: 'allergen' },
     ]);
     mockFetchLocations.mockResolvedValue(['Turkey', 'Italy']);
+    getAllergens.mockResolvedValue([{ id: 2, name: 'Peanuts' }]);
     getCulturalTags.mockImplementation(async (country?: string | null) => {
       const all = [
         { id: 1, key: 'wedding', labelEn: 'Wedding', labelTr: 'Düğün', country: null },
