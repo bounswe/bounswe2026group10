@@ -25,6 +25,7 @@ export interface RecipeStep {
   id: string
   stepOrder: number
   description: string
+  videoTimestamp: number | null
 }
 
 export interface RecipeTool {
@@ -190,6 +191,7 @@ export const recipeService = {
         id: String(s.id),
         stepOrder: s.stepOrder,
         description: s.description,
+        videoTimestamp: typeof s.videoTimestamp === 'number' ? s.videoTimestamp : null,
       })),
       tools: (d.tools ?? []).map((t: any) => ({
         id: String(t.id),
