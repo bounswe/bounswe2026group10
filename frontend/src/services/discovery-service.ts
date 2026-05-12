@@ -197,6 +197,42 @@ export const discoveryService = {
     return raw.map(normalizeTag)
   },
 
+  /**
+   * GET /discovery/recipes/by-ingredients — recipes whose every ingredient is
+   * in the provided list (partial matches excluded). Backend returns the same
+   * envelope shape as /discovery/recipes (`{ recipes, pagination }`) but
+   * without cascade arrays — we leave those empty.
+   */
+  getByIngredients: async (
+    ingredientIds: number[],
+    page?: number,
+    limit?: number,
+  ): Promise<DiscoveryRecipeResults> => {
+    const params: Record<string, string | number> = {
+      ingredientIds: ingredientIds.join(','),
+    }
+    if (page) params.page = page
+    if (limit) params.limit = limit
+    const res = await httpClient.get('/discovery/recipes/by-ingredients', { params })
+    const payload = res.data?.data
+    const rawRecipes: unknown[] = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.recipes)
+        ? payload.recipes
+        : []
+    const pagination = payload?.pagination ?? {}
+    return {
+      recipes: rawRecipes.map(normalizeRecipe),
+      pagination: {
+        page: Number(pagination.page ?? page ?? 1),
+        limit: Number(pagination.limit ?? limit ?? 20),
+        total: Number(pagination.total ?? rawRecipes.length),
+      },
+      cascadeGenres: [],
+      cascadeVarieties: [],
+    }
+  },
+
   getRecipeResults: async (params?: DiscoveryParams): Promise<DiscoveryRecipeResults> => {
     const res = await httpClient.get('/discovery/recipes', { params })
     const payload = res.data?.data
