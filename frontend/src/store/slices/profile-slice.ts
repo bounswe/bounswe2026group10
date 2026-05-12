@@ -1,6 +1,10 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { isAxiosError } from 'axios'
-import { profileService } from '@/services/profile-service'
+import {
+  profileService,
+  type ProfileUpdatePayload,
+  type UpdatedProfile,
+} from '@/services/profile-service'
 import type { MeResponse, UserRole } from '@/services/types/auth'
 import { logout } from '@/store/slices/auth-slice'
 
@@ -11,6 +15,13 @@ interface ProfileState {
   username: string | null
   email: string | null
   role: UserRole | null
+  /** Backend does NOT return these on GET /auth/me. They are populated by
+   *  PATCH /auth/profile responses during a session and reset to null on
+   *  refresh until the user edits again. */
+  bio: string | null
+  avatarUrl: string | null
+  region: string | null
+  preferredLanguage: string | null
   status: ProfileStatus
   error: string | null
 }
@@ -20,6 +31,10 @@ const initialState: ProfileState = {
   username: null,
   email: null,
   role: null,
+  bio: null,
+  avatarUrl: null,
+  region: null,
+  preferredLanguage: null,
   status: 'idle',
   error: null,
 }
@@ -39,6 +54,26 @@ export const fetchProfileAsync = createAsyncThunk<
           ? err.message
           : 'Could not load profile.'
     return rejectWithValue(message || 'Could not load profile.')
+  }
+})
+
+export const updateProfileAsync = createAsyncThunk<
+  UpdatedProfile,
+  ProfileUpdatePayload,
+  { rejectValue: { code?: string; message: string } }
+>('profile/updateProfile', async (payload, { rejectWithValue }) => {
+  try {
+    return await profileService.updateProfile(payload)
+  } catch (err: unknown) {
+    if (isAxiosError(err) && err.response?.data) {
+      const body = err.response.data as { error?: { code?: string; message?: string } }
+      return rejectWithValue({
+        code: body.error?.code,
+        message: body.error?.message ?? 'Could not update profile.',
+      })
+    }
+    const message = err instanceof Error ? err.message : 'Could not update profile.'
+    return rejectWithValue({ message })
   }
 })
 
@@ -71,6 +106,13 @@ const profileSlice = createSlice({
       state.username = null
       state.email = null
       state.role = null
+    })
+    builder.addCase(updateProfileAsync.fulfilled, (state, action) => {
+      state.username = action.payload.username
+      state.bio = action.payload.bio
+      state.avatarUrl = action.payload.avatarUrl
+      state.region = action.payload.region
+      state.preferredLanguage = action.payload.preferredLanguage
     })
     builder.addCase(logout, () => initialState)
   },

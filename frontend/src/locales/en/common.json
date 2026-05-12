@@ -150,6 +150,33 @@
     "deleteConfirm": "Delete",
     "deleteCancel": "Cancel"
   },
+  "profileEdit": {
+    "openButton": "Edit profile",
+    "title": "Edit profile",
+    "hint": "Leave a field empty to keep its current value.",
+    "usernameLabel": "Username",
+    "usernameInvalid": "Only letters, numbers, and underscores are allowed.",
+    "usernameLength": "Username must be 3–30 characters.",
+    "usernameTaken": "This username is already taken.",
+    "bioLabel": "Bio",
+    "bioLength": "Bio must be at most 500 characters.",
+    "regionLabel": "Region",
+    "regionPlaceholder": "e.g. Istanbul, Turkey",
+    "languageLabel": "Preferred language",
+    "languageNone": "Not set",
+    "languages": {
+      "en": "English",
+      "tr": "Türkçe"
+    },
+    "changeAvatar": "Change photo",
+    "removeAvatar": "Remove photo",
+    "avatarTypeError": "Please choose an image file.",
+    "avatarSizeError": "Image must be 10 MB or smaller.",
+    "avatarUploadError": "Could not upload the image. Please try again.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "genericError": "Could not update profile. Please try again."
+  },
   "profileScreen": {
     "title": "Profile",
     "loading": "Loading profile…",
