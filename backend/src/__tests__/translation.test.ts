@@ -772,6 +772,298 @@ describe("GET /recipes/:id?lang=", () => {
     expect(res.status).toBe(200);
     expect(res.body.data.tools[0].name).toBe("Oven");
   });
+
+  // ─── allergens (top-level + per-ingredient) lang resolution ───────────────────
+
+  const mockRecipeWithAllergens = {
+    ...mockRecipeData,
+    allergen_ids: [10, 11],
+    recipe_ingredients: [
+      {
+        id: "ri-1",
+        quantity: 2,
+        unit: "cup",
+        ingredient: {
+          id: 1, name: "Flour", name_en: "Flour", name_tr: "Un",
+          ingredient_allergens: [
+            { allergen: { id: 10, name: "Gluten", name_en: "Gluten", name_tr: "Glüten" } },
+          ],
+        },
+      },
+    ],
+  };
+
+  it("top-level allergens are returned in TR when ?lang=tr", async () => {
+    setupMock({
+      recipes: { data: mockRecipeWithAllergens, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+      allergens: {
+        data: [
+          { id: 10, name: "Gluten", name_en: "Gluten", name_tr: "Glüten" },
+          { id: 11, name: "Dairy", name_en: "Dairy", name_tr: "Süt Ürünleri" },
+        ],
+        error: null,
+      },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    expect(res.body.data.allergens.map((a: any) => a.name)).toEqual(
+      expect.arrayContaining(["Glüten", "Süt Ürünleri"])
+    );
+  });
+
+  it("top-level allergens are returned in EN when ?lang=en", async () => {
+    setupMock({
+      recipes: { data: mockRecipeWithAllergens, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+      allergens: {
+        data: [
+          { id: 10, name: "Gluten", name_en: "Gluten", name_tr: "Glüten" },
+          { id: 11, name: "Dairy", name_en: "Dairy", name_tr: "Süt Ürünleri" },
+        ],
+        error: null,
+      },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=en");
+    expect(res.status).toBe(200);
+    expect(res.body.data.allergens.map((a: any) => a.name)).toEqual(
+      expect.arrayContaining(["Gluten", "Dairy"])
+    );
+  });
+
+  it("top-level allergens fall back to name_en when name_tr is null and ?lang=tr", async () => {
+    setupMock({
+      recipes: { data: mockRecipeWithAllergens, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+      allergens: {
+        data: [
+          { id: 10, name: "Gluten", name_en: "Gluten", name_tr: null },
+        ],
+        error: null,
+      },
+    });
+    const res = await request(app)
+      .get("/recipes/recipe-1?lang=tr")
+      .send();
+    expect(res.status).toBe(200);
+    expect(res.body.data.allergens[0].name).toBe("Gluten");
+  });
+
+  it("per-ingredient allergens are returned in TR when ?lang=tr", async () => {
+    setupMock({
+      recipes: { data: mockRecipeWithAllergens, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+      allergens: { data: [], error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    expect(res.body.data.ingredients[0].allergens).toEqual(["Glüten"]);
+  });
+
+  // ─── units localization via the `units` reference table ───────────────────────
+
+  it("ingredient unit is resolved via the units table when ?lang=tr and no DeepL translation exists", async () => {
+    setupMock({
+      recipes: { data: mockRecipeWithAllergens, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+      allergens: { data: [], error: null },
+      units: {
+        data: [{ name: "cup", name_en: "cup", name_tr: "su bardağı" }],
+        error: null,
+      },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    expect(res.body.data.ingredients[0].unit).toBe("su bardağı");
+  });
+
+  it("ingredient unit falls back to the stored value when no units row matches", async () => {
+    setupMock({
+      recipes: { data: mockRecipeWithAllergens, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+      allergens: { data: [], error: null },
+      units: { data: [], error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    expect(res.body.data.ingredients[0].unit).toBe("cup");
+  });
+
+  it("recipe_ingredient_translations still takes precedence over the units table", async () => {
+    setupMock({
+      recipes: { data: mockRecipeWithAllergens, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: {
+        data: [{ recipe_ingredient_id: "ri-1", unit: "bardak" }],
+        error: null,
+      },
+      recipe_tool_translations: { data: [], error: null },
+      allergens: { data: [], error: null },
+      units: {
+        data: [{ name: "cup", name_en: "cup", name_tr: "su bardağı" }],
+        error: null,
+      },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    expect(res.body.data.ingredients[0].unit).toBe("bardak");
+  });
+
+  // ─── typeName / countryName / culturalTag label lang resolution ─────────────
+
+  const mockRecipeForTypeCountry = {
+    ...mockRecipeData,
+    type: "community",
+    country: "Japan",
+    recipe_cultural_tags: [
+      { cultural_tag: { id: 5, key: "birth", label_en: "Birth Celebration", label_tr: "Doğum Kutlaması", country: null } },
+    ],
+  };
+
+  it("typeName returns the TR label when ?lang=tr", async () => {
+    setupMock({
+      recipes: { data: mockRecipeForTypeCountry, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+      allergens: { data: [], error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    expect(res.body.data.type).toBe("community");
+    expect(res.body.data.typeName).toBe("Topluluk");
+  });
+
+  it("typeName returns the EN label when ?lang=en", async () => {
+    setupMock({
+      recipes: { data: { ...mockRecipeForTypeCountry, type: "cultural" }, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+      allergens: { data: [], error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=en");
+    expect(res.status).toBe(200);
+    expect(res.body.data.type).toBe("cultural");
+    expect(res.body.data.typeName).toBe("Cultural");
+  });
+
+  it("typeName falls back to the raw enum when ?lang= is absent", async () => {
+    setupMock({
+      recipes: { data: mockRecipeForTypeCountry, error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1");
+    expect(res.status).toBe(200);
+    expect(res.body.data.typeName).toBe("community");
+  });
+
+  it("countryName returns the TR display name when ?lang=tr", async () => {
+    setupMock({
+      recipes: { data: mockRecipeForTypeCountry, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+      allergens: { data: [], error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    expect(res.body.data.country).toBe("Japan");
+    expect(res.body.data.countryName).toBe("Japonya");
+  });
+
+  it("countryName falls back to the raw value for countries not in the localization map", async () => {
+    setupMock({
+      recipes: { data: { ...mockRecipeForTypeCountry, country: "Atlantis" }, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+      allergens: { data: [], error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    expect(res.body.data.country).toBe("Atlantis");
+    expect(res.body.data.countryName).toBe("Atlantis");
+  });
+
+  it("culturalTags[].label is the TR label when ?lang=tr, alongside labelEn / labelTr", async () => {
+    setupMock({
+      recipes: { data: mockRecipeForTypeCountry, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+      allergens: { data: [], error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    const tag = res.body.data.culturalTags[0];
+    expect(tag.label).toBe("Doğum Kutlaması");
+    expect(tag.labelEn).toBe("Birth Celebration");
+    expect(tag.labelTr).toBe("Doğum Kutlaması");
+  });
+
+  it("culturalTags[].label is the EN label when ?lang=en", async () => {
+    setupMock({
+      recipes: { data: mockRecipeForTypeCountry, error: null },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+      allergens: { data: [], error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=en");
+    expect(res.status).toBe(200);
+    expect(res.body.data.culturalTags[0].label).toBe("Birth Celebration");
+  });
+
+  // ─── tags lang resolution — sanity check (already wired via resolveLocalizedName)
+  it("tags[].name returns name_tr when ?lang=tr", async () => {
+    setupMock({
+      recipes: {
+        data: {
+          ...mockRecipeWithAllergens,
+          recipe_dietary_tags: [
+            { dietary_tag: { id: 1, name: "Vegan", name_en: "Vegan", name_tr: "Vegan", category: "dietary" } },
+            { dietary_tag: { id: 2, name: "Gluten-Free", name_en: "Gluten-Free", name_tr: "Glütensiz", category: "allergen" } },
+          ],
+        },
+        error: null,
+      },
+      recipe_translations: { data: null, error: null },
+      recipe_step_translations: { data: [], error: null },
+      recipe_ingredient_translations: { data: [], error: null },
+      recipe_tool_translations: { data: [], error: null },
+      allergens: { data: [], error: null },
+    });
+    const res = await request(app).get("/recipes/recipe-1?lang=tr");
+    expect(res.status).toBe(200);
+    expect(res.body.data.tags.map((t: any) => t.name)).toEqual(
+      expect.arrayContaining(["Vegan", "Glütensiz"])
+    );
+  });
 });
 
 // ─── POST /recipes/:id/publish — additional edge cases ────────────────────────

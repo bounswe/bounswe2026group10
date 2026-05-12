@@ -72,6 +72,27 @@ export function getLocationVariants(input: string): string[] {
 }
 
 /**
+ * Resolve a country label into the caller's preferred language. The stored
+ * value is the canonical English display name (e.g. "Japan", "Turkey"); the
+ * lookup folds + alias-resolves the input so a row stored as "tr" or
+ * "Türkiye" still matches the canonical "Turkey" key. Falls back to the raw
+ * trimmed input when the country isn't in the table or `lang` is null, so
+ * countries we haven't enumerated never disappear from the response.
+ */
+export function resolveCountryName(
+  input: string | null | undefined,
+  lang: "EN" | "TR" | null
+): string | null {
+  const trimmed = normalizeLocation(input);
+  if (trimmed == null) return null;
+  if (!lang) return trimmed;
+  const canonical = getCanonicalDisplay(foldLocation(trimmed)) ?? trimmed;
+  const entry = COUNTRY_LOCALIZATIONS[canonical];
+  if (!entry) return trimmed;
+  return lang === "TR" ? entry.tr : entry.en;
+}
+
+/**
  * Deduplicate a list of location labels, treating values that share a
  * canonical key (after folding + alias resolution) as the same entry.
  * The canonical display name wins when present; otherwise the first-seen
@@ -186,4 +207,23 @@ const LOCATION_ALIASES: Record<string, string> = {
   "azerbaycan": "Azerbaijan",
   "az": "Azerbaijan",
   "aze": "Azerbaijan",
+};
+
+/**
+ * Canonical English display name → localized labels. Used by
+ * `resolveCountryName()` on `GET /recipes/:id?lang=` so the `countryName`
+ * field renders in the caller's language without requiring a frontend
+ * lookup. Add entries when a new country shows up in `recipes.country`.
+ */
+const COUNTRY_LOCALIZATIONS: Record<string, { en: string; tr: string }> = {
+  "Turkey":         { en: "Turkey",         tr: "Türkiye" },
+  "United States":  { en: "United States",  tr: "Amerika Birleşik Devletleri" },
+  "United Kingdom": { en: "United Kingdom", tr: "Birleşik Krallık" },
+  "Germany":        { en: "Germany",        tr: "Almanya" },
+  "Italy":          { en: "Italy",          tr: "İtalya" },
+  "France":         { en: "France",         tr: "Fransa" },
+  "Spain":          { en: "Spain",          tr: "İspanya" },
+  "Japan":          { en: "Japan",          tr: "Japonya" },
+  "Greece":         { en: "Greece",         tr: "Yunanistan" },
+  "Azerbaijan":     { en: "Azerbaijan",     tr: "Azerbaycan" },
 };

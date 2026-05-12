@@ -5,10 +5,10 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import type { AuthenticatedRequest, LanguageRequest } from "../types/index.js";
 import { errorResponse, successResponse } from "../utils/response.js";
-import { canonicalizeLocationForWrite } from "../utils/locations.js";
+import { canonicalizeLocationForWrite, resolveCountryName } from "../utils/locations.js";
 import { normalizeText } from "../utils/text.js";
 import { translateRecipe, fetchRecipeTitleTranslations } from "../services/translationService.js";
-import { resolveLocalizedName } from "../utils/i18n.js";
+import { resolveLocalizedName, resolveRecipeTypeLabel } from "../utils/i18n.js";
 
 const router = Router();
 
@@ -253,7 +253,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       `id, title, story, video_url, serving_size, type, is_published, average_rating, rating_count, allergen_ids, country, city, district, created_at, updated_at,
        creator:profiles!recipes_creator_id_fkey(id, username),
        dish_variety:dish_varieties(id, name, name_en, name_tr, dish_genre:dish_genres(id, name, name_en, name_tr)),
-       recipe_ingredients(id, quantity, unit, ingredient:ingredients(id, name, name_en, name_tr, ingredient_allergens(allergen:allergens(name)))),
+       recipe_ingredients(id, quantity, unit, ingredient:ingredients(id, name, name_en, name_tr, ingredient_allergens(allergen:allergens(id, name, name_en, name_tr)))),
        recipe_steps(id, step_order, description, video_timestamp),
        recipe_tools(id, name),
        recipe_media(id, url, type),
@@ -334,16 +334,49 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     }
   }
 
-  // Resolve top-level allergen names from stored allergen_ids
+  // Resolve top-level allergen names from stored allergen_ids, localized per
+  // ?lang= when supplied (falls back to the legacy `name` column).
   const storedAllergenIds: number[] = (data as any).allergen_ids ?? [];
   let topLevelAllergens: { id: number; name: string }[] = [];
   if (storedAllergenIds.length > 0) {
     const { data: allergenData } = await supabase
       .from("allergens")
-      .select("id, name")
+      .select("id, name, name_en, name_tr")
       .in("id", storedAllergenIds);
-    topLevelAllergens = (allergenData ?? []) as { id: number; name: string }[];
+    topLevelAllergens = ((allergenData ?? []) as any[]).map((a) => ({
+      id: a.id,
+      name: resolveLocalizedName(a, langParam) ?? a.name,
+    }));
   }
+
+  // Resolve units against the `units` reference table when ?lang= is set.
+  // Per-recipe DeepL translations in `recipe_ingredient_translations` still
+  // take precedence; this map is the fallback for recipes that haven't been
+  // translated yet (or units DeepL doesn't change).
+  const unitLocalizationMap = new Map<string, string>();
+  if (langParam) {
+    const rawUnits = ((data as any).recipe_ingredients ?? [])
+      .map((ri: any) => (ri.unit ?? "").trim())
+      .filter((u: string) => u.length > 0);
+    const uniqueUnits = [...new Set(rawUnits.map((u: string) => u.toLowerCase()))] as string[];
+    if (uniqueUnits.length > 0) {
+      const { data: unitRows } = await supabase
+        .from("units")
+        .select("name, name_en, name_tr")
+        .in("name", uniqueUnits);
+      for (const row of (unitRows ?? []) as any[]) {
+        const localized = resolveLocalizedName(row, langParam);
+        if (localized) {
+          unitLocalizationMap.set(String(row.name).toLowerCase(), localized);
+        }
+      }
+    }
+  }
+  const localizeUnit = (raw: string | null | undefined): string => {
+    const value = (raw ?? "").toString();
+    if (!langParam) return value;
+    return unitLocalizationMap.get(value.trim().toLowerCase()) ?? value;
+  };
 
   // Optionally resolve isFavorited for authenticated callers
   let isFavorited = false;
@@ -380,8 +413,17 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       videoUrl: (data as any).video_url ?? null,
       servingSize: (data as any).serving_size ?? null,
       type: data.type,
+      // `type` is a fixed enum (community|cultural) — frontend filters/CSS
+      // hooks rely on the raw value, so we keep it untouched and surface the
+      // localized display label as `typeName` (matches ingredientName /
+      // dishVarietyName naming).
+      typeName: resolveRecipeTypeLabel(data.type, langParam),
       isPublished: (data as any).is_published,
       country: (data as any).country ?? null,
+      // `country` is stored as the canonical English display name (see
+      // utils/locations.ts). `countryName` is the lang-resolved label;
+      // callers without `?lang=` get the raw value here too.
+      countryName: resolveCountryName((data as any).country, langParam),
       city: (data as any).city ?? null,
       district: (data as any).district ?? null,
       averageRating: (data as any).average_rating ?? null,
@@ -393,10 +435,12 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
         ingredientId: ri.ingredient?.id ?? null,
         ingredientName: resolveLocalizedName(ri.ingredient, langParam),
         quantity: ri.quantity,
-        unit: ingredientUnitMap[ri.id] ?? ri.unit,
+        unit: ingredientUnitMap[ri.id] ?? localizeUnit(ri.unit),
         allergens: (ri.ingredient?.ingredient_allergens ?? [])
-          .map((ia: any) => ia.allergen?.name)
-          .filter(Boolean),
+          .map((ia: any) =>
+            ia.allergen ? resolveLocalizedName(ia.allergen, langParam) ?? ia.allergen.name : null
+          )
+          .filter((n: string | null): n is string => Boolean(n)),
       })),
       steps: steps.map((s: any) => ({
         id: s.id,
@@ -418,13 +462,27 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
         name: resolveLocalizedName(rt.dietary_tag, langParam),
         category: rt.dietary_tag?.category ?? null,
       })),
-      culturalTags: ((data as any).recipe_cultural_tags ?? []).map((rt: any) => ({
-        id: rt.cultural_tag?.id ?? null,
-        key: rt.cultural_tag?.key ?? null,
-        labelEn: rt.cultural_tag?.label_en ?? null,
-        labelTr: rt.cultural_tag?.label_tr ?? null,
-        country: rt.cultural_tag?.country ?? null,
-      })),
+      culturalTags: ((data as any).recipe_cultural_tags ?? []).map((rt: any) => {
+        const tag = rt.cultural_tag ?? null;
+        // Single resolved `label` mirrors the tags[].name shape so the
+        // frontend can render either tag list with the same code. labelEn /
+        // labelTr stay on the response for callers that need both forms
+        // (admin moderation, frontend toggles) — additive only.
+        const label = tag
+          ? resolveLocalizedName(
+              { name: tag.label_en ?? null, name_en: tag.label_en, name_tr: tag.label_tr },
+              langParam
+            )
+          : null;
+        return {
+          id: tag?.id ?? null,
+          key: tag?.key ?? null,
+          label,
+          labelEn: tag?.label_en ?? null,
+          labelTr: tag?.label_tr ?? null,
+          country: tag?.country ?? null,
+        };
+      }),
       videoAnnotations: [...((data as any).video_annotations ?? [])]
         .sort((a: any, b: any) => Number(a.start_time) - Number(b.start_time))
         .map((a: any) => ({
