@@ -369,7 +369,6 @@ export const en = {
     tools: {
       title: 'Tools & Equipment',
       searchPlaceholder: 'Add a tool (e.g. Cast Iron Pan)',
-      quickAddLabel: 'QUICK ADD TOOLS',
     },
     instructions: {
       addStep: 'Add Step',
