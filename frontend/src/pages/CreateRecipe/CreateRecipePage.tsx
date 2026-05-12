@@ -770,12 +770,13 @@ export function CreateRecipePage() {
 
   // ── Step labels ───────────────────────────────────────────────────────────────
 
+  const TOTAL_STEPS = 5
   const stepLabels: Record<1 | 2 | 3 | 4 | 5, string> = {
-    1: t('create.stepLabel', { step: 1, label: t('create.steps.1') }),
-    2: t('create.stepLabel', { step: 2, label: t('create.steps.2') }),
-    3: t('create.stepLabel', { step: 3, label: t('create.steps.3') }),
-    4: t('create.stepLabel', { step: 4, label: t('create.steps.4') }),
-    5: t('create.stepLabel', { step: 5, label: t('create.steps.5') }),
+    1: t('create.stepLabel', { step: 1, total: TOTAL_STEPS, label: t('create.steps.1') }),
+    2: t('create.stepLabel', { step: 2, total: TOTAL_STEPS, label: t('create.steps.2') }),
+    3: t('create.stepLabel', { step: 3, total: TOTAL_STEPS, label: t('create.steps.3') }),
+    4: t('create.stepLabel', { step: 4, total: TOTAL_STEPS, label: t('create.steps.4') }),
+    5: t('create.stepLabel', { step: 5, total: TOTAL_STEPS, label: t('create.steps.5') }),
   }
 
   // allergen helpers for step 3
@@ -817,7 +818,7 @@ export function CreateRecipePage() {
       </div>
 
       {/* ── Progress ─────────────────────────────────────────────────────── */}
-      <ProgressBar step={step} total={5} label={stepLabels[step]} />
+      <ProgressBar step={step} total={TOTAL_STEPS} label={stepLabels[step]} />
 
       {/* ── Step content ─────────────────────────────────────────────────── */}
       <div className="cr-body">
@@ -1539,6 +1540,65 @@ export function CreateRecipePage() {
                   </span>
                 </div>
               </div>
+
+              {/* ── Detailed lists so the user can verify content before publishing ── */}
+              {(() => {
+                const completedIngredients = draft.ingredients.filter(ingredientRowIsComplete)
+                const filledTools = draft.tools.map((tool) => tool.trim()).filter(Boolean)
+                const filledSteps = draft.steps.filter((s) => s.text.trim())
+                return (
+                  <div className="cr-review-lists">
+                    {completedIngredients.length > 0 && (
+                      <details className="cr-review-list" open>
+                        <summary className="cr-review-list__summary">
+                          {t('create.review.ingredients')} ({completedIngredients.length})
+                        </summary>
+                        <ul className="cr-review-list__items">
+                          {completedIngredients.map((row, i) => (
+                            <li key={`ing-${i}`} className="cr-review-list__item">
+                              <span className="cr-review-list__qty">
+                                {row.quantity} {row.unit}
+                              </span>
+                              <span className="cr-review-list__name">{row.name}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                    {filledTools.length > 0 && (
+                      <details className="cr-review-list" open>
+                        <summary className="cr-review-list__summary">
+                          {t('create.review.tools')} ({filledTools.length})
+                        </summary>
+                        <ul className="cr-review-list__items">
+                          {filledTools.map((tool, i) => (
+                            <li key={`tool-${i}`} className="cr-review-list__item">
+                              <span className="cr-review-list__name">{tool}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                    {filledSteps.length > 0 && (
+                      <details className="cr-review-list" open>
+                        <summary className="cr-review-list__summary">
+                          {t('create.review.steps')} ({filledSteps.length})
+                        </summary>
+                        <ol className="cr-review-list__items cr-review-list__items--ordered">
+                          {filledSteps.map((s, i) => (
+                            <li key={`step-${i}`} className="cr-review-list__item">
+                              <span className="cr-review-list__name">{s.text.trim()}</span>
+                              {s.videoTimestamp.trim() && (
+                                <span className="cr-review-list__qty">⏱ {s.videoTimestamp.trim()}</span>
+                              )}
+                            </li>
+                          ))}
+                        </ol>
+                      </details>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
 
             {/* Standardized units / step descriptions */}

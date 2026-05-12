@@ -257,7 +257,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
        recipe_steps(id, step_order, description, video_timestamp),
        recipe_tools(id, name),
        recipe_media(id, url, type),
-       recipe_dietary_tags(dietary_tag:dietary_tags(id, name, category)),
+       recipe_dietary_tags(dietary_tag:dietary_tags(id, name, name_en, name_tr, category)),
        recipe_cultural_tags(cultural_tag:cultural_tags(id, key, label_en, label_tr, country)),
        video_annotations(id, start_time, end_time, note, technique, created_at)`
     )
@@ -415,7 +415,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       })),
       tags: ((data as any).recipe_dietary_tags ?? []).map((rt: any) => ({
         id: rt.dietary_tag?.id ?? null,
-        name: rt.dietary_tag?.name ?? null,
+        name: resolveLocalizedName(rt.dietary_tag, langParam),
         category: rt.dietary_tag?.category ?? null,
       })),
       culturalTags: ((data as any).recipe_cultural_tags ?? []).map((rt: any) => ({
