@@ -663,6 +663,7 @@ describe("GET /discovery/recipes", () => {
   it("combines search with genreId filter", async () => {
     (supabase.from as jest.Mock).mockImplementation((table) => {
       if (table === "dish_varieties") return chainable({ data: [{ id: 1 }], error: null });
+      if (table === "recipe_translations") return chainable({ data: [], error: null });
       if (table === "recipes") return chainable({ data: mockRecipes, error: null, count: 1 });
     });
 
@@ -671,6 +672,71 @@ describe("GET /discovery/recipes", () => {
     expect(res.status).toBe(200);
     expect(res.body.data.recipes).toHaveLength(1);
     expect(res.body.data.recipes[0].title).toBe("Adana Kebap");
+  });
+
+  // ─── Bilingual title search via recipe_translations ──────────────────────
+  // recipes.title only stores the authored language; the opposite language
+  // lives in recipe_translations. Search must hit both so "English" finds a
+  // TR-authored recipe via its EN translation row and vice versa (#????).
+
+  it("includes recipes whose translated title matches the search term", async () => {
+    const recipeChain = chainable({
+      data: [
+        {
+          id: "r-tr-1",
+          title: "Ege’nin Yeni İngilizce Sınavı Tarifi",
+          type: "community",
+          average_rating: 4.5,
+          rating_count: 2,
+          created_at: "2024-01-01",
+          updated_at: "2024-01-01",
+          dish_variety: null,
+          profile: { id: "p1", username: "ege" },
+        },
+      ],
+      error: null,
+      count: 1,
+    });
+
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "recipe_translations") {
+        // EN translation row of a TR-authored recipe matches "English".
+        return chainable({
+          data: [{ recipe_id: "r-tr-1" }],
+          error: null,
+        });
+      }
+      if (table === "recipes") return recipeChain;
+    });
+
+    const res = await request(app).get("/discovery/recipes?search=English");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.recipes).toHaveLength(1);
+    expect(res.body.data.recipes[0].id).toBe("r-tr-1");
+    // Main recipe query should OR title.ilike clauses with the matched IDs.
+    const orCalls = (recipeChain.or as jest.Mock).mock.calls.map(
+      (c: any[]) => c[0] as string
+    );
+    expect(
+      orCalls.some(
+        (f) => f.includes("title.ilike.") && f.includes("id.in.(r-tr-1)")
+      )
+    ).toBe(true);
+  });
+
+  it("returns 500 when the recipe_translations lookup fails", async () => {
+    (supabase.from as jest.Mock).mockImplementation((table) => {
+      if (table === "recipe_translations") {
+        return chainable({ data: null, error: { message: "DB timeout" } });
+      }
+      return chainable({ data: [], error: null, count: 0 });
+    });
+
+    const res = await request(app).get("/discovery/recipes?search=anything");
+
+    expect(res.status).toBe(500);
+    expect(res.body.error.code).toBe("DB_ERROR");
   });
 
   it("filters by country", async () => {

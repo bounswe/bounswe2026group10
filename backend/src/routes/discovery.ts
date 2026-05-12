@@ -32,24 +32,29 @@ function applyLocationFilter(
   return query.or(orFilter);
 }
 
-// Apply a Turkish-aware partial-text search across a column. Expands the
-// input into Turkish/ASCII-folded variants so a query for "kofte" still
-// hits rows stored as "Köfte" and "istanbul" hits "İstanbul" regardless
-// of database collation (#402).
-function applyTextSearch(
+// Title search that also unions in recipes whose translated title matches.
+// `recipes.title` only holds the authored language; recipe_translations stores
+// the opposite-language row produced by translateRecipe(). To support
+// searching in either language regardless of how the recipe was authored, OR
+// the ilike-on-title with an explicit id-in-(translationMatchedIds) filter.
+function applyTitleSearch(
   query: any,
-  column: string,
-  rawValue: string
+  rawValue: string,
+  translationMatchedIds: string[]
 ): any {
   const variants = buildSearchVariants(rawValue);
-  if (variants.length === 0) return query;
-  if (variants.length === 1) {
-    return query.ilike(column, `%${escapeLikePattern(variants[0]!)}%`);
+  const titleClauses = variants.map(
+    (v) => `title.ilike.%${escapeLikePattern(v)}%`
+  );
+  const orFilters = [...titleClauses];
+  if (translationMatchedIds.length > 0) {
+    orFilters.push(`id.in.(${translationMatchedIds.join(",")})`);
   }
-  const orFilter = variants
-    .map((v) => `${column}.ilike.%${escapeLikePattern(v)}%`)
-    .join(",");
-  return query.or(orFilter);
+  if (orFilters.length === 0) return query;
+  if (orFilters.length === 1 && variants.length === 1) {
+    return query.ilike("title", `%${escapeLikePattern(variants[0]!)}%`);
+  }
+  return query.or(orFilters.join(","));
 }
 
 const router = Router();
@@ -252,13 +257,53 @@ router.get("/recipes", async (req, res) => {
       }
     }
 
+    // ── Step 2b: When searching, also resolve recipes by translated title ────
+    // recipes.title only holds the authored language; recipe_translations
+    // carries the opposite-language version produced by translateRecipe().
+    // Pre-resolve the matching recipe IDs so applyTitleSearch can union them
+    // into the title ilike clause — that way "English" finds a TR-authored
+    // recipe via its EN translation row and "İngilizce" finds an EN-authored
+    // recipe via its TR translation row, regardless of ?lang.
+    let translationMatchedRecipeIds: string[] = [];
+    if (search) {
+      const variants = buildSearchVariants(search);
+      if (variants.length > 0) {
+        let translationQuery = supabase
+          .from("recipe_translations")
+          .select("recipe_id");
+        if (variants.length === 1) {
+          translationQuery = translationQuery.ilike(
+            "title",
+            `%${escapeLikePattern(variants[0]!)}%`
+          );
+        } else {
+          const orFilter = variants
+            .map((v) => `title.ilike.%${escapeLikePattern(v)}%`)
+            .join(",");
+          translationQuery = translationQuery.or(orFilter);
+        }
+        const { data: translationRows, error: translationErr } =
+          await translationQuery;
+        if (translationErr) {
+          return res
+            .status(500)
+            .json(errorResponse("DB_ERROR", translationErr.message));
+        }
+        translationMatchedRecipeIds = [
+          ...new Set(
+            (translationRows ?? []).map((r: any) => r.recipe_id as string)
+          ),
+        ];
+      }
+    }
+
     // ── Step 3: Build the main recipe query ───────────────────────────────────
     // Apply every filter shared between the paginated list and the cascade
     // aggregation. Origin filters tolerate casing/whitespace differences and
     // known aliases (e.g. "tr"/"Türkiye" → "Turkey") via applyLocationFilter
     // (issue #398).
     const applyFilters = (q: any): any => {
-      if (search) q = applyTextSearch(q, "title", search);
+      if (search) q = applyTitleSearch(q, search, translationMatchedRecipeIds);
       if (country) q = applyLocationFilter(q, "country", country);
       if (city) q = applyLocationFilter(q, "city", city);
       if (district) q = applyLocationFilter(q, "district", district);
