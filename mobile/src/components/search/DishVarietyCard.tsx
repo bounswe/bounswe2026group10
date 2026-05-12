@@ -1,6 +1,5 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { DishVarietyResult } from '../../api/search';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 
@@ -12,14 +11,10 @@ interface DishVarietyCardProps {
 export function DishVarietyCard({ variety, onPress }: DishVarietyCardProps) {
   return (
     <TouchableOpacity onPress={onPress} style={styles.container} activeOpacity={0.7}>
-      <View style={styles.image} />
       <View style={styles.info}>
-        <View style={styles.titleRow}>
-          <Text style={styles.name} numberOfLines={1}>
-            {variety.name}
-          </Text>
-          <MaterialCommunityIcons name="bookmark-outline" size={20} color={colors.tertiary} />
-        </View>
+        <Text style={styles.name} numberOfLines={1}>
+          {variety.name}
+        </Text>
         {variety.description && (
           <Text style={styles.description} numberOfLines={2}>
             {variety.description}
@@ -37,39 +32,21 @@ export function DishVarietyCard({ variety, onPress }: DishVarietyCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
     backgroundColor: colors.white,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.outline,
     overflow: 'hidden',
     marginBottom: spacing.md,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-  },
-  image: {
-    width: 88,
-    height: 88,
-    backgroundColor: colors.surfaceContainer,
   },
   info: {
-    flex: 1,
     padding: spacing.md,
-    justifyContent: 'center',
     gap: spacing.xs,
   },
-  titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
   name: {
-    flex: 1,
     fontFamily: fonts.serifBold,
     fontSize: fontSizes.lg,
     color: colors.onSurface,
-    marginRight: spacing.sm,
   },
   description: {
     fontFamily: fonts.sans,

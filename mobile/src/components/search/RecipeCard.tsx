@@ -23,7 +23,13 @@ export function RecipeCard({ recipe, onPress }: RecipeCardProps) {
             style={styles.image}
           />
         ) : (
-          <View style={styles.image} />
+          <View style={[styles.image, styles.imagePlaceholder]}>
+            <MaterialCommunityIcons
+              name="silverware-fork-knife"
+              size={40}
+              color={colors.outline}
+            />
+          </View>
         )}
         {/* Recipe type badge — top-right, like the example image */}
         <View style={[styles.badge, isCultural ? styles.badgeCultural : styles.badgeCommunity]}>
@@ -68,13 +74,10 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.white,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.outline,
     overflow: 'hidden',
     marginBottom: spacing.md,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
   },
   imageWrapper: {
     position: 'relative',
@@ -83,6 +86,10 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 180,
     backgroundColor: colors.surfaceContainer,
+  },
+  imagePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   badge: {
     position: 'absolute',
