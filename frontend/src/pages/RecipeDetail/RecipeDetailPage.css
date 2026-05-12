@@ -863,6 +863,42 @@
   box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
 }
 
+/* Step jump markers — sit just above the annotation marker row */
+.rd-video-player__step-markers {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 52px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.rd-video-player__step-marker {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: 2px solid #fff;
+  border-radius: 9px;
+  background: #1f3a5f;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.rd-video-player__step-marker:hover {
+  transform: translateX(-50%) scale(1.15);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
+}
+
 .rd-video-player__annotation-list {
   list-style: none;
   margin: 0;

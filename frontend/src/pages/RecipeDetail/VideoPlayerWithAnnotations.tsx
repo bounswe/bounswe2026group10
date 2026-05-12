@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { VideoAnnotation } from '@/services/recipe-service'
+import type { RecipeStep, VideoAnnotation } from '@/services/recipe-service'
 
 export interface VideoPlayerWithAnnotationsProps {
   src: string
   annotations: VideoAnnotation[]
   ariaLabel: string
+  /** Recipe steps. Steps with a non-null videoTimestamp render as numbered jump markers on the timeline. */
+  steps?: RecipeStep[]
 }
 
 function formatTime(seconds: number): string {
@@ -19,6 +21,7 @@ export function VideoPlayerWithAnnotations({
   src,
   annotations,
   ariaLabel,
+  steps = [],
 }: VideoPlayerWithAnnotationsProps) {
   const { t } = useTranslation('common')
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -50,6 +53,9 @@ export function VideoPlayerWithAnnotations({
   }, [src])
 
   const sortedAnnotations = [...annotations].sort((a, b) => a.startTime - b.startTime)
+  const stepMarkers = steps
+    .filter((s): s is RecipeStep & { videoTimestamp: number } => typeof s.videoTimestamp === 'number' && s.videoTimestamp >= 0)
+    .sort((a, b) => a.videoTimestamp - b.videoTimestamp)
 
   return (
     <div className="rd-video-player">
@@ -82,6 +88,32 @@ export function VideoPlayerWithAnnotations({
                   title={`${formatTime(a.startTime)} — ${a.note}`}
                   aria-label={`${formatTime(a.startTime)} ${a.note}`}
                 />
+              )
+            })}
+          </div>
+        )}
+        {duration > 0 && stepMarkers.length > 0 && (
+          <div className="rd-video-player__step-markers">
+            {stepMarkers.map((s) => {
+              const left = Math.max(0, Math.min(100, (s.videoTimestamp / duration) * 100))
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  className="rd-video-player__step-marker"
+                  style={{ left: `${left}%` }}
+                  onClick={() => seekTo(s.videoTimestamp)}
+                  title={t('recipeDetail.videoStepMarkers.seekAria', {
+                    n: s.stepOrder,
+                    start: formatTime(s.videoTimestamp),
+                  })}
+                  aria-label={t('recipeDetail.videoStepMarkers.seekAria', {
+                    n: s.stepOrder,
+                    start: formatTime(s.videoTimestamp),
+                  })}
+                >
+                  {s.stepOrder}
+                </button>
               )
             })}
           </div>

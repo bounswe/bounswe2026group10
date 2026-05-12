@@ -350,6 +350,9 @@
     "videoAnnotations": {
       "seekAria": "{{start}} zamanına git: {{note}}"
     },
+    "videoStepMarkers": {
+      "seekAria": "{{n}}. adıma git ({{start}})"
+    },
     "videoGuide": {
       "title": "Adım adım video rehberi",
       "openAria": "Adım adım video rehberini aç",

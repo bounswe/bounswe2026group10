@@ -586,8 +586,10 @@ export function RecipeDetailPage() {
                 <VideoPlayerWithAnnotations
                   key={m.id}
                   src={m.url}
-                  // attach annotations only to the first video — backend ties annotations to recipe, not media item
+                  // attach annotations and step markers only to the first video —
+                  // backend ties both to the recipe, not to a particular media item
                   annotations={idx === 0 ? recipe.videoAnnotations : []}
+                  steps={idx === 0 ? recipe.steps : []}
                   ariaLabel={t('recipeDetail.videoPlayerAria')}
                 />
               ))}

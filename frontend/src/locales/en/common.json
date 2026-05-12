@@ -350,6 +350,9 @@
     "videoAnnotations": {
       "seekAria": "Jump to {{start}}: {{note}}"
     },
+    "videoStepMarkers": {
+      "seekAria": "Jump to step {{n}} ({{start}})"
+    },
     "videoGuide": {
       "title": "Step-by-step video guide",
       "openAria": "Open step-by-step video guide",
