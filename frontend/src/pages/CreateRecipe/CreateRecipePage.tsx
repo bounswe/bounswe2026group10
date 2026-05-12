@@ -284,9 +284,9 @@ export function CreateRecipePage() {
     if (!canSuggestContent) return
     let cancelled = false
     discoveryService
-      .getLocations()
+      .getCountries()
       .then((opts) => {
-        if (!cancelled) setCountryOptions(opts.countries)
+        if (!cancelled) setCountryOptions(opts)
       })
       .catch(() => {
         if (!cancelled) setCountryOptions([])

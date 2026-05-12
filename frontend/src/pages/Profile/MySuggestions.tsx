@@ -63,16 +63,14 @@ export function MySuggestions() {
       dishGenreRequest.listMine(),
       dishVarietyRequest.listMine(),
       discoveryService.getGenres(),
-      discoveryService.getLocations(),
+      discoveryService.getCountries(),
     ]).then((results) => {
       if (cancelled) return
       setCultural(results[0].status === 'fulfilled' ? results[0].value : [])
       setGenres(results[1].status === 'fulfilled' ? results[1].value : [])
       setVarieties(results[2].status === 'fulfilled' ? results[2].value : [])
       setGenreOptions(results[3].status === 'fulfilled' ? results[3].value : [])
-      setCountryOptions(
-        results[4].status === 'fulfilled' ? results[4].value.countries : [],
-      )
+      setCountryOptions(results[4].status === 'fulfilled' ? results[4].value : [])
     })
     return () => {
       cancelled = true
