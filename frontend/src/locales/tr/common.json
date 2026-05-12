@@ -380,6 +380,8 @@
     "substituteLoadError": "Alternatifler yüklenemedi.",
     "substituteClose": "Kapat",
     "substituteConfidence": "Güven: %{{pct}}",
+    "allergenTagLabel": "⚠ {{name}}",
+    "allergenTagAria": "Alerjen içerir: {{name}}",
     "videoAnnotations": {
       "seekAria": "{{start}} zamanına git: {{note}}"
     },

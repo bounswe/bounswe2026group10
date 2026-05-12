@@ -320,6 +320,24 @@ export function RecipeDetailPage() {
   const authorInitial = (recipe.creatorUsername ?? '?').slice(0, 1).toUpperCase()
   const badgeLabel = recipe.type === 'cultural' ? t('recipeDetail.cultural') : t('recipeDetail.community')
 
+  const existingAllergenTagNames = new Set(
+    recipe.tags
+      .filter((tag) => tag.category === 'allergen')
+      .map((tag) => tag.name.trim().toLowerCase())
+  )
+  const ingredientAllergenNames: string[] = []
+  const seenAllergens = new Set<string>()
+  for (const ing of recipe.ingredients) {
+    for (const raw of ing.allergens) {
+      const name = raw?.trim()
+      if (!name) continue
+      const key = name.toLowerCase()
+      if (seenAllergens.has(key) || existingAllergenTagNames.has(key)) continue
+      seenAllergens.add(key)
+      ingredientAllergenNames.push(name)
+    }
+  }
+
   return (
     <div className="recipe-detail">
       {/* Hero — web-design: full-bleed image + gradient + overlay toolbar */}
@@ -384,7 +402,7 @@ export function RecipeDetailPage() {
           )}
         </div>
 
-        {(recipe.tags.length > 0 || recipe.culturalTags.length > 0) && (
+        {(recipe.tags.length > 0 || recipe.culturalTags.length > 0 || ingredientAllergenNames.length > 0) && (
           <div className="recipe-detail__tags">
             {recipe.culturalTags.map((tag) => {
               const label =
@@ -406,7 +424,18 @@ export function RecipeDetailPage() {
                 key={tag.id}
                 className={`recipe-detail__tag recipe-detail__tag--${tag.category}`}
               >
-                {tag.name}
+                {tag.category === 'allergen'
+                  ? t('recipeDetail.allergenTagLabel', { name: tag.name })
+                  : tag.name}
+              </span>
+            ))}
+            {ingredientAllergenNames.map((name) => (
+              <span
+                key={`ing-allergen-${name}`}
+                className="recipe-detail__tag recipe-detail__tag--allergen"
+                aria-label={t('recipeDetail.allergenTagAria', { name })}
+              >
+                {t('recipeDetail.allergenTagLabel', { name })}
               </span>
             ))}
           </div>
