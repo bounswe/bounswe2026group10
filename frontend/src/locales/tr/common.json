@@ -173,7 +173,49 @@
     "draftPublishConfirm": "Bu tarif yayınlansın mı? Herkese görünür olacak.",
     "draftDeleteConfirm": "Bu taslak silinsin mi? Bu işlem geri alınamaz.",
     "draftPublished": "Tarif başarıyla yayınlandı.",
-    "draftDeleted": "Taslak silindi."
+    "draftDeleted": "Taslak silindi.",
+    "suggestions": {
+      "title": "Önerilerim",
+      "newButton": "Yeni öneri",
+      "tabCultural": "Kültürel Etiketler",
+      "tabGenre": "Türler",
+      "tabVariety": "Çeşitler",
+      "emptyCultural": "Henüz kültürel etiket önermediniz.",
+      "emptyGenre": "Henüz tür önermediniz.",
+      "emptyVariety": "Henüz çeşit önermediniz.",
+      "statusPending": "Beklemede",
+      "statusApproved": "Onaylandı",
+      "statusRejected": "Reddedildi",
+      "decisionNote": "Yönetici notu:",
+      "submittedOn": "Gönderildi: {{date}}",
+      "decidedOn": "Karar: {{date}}"
+    }
+  },
+  "suggestion": {
+    "title": {
+      "cultural": "Yeni kültürel etiket öner",
+      "genre": "Yeni tür öner",
+      "variety": "Yeni çeşit öner"
+    },
+    "fields": {
+      "labelEn": "İngilizce etiket",
+      "labelTr": "Türkçe etiket",
+      "nameEn": "İngilizce ad",
+      "nameTr": "Türkçe ad",
+      "country": "Ülke (isteğe bağlı)",
+      "countryAny": "Tüm bölgeler (küresel etiket)",
+      "genre": "Üst tür",
+      "genrePlaceholder": "Bir tür seçin",
+      "descriptionEn": "İngilizce açıklama (isteğe bağlı)",
+      "descriptionTr": "Türkçe açıklama (isteğe bağlı)"
+    },
+    "showMore": "Açıklama alanlarını göster",
+    "hint": "En az bir dilde etiket girin. Diğer dilin çevirisini biz yapacağız. Öneriniz yönetici onayına sunulacak.",
+    "submit": "Öneriyi gönder",
+    "cancel": "İptal",
+    "errors": {
+      "submitFailed": "Öneri gönderilemedi. Lütfen tekrar deneyin."
+    }
   },
   "home": {
     "featured": "Öne Çıkan Tarif",
@@ -361,6 +403,9 @@
       "culturalTags": "Kültürel etiketler",
       "culturalTagsHint": "Bu tarifin ait olduğu vesileleri etiketleyin. Yukarıdan bir ülke seçerseniz o bölgeye özel etiketler ile küresel etiketler birlikte görünür.",
       "culturalTagsEmpty": "Seçili ülke için henüz kültürel etiket bulunmuyor.",
+      "suggestNewGenre": "Türü bulamadın mı? Yeni bir tür öner →",
+      "suggestNewVariety": "Yemeği bulamadın mı? Yeni bir çeşit öner →",
+      "suggestNewCulturalTag": "Vesileyi bulamadın mı? Yeni bir etiket öner →",
       "allergenTags": "Bu tarifte bulunan alerjenler",
       "allergenTagsHint": "Malzemelerde bulunan tüm alerjenleri seçin.",
       "detectedAllergens": "Tespit Edilen Alerjenler",
@@ -438,6 +483,7 @@
     "successDraft": "Tarif taslak olarak kaydedildi!",
     "successPublished": "Tarif yayınlandı!",
     "errorCreate": "Tarif oluşturulamadı. Lütfen tekrar deneyin.",
+    "suggestionSent": "Öneriniz gönderildi. Yönetici onayladıktan sonra eklenecek.",
     "media": {
       "title": "Fotoğraf ve video (isteğe bağlı)",
       "hint": "JPEG, PNG veya WebP görseller (dosya başına en fazla 10 MB) ve MP4 video (en fazla 100 MB). Dosyalar tarif oluşturulduktan sonra yüklenir.",
