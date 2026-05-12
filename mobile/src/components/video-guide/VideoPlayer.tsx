@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,17 +8,24 @@ interface VideoPlayerProps {
   videoUrl?: string;
   stepNumber: number;
   stepDescription: string;
+  videoTimestamp?: number;
 }
 
 export function VideoPlayer({
   videoUrl,
   stepNumber,
   stepDescription,
+  videoTimestamp,
 }: VideoPlayerProps) {
-  console.log('[VideoPlayer] videoUrl:', videoUrl);
   const player = useVideoPlayer(videoUrl ?? null, (p) => {
     p.loop = true;
   });
+
+  useEffect(() => {
+    if (videoTimestamp == null) return;
+    player.currentTime = videoTimestamp;
+    player.play();
+  }, [player, videoTimestamp]);
 
   return (
     <View style={styles.container}>
