@@ -11,7 +11,11 @@ import {
 } from '@/services/cultural-tag-service'
 import { recipeService, type CreateRecipeIngredient } from '@/services/recipe-service'
 import { ingredientService, type IngredientOption } from '@/services/ingredient-service'
-import { parseService, type ParsedRecipeOutput } from '@/services/parse-service'
+import {
+  parseService,
+  type ParsedRecipeOutput,
+  type StandardizeUnitsOutput,
+} from '@/services/parse-service'
 import { IngredientPicker } from '@/components/CreateRecipe/IngredientPicker'
 import { ToolPicker } from '@/components/CreateRecipe/ToolPicker'
 import { UnitPicker } from '@/components/CreateRecipe/UnitPicker'
@@ -254,6 +258,9 @@ export function CreateRecipePage() {
   const [unmatchedParsedIngredients, setUnmatchedParsedIngredients] = useState<string[]>([])
   const [recording, setRecording] = useState(false)
   const [voiceLanguage, setVoiceLanguage] = useState<'auto' | 'en' | 'tr'>('auto')
+  const [standardized, setStandardized] = useState<StandardizeUnitsOutput | null>(null)
+  const [standardizing, setStandardizing] = useState(false)
+  const [standardizeError, setStandardizeError] = useState<string | null>(null)
   const [culturalTags, setCulturalTags] = useState<CulturalTag[]>([])
   /** Country options for the cultural-tag suggestion modal — populated lazily. */
   const [countryOptions, setCountryOptions] = useState<string[]>([])
@@ -684,6 +691,48 @@ export function CreateRecipePage() {
   const canContinueStep2 = ingredientsStepValid(draft.ingredients)
   // step 3 (allergens) is always skippable — no required field
   const canContinueStep4 = draft.steps.some((s) => s.text.trim().length > 0)
+
+  /** When the user arrives at the Review step, ask the backend to standardize
+   * informal / region-specific ingredient units and step phrasing (e.g.
+   * "kulak memesi kıvamı" → a clear description). Runs in the background — the
+   * Continue→Review transition is not blocked. Re-runs on each entry into the
+   * step so back-edits are reflected. */
+  useEffect(() => {
+    if (step !== 5) return
+    const payloadIngredients = draft.ingredients
+      .filter((row) => row.name.trim() && row.unit.trim())
+      .map((row) => ({
+        name: row.name.trim(),
+        quantity: parseQuantityValue(row.quantity) ?? 0,
+        unit: row.unit.trim(),
+      }))
+      .filter((row) => row.quantity > 0)
+    if (payloadIngredients.length === 0) {
+      setStandardized(null)
+      return
+    }
+    const payloadSteps = draft.steps
+      .map((s, i) => ({ stepOrder: i + 1, description: s.text.trim() }))
+      .filter((s) => s.description.length > 0)
+    let cancelled = false
+    setStandardizing(true)
+    setStandardizeError(null)
+    parseService
+      .standardizeUnits(payloadIngredients, payloadSteps, draft.country.trim() || undefined)
+      .then((res) => {
+        if (!cancelled) setStandardized(res)
+      })
+      .catch(() => {
+        if (!cancelled) setStandardizeError(t('create.review.standardizeError'))
+      })
+      .finally(() => {
+        if (!cancelled) setStandardizing(false)
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
 
   const goNext = async () => {
     if (step === 2) {
@@ -1491,6 +1540,85 @@ export function CreateRecipePage() {
                 </div>
               </div>
             </div>
+
+            {/* Standardized units / step descriptions */}
+            {(standardizing || standardizeError || standardized) && (
+              <div className="cr-review-standardize" aria-live="polite">
+                <h4 className="cr-review-standardize__title">
+                  {t('create.review.standardizeTitle')}
+                </h4>
+                {standardizing && (
+                  <p className="cr-review-standardize__status">
+                    <span className="ui-spinner" aria-hidden />{' '}
+                    {t('create.review.standardizing')}
+                  </p>
+                )}
+                {standardizeError && !standardizing && (
+                  <p className="cr-error">{standardizeError}</p>
+                )}
+                {standardized && !standardizing && !standardizeError && (() => {
+                  const changedIngredients = standardized.ingredients.filter(
+                    (ing) =>
+                      ing.originalQuantity !== ing.standardQuantity ||
+                      ing.originalUnit.trim().toLowerCase() !==
+                        ing.standardUnit.trim().toLowerCase(),
+                  )
+                  const changedSteps = standardized.steps.filter(
+                    (s) =>
+                      s.originalDescription.trim() !==
+                      s.standardDescription.trim(),
+                  )
+                  if (changedIngredients.length === 0 && changedSteps.length === 0) {
+                    return (
+                      <p className="cr-review-standardize__none">
+                        {t('create.review.standardizeNone')}
+                      </p>
+                    )
+                  }
+                  return (
+                    <>
+                      {changedIngredients.length > 0 && (
+                        <ul className="cr-review-standardize__list">
+                          {changedIngredients.map((ing, idx) => (
+                            <li key={`std-ing-${idx}`} className="cr-review-standardize__row">
+                              <span className="cr-review-standardize__name">{ing.name}</span>
+                              <span className="cr-review-standardize__from">
+                                {ing.originalQuantity} {ing.originalUnit}
+                              </span>
+                              <span className="cr-review-standardize__arrow" aria-hidden>→</span>
+                              <span className="cr-review-standardize__to">
+                                {ing.standardQuantity} {ing.standardUnit}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {changedSteps.length > 0 && (
+                        <ul className="cr-review-standardize__steps">
+                          {changedSteps.map((s) => (
+                            <li
+                              key={`std-step-${s.stepOrder}`}
+                              className="cr-review-standardize__steprow"
+                            >
+                              <span className="cr-review-standardize__steplabel">
+                                {t('create.review.stepLabel', { order: s.stepOrder })}
+                              </span>
+                              <span className="cr-review-standardize__stepfrom">
+                                {s.originalDescription}
+                              </span>
+                              <span className="cr-review-standardize__arrow" aria-hidden>→</span>
+                              <span className="cr-review-standardize__stepto">
+                                {s.standardDescription}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </>
+                  )
+                })()}
+              </div>
+            )}
 
             {/* Publication note */}
             <div className="cr-review-note">

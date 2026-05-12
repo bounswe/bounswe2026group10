@@ -525,7 +525,12 @@
       "stepsUnit": "adım",
       "servings": "{{count}} porsiyon",
       "publish": "Tarifi Yayınla",
-      "saveDraft": "Taslak Olarak Kaydet"
+      "saveDraft": "Taslak Olarak Kaydet",
+      "standardizeTitle": "Standartlaştırılmış ölçü ve ifadeler",
+      "standardizing": "Yerel ölçüler ve ifadeler kontrol ediliyor…",
+      "standardizeError": "Birimler şu an standartlaştırılamadı. Tarifi olduğu gibi yayınlayabilirsiniz.",
+      "standardizeNone": "Tüm ölçüler ve adım açıklamaları standart görünüyor.",
+      "stepLabel": "Adım {{order}}"
     },
     "successDraft": "Tarif taslak olarak kaydedildi!",
     "successPublished": "Tarif yayınlandı!",

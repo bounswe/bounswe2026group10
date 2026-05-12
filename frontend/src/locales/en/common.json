@@ -525,7 +525,12 @@
       "stepsUnit": "steps",
       "servings": "{{count}} servings",
       "publish": "Publish Recipe",
-      "saveDraft": "Save as Draft"
+      "saveDraft": "Save as Draft",
+      "standardizeTitle": "Standardized units & phrasing",
+      "standardizing": "Checking for informal units and phrases…",
+      "standardizeError": "Could not standardize units right now. Your recipe is fine to publish as-is.",
+      "standardizeNone": "All units and step descriptions look standard.",
+      "stepLabel": "Step {{order}}"
     },
     "successDraft": "Recipe saved as draft!",
     "successPublished": "Recipe published!",
