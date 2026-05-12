@@ -371,7 +371,6 @@ export const tr: Translations = {
     tools: {
       title: 'Araç ve Gereçler',
       searchPlaceholder: 'Araç ekle (örn. Döküm Tava)',
-      quickAddLabel: 'HIZLI EKLE',
     },
     instructions: {
       addStep: 'Adım Ekle',
