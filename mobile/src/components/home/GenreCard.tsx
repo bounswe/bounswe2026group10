@@ -42,8 +42,11 @@ const styles = StyleSheet.create({
   },
   labelContainer: {
     position: 'absolute',
+    left: 0,
+    right: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
   },
   label: {
     fontFamily: fonts.sansBold,
@@ -51,5 +54,6 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
     textTransform: 'uppercase',
     letterSpacing: -0.3,
+    textAlign: 'center',
   },
 });
