@@ -13,6 +13,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { fetchDietaryTags, fetchLocations, type DietaryTag } from '../../api/search';
 import { getCulturalTags, pickCulturalTagLabel, type CulturalTagItem } from '../../api/cultural-tags';
+import { getAllergens, type AllergenItem } from '../../api/allergens';
 import { colors, fonts, fontSizes, spacing } from '../../theme';
 import type { ActiveFilters } from '../../navigation/types';
 
@@ -46,6 +47,7 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
     cultural: false,
     location: false,
   });
+  const [allergens, setAllergens] = useState<AllergenItem[]>([]);
   const [tags, setTags] = useState<DietaryTag[]>([]);
   const [culturalTags, setCulturalTags] = useState<CulturalTagItem[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
@@ -65,14 +67,15 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
     setFilters(appliedFilters ?? EMPTY_FILTERS);
   }, [appliedFilters]);
 
-  // Load dietary tags + countries when modal opens
+  // Load allergens, dietary tags and countries when modal opens
   useEffect(() => {
     if (!visible) return;
     setLoading(true);
-    Promise.all([fetchDietaryTags(), fetchLocations()])
-      .then(([tagData, countryData]) => {
+    Promise.all([fetchDietaryTags(), fetchLocations(), getAllergens()])
+      .then(([tagData, countryData, allergenData]) => {
         setTags(tagData);
         setCountries(countryData);
+        setAllergens(allergenData);
       })
       .finally(() => setLoading(false));
   }, [visible, i18n.language]);
@@ -102,7 +105,6 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
     fetchLocations(filters.country).then(setCities);
   }, [filters.country]);
 
-  const allergenTags = tags.filter((t) => t.category === 'allergen');
   const dietaryTags = tags.filter((t) => t.category === 'dietary');
 
   const toggleAllergen = (id: number, name: string) => {
@@ -243,7 +245,7 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
             )}
 
             {/* ── Exclude Allergens ── */}
-            {allergenTags.length > 0 && (
+            {allergens.length > 0 && (
               <View style={styles.filterSection}>
                 <TouchableOpacity
                   style={styles.sectionHeader}
@@ -259,7 +261,7 @@ export function FilterModal({ visible, onClose, onApply, onClear, appliedFilters
 
                 {expandedSections.allergens && (
                   <View style={styles.sectionContent}>
-                    {allergenTags.map((tag) => (
+                    {allergens.map((tag) => (
                       <TouchableOpacity
                         key={tag.id}
                         style={styles.checkboxRow}
