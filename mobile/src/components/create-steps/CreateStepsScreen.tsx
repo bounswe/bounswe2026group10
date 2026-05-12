@@ -165,6 +165,8 @@ export function CreateStepsScreen() {
           description: s.description,
           timestamp: s.timestamp,
         })),
+        videoUrl: uploadedUrl,
+        videoFileName,
       });
       Alert.alert(t("create.draftSaved"), t("create.draftSavedMsg2"), [
         {
