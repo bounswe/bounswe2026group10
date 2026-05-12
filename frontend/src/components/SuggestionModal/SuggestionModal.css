@@ -1,0 +1,207 @@
+.suggestion-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  animation: suggestion-modal-fade 0.2s ease;
+}
+
+.suggestion-modal {
+  width: 100%;
+  max-width: 480px;
+  padding: var(--space-xl);
+  background: var(--surface-card, #fff);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: suggestion-modal-scale 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: calc(100vh - 2 * var(--space-md));
+  overflow-y: auto;
+}
+
+.suggestion-modal__title {
+  margin: 0 0 var(--space-xs);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  color: var(--rd-fg, #2a1810);
+}
+
+.suggestion-modal__hint {
+  margin: 0 0 var(--space-lg);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--rd-muted, #6b5d52);
+}
+
+.suggestion-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.suggestion-modal__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+@media (max-width: 520px) {
+  .suggestion-modal__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.suggestion-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.suggestion-modal__label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--rd-fg, #2a1810);
+}
+
+.suggestion-modal__input,
+.suggestion-modal__select,
+.suggestion-modal__textarea {
+  width: 100%;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  background: var(--surface-card, #fff);
+  border: 1px solid rgba(42, 24, 16, 0.18);
+  border-radius: var(--radius-sm);
+  color: var(--rd-fg, #2a1810);
+  transition: border-color var(--transition-fast);
+}
+
+.suggestion-modal__input:focus,
+.suggestion-modal__select:focus,
+.suggestion-modal__textarea:focus {
+  outline: none;
+  border-color: var(--color-main);
+}
+
+.suggestion-modal__textarea {
+  min-height: 60px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.suggestion-modal__toggle {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-main);
+  cursor: pointer;
+}
+
+.suggestion-modal__toggle:hover {
+  text-decoration: underline;
+}
+
+.suggestion-modal__error {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: rgba(180, 35, 24, 0.08);
+  border: 1px solid rgba(180, 35, 24, 0.25);
+  border-radius: var(--radius-sm);
+  color: #b42318;
+  font-size: 0.85rem;
+}
+
+.suggestion-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.suggestion-modal__btn {
+  min-height: 2.5rem;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  border: none;
+  transition: opacity var(--transition-fast), filter var(--transition-fast);
+}
+
+.suggestion-modal__btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.suggestion-modal__btn--secondary {
+  background: transparent;
+  color: var(--rd-muted, #6b5d52);
+  border: 1px solid rgba(42, 24, 16, 0.2);
+}
+
+.suggestion-modal__btn--secondary:hover:not(:disabled) {
+  background: rgba(42, 24, 16, 0.05);
+}
+
+.suggestion-modal__btn--primary {
+  background: var(--color-main);
+  color: #fff;
+}
+
+.suggestion-modal__btn--primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.suggestion-modal__btn-content {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.suggestion-modal__btn-label {
+  display: inline-block;
+}
+
+.suggestion-modal__btn-label--hidden {
+  visibility: hidden;
+}
+
+.suggestion-modal__btn-spinner-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.suggestion-modal__btn--primary .suggestion-modal__btn-spinner {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+}
+
+@keyframes suggestion-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes suggestion-modal-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

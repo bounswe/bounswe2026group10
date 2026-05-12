@@ -173,7 +173,49 @@
     "draftPublishConfirm": "Publish this recipe? It will be visible to everyone.",
     "draftDeleteConfirm": "Delete this draft? This cannot be undone.",
     "draftPublished": "Recipe published successfully.",
-    "draftDeleted": "Draft deleted."
+    "draftDeleted": "Draft deleted.",
+    "suggestions": {
+      "title": "My Suggestions",
+      "newButton": "New suggestion",
+      "tabCultural": "Cultural Tags",
+      "tabGenre": "Genres",
+      "tabVariety": "Varieties",
+      "emptyCultural": "You haven't suggested any cultural tags yet.",
+      "emptyGenre": "You haven't suggested any genres yet.",
+      "emptyVariety": "You haven't suggested any varieties yet.",
+      "statusPending": "Pending",
+      "statusApproved": "Approved",
+      "statusRejected": "Rejected",
+      "decisionNote": "Admin note:",
+      "submittedOn": "Submitted {{date}}",
+      "decidedOn": "Decided {{date}}"
+    }
+  },
+  "suggestion": {
+    "title": {
+      "cultural": "Suggest a new cultural tag",
+      "genre": "Suggest a new genre",
+      "variety": "Suggest a new variety"
+    },
+    "fields": {
+      "labelEn": "English label",
+      "labelTr": "Turkish label",
+      "nameEn": "English name",
+      "nameTr": "Turkish name",
+      "country": "Country (optional)",
+      "countryAny": "Any region (global tag)",
+      "genre": "Parent genre",
+      "genrePlaceholder": "Select a genre",
+      "descriptionEn": "English description (optional)",
+      "descriptionTr": "Turkish description (optional)"
+    },
+    "showMore": "Show description fields",
+    "hint": "Provide at least one language label. We'll auto-translate the other if missing. An admin will review your suggestion.",
+    "submit": "Send suggestion",
+    "cancel": "Cancel",
+    "errors": {
+      "submitFailed": "Could not send suggestion. Please try again."
+    }
   },
   "home": {
     "featured": "Featured Recipe",
@@ -361,6 +403,9 @@
       "culturalTags": "Cultural tags",
       "culturalTagsHint": "Tag the occasions this recipe belongs to. Pick a country above to see region-specific tags alongside global ones.",
       "culturalTagsEmpty": "No cultural tags available for the selected country yet.",
+      "suggestNewGenre": "Don't see your genre? Suggest a new one →",
+      "suggestNewVariety": "Don't see your dish? Suggest a new variety →",
+      "suggestNewCulturalTag": "Don't see your occasion? Suggest a new tag →",
       "allergenTags": "Allergens in this recipe",
       "allergenTagsHint": "Select all allergens present in the ingredients.",
       "detectedAllergens": "Detected Allergens",
@@ -438,6 +483,7 @@
     "successDraft": "Recipe saved as draft!",
     "successPublished": "Recipe published!",
     "errorCreate": "Failed to create recipe. Please try again.",
+    "suggestionSent": "Suggestion sent. We'll add it once an admin approves.",
     "media": {
       "title": "Photos & video (optional)",
       "hint": "JPEG, PNG, or WebP images (max 10 MB each) and MP4 video (max 100 MB). Files are uploaded after the recipe is created.",

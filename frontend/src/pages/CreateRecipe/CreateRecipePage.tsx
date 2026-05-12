@@ -17,6 +17,7 @@ import { ToolPicker } from '@/components/CreateRecipe/ToolPicker'
 import { UnitPicker } from '@/components/CreateRecipe/UnitPicker'
 import { mediaService } from '@/services/media-service'
 import { useUserRole } from '@/hooks/useUserRole'
+import { SuggestionModal, type SuggestionKind } from '@/components/SuggestionModal/SuggestionModal'
 import './CreateRecipePage.css'
 
 /** Aligned with backend `media.ts` */
@@ -236,14 +237,45 @@ export function CreateRecipePage() {
   const [recording, setRecording] = useState(false)
   const [voiceLanguage, setVoiceLanguage] = useState<'auto' | 'en' | 'tr'>('auto')
   const [culturalTags, setCulturalTags] = useState<CulturalTag[]>([])
+  /** Country options for the cultural-tag suggestion modal — populated lazily. */
+  const [countryOptions, setCountryOptions] = useState<string[]>([])
+  /** Active suggestion modal kind (null = closed). Only experts can open it. */
+  const [suggestModal, setSuggestModal] = useState<SuggestionKind | null>(null)
+  /** Inline confirmation banner shown briefly after a suggestion is submitted. */
+  const [suggestSent, setSuggestSent] = useState(false)
   // Cook can only create community; expert can create both
   const canCreateCultural = role === 'expert'
+  const canSuggestContent = role === 'expert'
 
   useEffect(() => {
     discoveryService.getGenres().then(setGenres).catch(() => setGenres([]))
     discoveryService.getDietaryTags().then(setAllTags).catch(() => setAllTags([]))
     allergenService.list().then(setAllAllergens).catch(() => setAllAllergens([]))
   }, [])
+
+  /** Fetch country list once when the user has the expert role — the cultural-tag
+   * suggestion modal needs it for its dropdown. */
+  useEffect(() => {
+    if (!canSuggestContent) return
+    let cancelled = false
+    discoveryService
+      .getLocations()
+      .then((opts) => {
+        if (!cancelled) setCountryOptions(opts.countries)
+      })
+      .catch(() => {
+        if (!cancelled) setCountryOptions([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [canSuggestContent])
+
+  function handleSuggestSuccess() {
+    setSuggestModal(null)
+    setSuggestSent(true)
+    window.setTimeout(() => setSuggestSent(false), 4000)
+  }
 
   /** Fetch cultural tags scoped to the recipe's country (global tags always included).
    * Available for both community and cultural recipes (mirrors mobile). Drops
@@ -704,6 +736,11 @@ export function CreateRecipePage() {
         {/* ── STEP 1: Basic Info ──────────────────────────────────────────── */}
         {step === 1 && (
           <div className="cr-section">
+            {suggestSent && (
+              <div className="cr-suggest-success-banner" role="status" aria-live="polite">
+                ✓ {t('create.suggestionSent')}
+              </div>
+            )}
             <div className="cr-field cr-parse">
               <label className="cr-label" htmlFor="cr-parse-text">
                 {t('create.parse.label')}
@@ -869,6 +906,15 @@ export function CreateRecipePage() {
                   })}
                 </div>
               )}
+              {canSuggestContent && (
+                <button
+                  type="button"
+                  className="cr-suggest-link"
+                  onClick={() => setSuggestModal('cultural')}
+                >
+                  {t('create.fields.suggestNewCulturalTag')}
+                </button>
+              )}
             </div>
 
             {/* Genre → Variety (two-step; varieties loaded per genre) */}
@@ -891,6 +937,15 @@ export function CreateRecipePage() {
                   </option>
                 ))}
               </select>
+              {canSuggestContent && (
+                <button
+                  type="button"
+                  className="cr-suggest-link"
+                  onClick={() => setSuggestModal('genre')}
+                >
+                  {t('create.fields.suggestNewGenre')}
+                </button>
+              )}
             </div>
 
             <div className="cr-field">
@@ -918,6 +973,15 @@ export function CreateRecipePage() {
                   </option>
                 ))}
               </select>
+              {canSuggestContent && draft.genreId && (
+                <button
+                  type="button"
+                  className="cr-suggest-link"
+                  onClick={() => setSuggestModal('variety')}
+                >
+                  {t('create.fields.suggestNewVariety')}
+                </button>
+              )}
             </div>
 
             {/* Serving Size */}
@@ -1430,6 +1494,17 @@ export function CreateRecipePage() {
         )}
       </div>
 
+      {canSuggestContent && (
+        <SuggestionModal
+          kind={suggestModal ?? 'cultural'}
+          isOpen={suggestModal !== null}
+          onClose={() => setSuggestModal(null)}
+          onSuccess={handleSuggestSuccess}
+          prefillGenreId={draft.genreId ? Number(draft.genreId) : undefined}
+          countryOptions={countryOptions}
+          genreOptions={genres.map((g) => ({ id: g.id, name: g.name }))}
+        />
+      )}
     </div>
   )
 }

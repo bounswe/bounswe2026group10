@@ -5,6 +5,7 @@ import { isAxiosError } from 'axios'
 import { useAppSelector } from '@/store/hooks'
 import { recipeService, type MyRecipeSummary } from '@/services/recipe-service'
 import { favoriteService, type FavoriteRecipe } from '@/services/favorite-service'
+import { MySuggestions } from '@/pages/Profile/MySuggestions'
 import './ProfilePage.css'
 
 function StarIcon() {
@@ -299,6 +300,8 @@ export function ProfilePage() {
       {!favoritesLoading && favorites.length === 0 && (
         <p className="profile-page__empty">{t('profileScreen.noFavorites')}</p>
       )}
+
+      {profile.role === 'expert' && <MySuggestions />}
     </div>
   )
 }
