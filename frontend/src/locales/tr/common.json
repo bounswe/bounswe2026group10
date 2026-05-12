@@ -150,6 +150,33 @@
     "deleteConfirm": "Sil",
     "deleteCancel": "Vazgeç"
   },
+  "profileEdit": {
+    "openButton": "Profili düzenle",
+    "title": "Profili düzenle",
+    "hint": "Bir alanı boş bırakırsanız mevcut değeri korunur.",
+    "usernameLabel": "Kullanıcı adı",
+    "usernameInvalid": "Yalnızca harf, rakam ve alt çizgi kullanabilirsiniz.",
+    "usernameLength": "Kullanıcı adı 3–30 karakter olmalıdır.",
+    "usernameTaken": "Bu kullanıcı adı zaten kullanımda.",
+    "bioLabel": "Hakkımda",
+    "bioLength": "Hakkımda alanı en fazla 500 karakter olmalı.",
+    "regionLabel": "Bölge",
+    "regionPlaceholder": "ör. İstanbul, Türkiye",
+    "languageLabel": "Tercih edilen dil",
+    "languageNone": "Belirtilmedi",
+    "languages": {
+      "en": "English",
+      "tr": "Türkçe"
+    },
+    "changeAvatar": "Fotoğrafı değiştir",
+    "removeAvatar": "Fotoğrafı kaldır",
+    "avatarTypeError": "Lütfen bir görsel dosyası seçin.",
+    "avatarSizeError": "Görsel 10 MB veya daha küçük olmalı.",
+    "avatarUploadError": "Görsel yüklenemedi. Lütfen tekrar deneyin.",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "genericError": "Profil güncellenemedi. Lütfen tekrar deneyin."
+  },
   "profileScreen": {
     "title": "Profil",
     "loading": "Profil yükleniyor…",

@@ -6,6 +6,7 @@ import { useAppSelector } from '@/store/hooks'
 import { recipeService, type MyRecipeSummary } from '@/services/recipe-service'
 import { favoriteService, type FavoriteRecipe } from '@/services/favorite-service'
 import { MySuggestions } from '@/pages/Profile/MySuggestions'
+import { ProfileEditForm } from '@/pages/Profile/ProfileEditForm'
 import './ProfilePage.css'
 
 function StarIcon() {
@@ -29,6 +30,7 @@ export function ProfilePage() {
   const [favorites, setFavorites] = useState<FavoriteRecipe[]>([])
   const [favoritesTotal, setFavoritesTotal] = useState(0)
   const [favoritesLoading, setFavoritesLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -114,15 +116,40 @@ export function ProfilePage() {
 
       {/* ── User card ── */}
       <div className="profile-page__card">
-        <div className="profile-page__avatar">{initials}</div>
+        <div className="profile-page__avatar">
+          {profile.avatarUrl ? (
+            <img src={profile.avatarUrl} alt="" />
+          ) : (
+            initials
+          )}
+        </div>
         <div className="profile-page__info">
           <h1 className="profile-page__username">{profile.username ?? '—'}</h1>
           <p className="profile-page__email">{profile.email ?? '—'}</p>
           <span className={`profile-page__role-badge profile-page__role-badge--${profile.role ?? 'learner'}`}>
             {roleLabel}
           </span>
+          {profile.bio && (
+            <p className="profile-page__bio">{profile.bio}</p>
+          )}
+          {profile.region && (
+            <p className="profile-page__region">{profile.region}</p>
+          )}
         </div>
+        <button
+          type="button"
+          className="profile-page__edit-btn"
+          onClick={() => setEditing(true)}
+        >
+          {t('profileEdit.openButton')}
+        </button>
       </div>
+
+      {editing && (
+        <div className="profile-page__edit-wrapper">
+          <ProfileEditForm onClose={() => setEditing(false)} />
+        </div>
+      )}
 
       {/* ── Stats ── */}
       {!recipesLoading && !draftsLoading && (
