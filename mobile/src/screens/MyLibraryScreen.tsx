@@ -77,7 +77,7 @@ export function MyLibraryScreen() {
   const [cityModalOpen, setCityModalOpen] = useState(false);
 
   const { updateDraft } = useRecipeForm();
-  const [resumingId, setResumingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const isFavoritesTab = filter === 'favorites';
 
@@ -180,6 +180,21 @@ export function MyLibraryScreen() {
     setDeleteTarget({ id: recipe.id, title: recipe.title });
   }
 
+  async function handleEdit(recipe: MyRecipeSummary) {
+    setActionError(null);
+    try {
+      setEditingId(recipe.id);
+      const detail = await getRecipeById(recipe.id);
+      const draftState = mapBackendToDraft(detail);
+      updateDraft(draftState);
+      navigation.getParent()?.navigate('CreateTab' as never);
+    } catch {
+      setActionError(t('library.editError'));
+    } finally {
+      setEditingId(null);
+    }
+  }
+
   function renderFavoriteItem({ item }: { item: FavoriteRecipe }) {
     const subtitle = [item.dishVarietyName, item.genreName]
       .filter(Boolean)
@@ -263,33 +278,22 @@ export function MyLibraryScreen() {
 
   function renderItem({ item }: { item: MyRecipeSummary }) {
     const location = [item.city, item.country].filter(Boolean).join(', ');
-    const isResuming = resumingId === item.id;
+    const isEditing = editingId === item.id;
     return (
       <TouchableOpacity
         activeOpacity={0.85}
         style={styles.card}
-        disabled={isResuming}
-        onPress={async () => {
+        disabled={isEditing}
+        onPress={() => {
           if (!item.isPublished) {
-            try {
-              setResumingId(item.id);
-              const detail = await getRecipeById(item.id);
-              const draftState = mapBackendToDraft(detail);
-              updateDraft(draftState);
-              navigation.getParent()?.navigate('CreateTab' as never);
-            } catch (err) {
-              console.error(err);
-              setActionError(t('library.errorRetry'));
-            } finally {
-              setResumingId(null);
-            }
+            handleEdit(item);
           } else {
             navigation.navigate('RecipeDetail', { recipeId: item.id });
           }
         }}
       >
         <View style={styles.thumb}>
-          {isResuming ? (
+          {isEditing ? (
             <View style={styles.thumbPlaceholder}>
               <ActivityIndicator color={colors.primary} />
             </View>
@@ -387,7 +391,19 @@ export function MyLibraryScreen() {
 
           <View style={styles.actionsRow}>
             <TouchableOpacity
+              style={[styles.actionBtn, styles.editBtn]}
+              disabled={isEditing}
+              onPress={() => handleEdit(item)}
+            >
+              {isEditing ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Text style={styles.editBtnText}>{t('library.edit')}</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[styles.actionBtn, styles.deleteBtn]}
+              disabled={isEditing}
               onPress={() => openDeleteConfirm(item)}
             >
               <Text style={styles.deleteBtnText}>{t('library.delete')}</Text>
@@ -882,6 +898,15 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   publishBtnText: { color: colors.white, fontSize: 12, fontWeight: '600' },
+  editBtn: {
+    backgroundColor: colors.white,
+    borderColor: colors.primary,
+  },
+  editBtnText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
   deleteBtn: {
     backgroundColor: colors.white,
     borderColor: colors.negative,

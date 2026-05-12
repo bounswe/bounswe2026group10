@@ -11,6 +11,7 @@ export interface ReviewStep {
 
 export interface RecipeFormState {
   recipeId?: string;
+  isAlreadyPublished?: boolean;
   // Screen 12 — Basic Info
   title: string;
   type: RecipeType;
