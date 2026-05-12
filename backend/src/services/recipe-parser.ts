@@ -107,6 +107,7 @@ Standard units to use for ingredients (pick the most appropriate):
 Ingredient rules:
 - Convert ALL informal/colloquial units to standard ones. Examples:
   - "a pinch" → 1 g or 0.5 g depending on ingredient
+  - "1 gō" → 180 ml
   - "a handful" → approximate grams for that ingredient
   - "1 tea glass" (Turkish "çay bardağı") → 100 ml
   - "1 water glass" (Turkish "su bardağı") → 200 ml
